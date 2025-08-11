@@ -39,18 +39,13 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
         $fields = ['username' => 'email', 'password' => 'password'];
 
-
         $service->loadAuthenticator('Authentication.Session');
-
 
         $service->loadAuthenticator('Authentication.Form', [
             'fields'   => $fields,
-            'loginUrl' => '/admin/users/login',
+            'loginUrl' => ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'login'], // ✅
             'identifier' => [
-
-                'Authentication.Password' => [
-                    'fields' => $fields,
-                ],
+                'Authentication.Password' => ['fields' => $fields],
             ],
         ]);
 

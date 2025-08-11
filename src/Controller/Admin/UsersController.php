@@ -16,10 +16,15 @@ class UsersController extends AppController
     {
         $this->request->allowMethod(['get','post']);
         $result = $this->Authentication->getResult();
+
         if ($result && $result->isValid()) {
-            $target = $this->request->getQuery('redirect', '/admin');
+
+            $target = $this->request->getQuery('redirect') ?: [
+                'prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'
+            ];
             return $this->redirect($target);
         }
+
         if ($this->request->is('post') && (!$result || !$result->isValid())) {
             $this->Flash->error(__('Invalid email or password'));
         }
@@ -28,6 +33,6 @@ class UsersController extends AppController
     public function logout()
     {
         $this->Authentication->logout();
-        return $this->redirect('/admin/users/login');
+        return $this->redirect(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'login']);
     }
 }

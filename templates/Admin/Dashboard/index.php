@@ -10,6 +10,12 @@
 </div>
 <div style="margin-top:1rem;">
   <a class="button" href="/admin/contact-messages">View Submissions</a>
+    <?= $this->Html->link(
+        'View Submissions',
+        ['prefix' => 'Admin', 'controller' => 'ContactMessages', 'action' => 'index'],
+        ['class' => 'button']
+    ) ?>
+
 </div>
 <style>
 .button { display:inline-block; padding:.5rem 1rem; border-radius:.5rem; background:#0366d6; color:#fff; text-decoration:none; }
