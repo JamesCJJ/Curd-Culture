@@ -20,11 +20,18 @@
             <p>Please answer: <strong><?= h($a) ?> + <?= h($b) ?> = ?</strong></p>
             <?= $this->Form->control('captcha', ['label' => 'Your answer']) ?>
         </fieldset>
-
         <div style="display:flex; gap:.75rem; margin-top:1rem;">
             <?= $this->Form->button(__('Submit')) ?>
             <?= $this->Form->reset(__('Reset')) ?>
+            <?= $this->Form->button(__('Back'), [
+                'type' => 'button',
+                'onclick' => 'window.history.back();',
+                'formnovalidate' => true
+            ]) ?>
         </div>
+
+
+
         <?= $this->Form->end() ?>
     </div>
 </div>
