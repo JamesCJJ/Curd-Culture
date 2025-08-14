@@ -1,5 +1,5 @@
 <div class="hero">
-    <h1>Welcome</h1>
+    <h1>Curd & Culture</h1>
     <p class="lead">Landing page with a clear CTA.</p>
 
     <p>
