@@ -150,10 +150,58 @@ $this->assign('title', 'Curd & Culture');
     .btn:focus-visible{outline:3px solid var(--ring);outline-offset:2px}
     .btn:hover{filter:brightness(.98);transform:translateY(-1px);transition:.15s}
 
-    /* High-contrast mode hooks */
-    .page.hc .badge{background:#1f2937;border-color:#475569;color:#fff}
-    .page.hc .card{background:#0f172a}
-    .page.hc .trust li{background:#111827;border-color:#334155;color:#e5e7eb}
+    /* ========= High-Contrast theme (fix) ========= */
+
+
+    .page.hc{
+        --bg:#0b0f14;
+        --text:#f1f5f9;
+        --muted:#cbd5e1;
+        --card:#0f172a;
+        --brand:#60a5fa;
+        --ring:rgba(96,165,250,.45);
+        color:var(--text);
+        background:var(--bg);
+    }
+
+
+    .page.hc .hero--blend{ background:none; }
+
+
+    .page.hc .badge{ background:#111827; border-color:#334155; color:#e5e7eb; }
+
+
+    .page.hc .card,
+    .page.hc .info,
+    .page.hc .stepper li{
+        background:var(--card);
+        color:var(--text);
+        border-color:#334155;
+    }
+
+
+    .page.hc .step-num{
+        background:#0b1220;
+        border-color:#334155;
+        color:#9ec5ff;
+    }
+
+
+    .page.hc .trust li{
+        background:#111827;
+        border-color:#334155;
+        color:#e5e7eb;
+    }
+
+    .page.hc .muted{ color:var(--muted); }
+
+
+    .page.hc details,
+    .page.hc details summary{ color:var(--text); }
+
+
+    .page.hc .hero__img,
+    .page.hc .img-card{ box-shadow:none; }
 
     /* Responsive */
     @media (max-width: 920px){

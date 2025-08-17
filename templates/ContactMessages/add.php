@@ -88,4 +88,25 @@ $this->assign('title', 'Contact Us');
     .actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem}
 
     .cm-foot{ text-align:center; margin-top:1.25rem; color:#6b7280 }
+
+    /* ========= High-Contrast fixes for form ========= */
+    .page.hc .cm-card{ background:#0f172a; color:#f1f5f9; }
+    .page.hc .cm-captcha{ border-color:#334155; }
+
+    .page.hc .field input,
+    .page.hc .field textarea,
+    .page.hc .captcha-row input{
+        background:#0b1220;
+        color:#e5e7eb;
+        border-color:#334155;
+    }
+
+    .page.hc .field input::placeholder,
+    .page.hc .field textarea::placeholder{
+        color:#9aa3ae;
+    }
+
+
+    .page.hc .btn{ background:#1f2937; color:#fff; border-color:#475569; }
+    .page.hc .btn-primary{ background:#60a5fa; color:#111; }
 </style>
