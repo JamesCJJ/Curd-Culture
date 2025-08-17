@@ -1,21 +1,23 @@
 <?php
-use Cake\Routing\Router;
 use Cake\Routing\Route\DashedRoute;
+use Cake\Routing\RouteBuilder;
 
-return static function (\Cake\Routing\RouteBuilder $routes) {
+return static function (RouteBuilder $routes) {
+    //  DashedRoute
     $routes->setRouteClass(DashedRoute::class);
 
-    // Landing page -> Pages::home
+    //  -> Pages::display('home')
     $routes->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
 
-    // Default routes
-    $routes->scope('/', function ($builder) {
-        $builder->fallbacks();
+    //
+    $routes->scope('/', function (RouteBuilder $builder) {
+        $builder->fallbacks(DashedRoute::class);
     });
 
-    // Admin prefix
-    $routes->prefix('Admin', function ($builder) {
-        $builder->connect('/', ['controller' => 'Dashboard', 'action' => 'index']);
-        $builder->fallbacks();
+    // Admin
+    $routes->prefix('Admin', function (RouteBuilder $builder) {
+
+        $builder->connect('/', ['controller' => 'Users', 'action' => 'login']);
+        $builder->fallbacks(DashedRoute::class);
     });
 };

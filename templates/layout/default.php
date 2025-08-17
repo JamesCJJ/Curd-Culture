@@ -19,15 +19,22 @@
 <header class="topbar" role="navigation" aria-label="Global">
     <div class="topbar__inner">
         <div class="brand">
-            <?= $this->Html->link('Curd & Culture', ['controller' => 'Pages', 'action' => 'display', 'home'], ['class' => 'brand__link']) ?>
+
+            <?= $this->Html->link(
+                'Curd & Culture',
+                ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home'],
+                ['class' => 'brand__link']
+            ) ?>
         </div>
 
         <div class="nav-actions">
+
             <?= $this->Html->link(
                 'Contact Us',
-                ['controller' => 'ContactMessages', 'action' => 'add'],
+                ['prefix' => false, 'controller' => 'ContactMessages', 'action' => 'add'],
                 ['class' => 'btn btn-primary', 'aria-label' => 'Go to contact form']
             ) ?>
+
 
             <?= $this->Html->link(
                 'Admin Login',
@@ -46,7 +53,6 @@
     </div>
 </header>
 
-
 <main id="content" class="page">
     <?= $this->fetch('content') ?>
 </main>
@@ -64,7 +70,7 @@
     .page.hc .brand__link { color: #f8fafc; }
     .nav-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
 
-
+    /* Buttons */
     .btn { display:inline-block; padding:.55rem .9rem; border-radius:.6rem; border:1px solid transparent; background:#e5e7eb; color:#111; text-decoration:none; }
     .btn:hover { filter:brightness(.98); }
     .btn:focus-visible { outline: 3px solid rgba(44,123,229,.25); outline-offset:2px; }
@@ -72,11 +78,11 @@
     .btn-subtle { background:transparent; border-color:#d1d5db; color:#374151; }
     .small { font-size:.9rem; padding:.35rem .55rem; }
 
-
+    /* Content & Footer */
     #content { max-width: 1100px; margin: 0 auto; padding: 1.25rem 1rem; }
     .footer { text-align:center; color:#6b7280; padding: 1.25rem 1rem; }
 
-
+    /* High contrast base */
     .page.hc .btn { background:#1f2937; color:#fff; border-color:#475569; }
     .page.hc .btn-primary { background:#60a5fa; color:#111; }
 
