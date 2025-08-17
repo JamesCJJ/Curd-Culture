@@ -90,6 +90,15 @@
         .topbar__inner { padding:.5rem .75rem; }
         .nav-actions { gap:.4rem; }
     }
+
+    .page.hc {
+        background: #0b1220;
+        color: #e5e7eb;
+    }
+    .page.hc a {
+        color: #93c5fd;
+    }
+
 </style>
 
 <script>
