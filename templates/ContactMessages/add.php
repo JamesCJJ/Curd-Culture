@@ -61,52 +61,29 @@ $this->assign('title', 'Contact Us');
         </div>
         <?= $this->Form->end() ?>
     </div>
-
-
+</section>
 
 <style>
     .cm-wrap{max-width:780px;margin:0 auto;padding:1rem}
     .cm-head h2{margin:.25rem 0}
     .muted{color:#6b7280}
-
     .cm-card{background:#fff;border-radius:1rem;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:1.25rem}
     .page.hc .cm-card{background:#0f172a}
-
     .grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
     @media(max-width:700px){.grid{grid-template-columns:1fr}}
-
     .field{display:flex;flex-direction:column;gap:.35rem;margin:.5rem 0}
-    .field input,.field textarea{
-        width:100%;padding:.65rem .8rem;border:1px solid #d1d5db;border-radius:.6rem;background:#f9fafb
-    }
+    .field input,.field textarea{width:100%;padding:.65rem .8rem;border:1px solid #d1d5db;border-radius:.6rem;background:#f9fafb}
     .field input:focus,.field textarea:focus{outline:3px solid rgba(44,123,229,.2);border-color:#9ca3af}
-
     .cm-captcha{margin-top:1rem;border:1px dashed #d1d5db;border-radius:.6rem;padding:.9rem}
     .captcha-row{display:flex;align-items:center;gap:.75rem;margin-top:.3rem}
     .question{display:inline-block;min-width:7rem;font-weight:600}
-
     .actions{display:flex;gap:.6rem;flex-wrap:wrap;margin-top:1rem}
 
-    .cm-foot{ text-align:center; margin-top:1.25rem; color:#6b7280 }
-
-    /* ========= High-Contrast fixes for form ========= */
-    .page.hc .cm-card{ background:#0f172a; color:#f1f5f9; }
-    .page.hc .cm-captcha{ border-color:#334155; }
-
-    .page.hc .field input,
-    .page.hc .field textarea,
-    .page.hc .captcha-row input{
-        background:#0b1220;
-        color:#e5e7eb;
-        border-color:#334155;
-    }
-
-    .page.hc .field input::placeholder,
-    .page.hc .field textarea::placeholder{
-        color:#9aa3ae;
-    }
-
-
-    .page.hc .btn{ background:#1f2937; color:#fff; border-color:#475569; }
-    .page.hc .btn-primary{ background:#60a5fa; color:#111; }
+    /* High-contrast */
+    .page.hc .cm-card{background:#0f172a;color:#f1f5f9}
+    .page.hc .cm-captcha{border-color:#334155}
+    .page.hc .field input,.page.hc .field textarea,.page.hc .captcha-row input{background:#0b1220;color:#e5e7eb;border-color:#334155}
+    .page.hc .field input::placeholder,.page.hc .field textarea::placeholder{color:#9aa3ae}
+    .page.hc .btn{background:#1f2937;color:#fff;border-color:#475569}
+    .page.hc .btn-primary{background:#60a5fa;color:#111}
 </style>

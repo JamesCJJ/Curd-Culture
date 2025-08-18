@@ -3,36 +3,46 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Controller\Admin\AppController;
+
 class UsersController extends AppController
 {
-    public function initialize(): void
-    {
-        parent::initialize();
-        // Allow unauthenticated access to login
-        $this->Authentication->addUnauthenticatedActions(['login']);
-    }
-
     public function login()
     {
-        $this->request->allowMethod(['get','post']);
-        $result = $this->Authentication->getResult();
+        if ($this->request->is('post')) {
+            $email    = (string)$this->request->getData('email');
+            $password = (string)$this->request->getData('password');
 
-        if ($result && $result->isValid()) {
+            $Users = $this->fetchTable('Users');
+            $user = $Users->find()
+                ->select(['id', 'email', 'password', 'role'])
+                ->where(['email' => $email])
+                ->first();
 
-            $target = $this->request->getQuery('redirect') ?: [
-                'prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'
-            ];
-            return $this->redirect($target);
-        }
+            if ($user && password_verify($password, (string)$user->password) && $user->role === 'admin') {
 
-        if ($this->request->is('post') && (!$result || !$result->isValid())) {
-            $this->Flash->error(__('Invalid email or password'));
+                $this->request->getSession()->write('Auth.AdminUser', [
+                    'id'    => $user->id,
+                    'email' => $user->email,
+                    'role'  => $user->role,
+                ]);
+
+                $this->Flash->success('Welcome back!');
+                return $this->redirect([
+                    'prefix' => 'Admin',
+                    'controller' => 'Dashboard',
+                    'action' => 'index'
+                ]);
+            }
+
+            $this->Flash->error('Invalid credentials or not an admin.');
         }
     }
 
     public function logout()
     {
-        $this->Authentication->logout();
-        return $this->redirect(['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'login']);
+        $this->request->getSession()->delete('Auth.AdminUser');
+        $this->Flash->success('You have been logged out.');
+        return $this->redirect(['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home']);
     }
 }

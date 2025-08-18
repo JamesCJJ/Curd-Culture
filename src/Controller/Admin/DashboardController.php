@@ -7,14 +7,22 @@ class DashboardController extends AppController
 {
     public function index()
     {
-        $this->loadModel('ContactMessages');
-        $total = $this->ContactMessages->find()->count();
-        $today = $this->ContactMessages->find()
+        $ContactMessages = $this->fetchTable('ContactMessages');
+
+        $total        = $ContactMessages->find()->count();
+        $unreadCount  = $ContactMessages->find()->where(['status' => 'unread'])->count();
+        $repliedCount = $ContactMessages->find()->where(['status' => 'replied'])->count();
+        $todayCount   = $ContactMessages->find()
             ->where(function ($exp, $q) {
-                $start = new \DateTimeImmutable('today');
-                return $exp->gte('created', $start->format('Y-m-d 00:00:00'));
+                return $exp->gte('created', (new \DateTime('today'))->format('Y-m-d 00:00:00'));
             })
             ->count();
-        $this->set(compact('total','today'));
+
+        $latest = $ContactMessages->find()
+            ->orderByDesc('created')
+            ->limit(10)
+            ->all();
+
+        $this->set(compact('total','unreadCount','repliedCount','todayCount','latest'));
     }
 }

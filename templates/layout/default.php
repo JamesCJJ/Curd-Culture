@@ -10,8 +10,10 @@
     <?= $this->Html->charset() ?>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= h($this->fetch('title') ?: 'Curd & Culture') ?></title>
+
     <?= $this->fetch('meta') ?>
-    <?= $this->Html->css('home') ?>        <!-- 载入全局样式 -->
+
+    <?= $this->Html->css('home') ?>
     <?= $this->fetch('css') ?>
     <?= $this->fetch('script') ?>
 </head>
@@ -21,7 +23,7 @@
     <div class="topbar__inner">
         <div class="brand">
             <?= $this->Html->link(
-                $this->Html->image('logo.png', [   // 如果你实际是 cake-logo.png，这里改成 'cake-logo.png'
+                $this->Html->image('logo.png', [
                     'alt' => 'Curd & Culture',
                     'class' => 'brand-logo'
                 ]) . '<span class="brand-name">Curd &amp; Culture</span>',
@@ -37,20 +39,38 @@
                 ['class' => 'btn btn-primary', 'aria-label' => 'Go to contact form']
             ) ?>
 
-            <?= $this->Html->link(
-                'Admin Login',
-                ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'login'],
-                ['class' => 'btn', 'aria-label' => 'Go to admin login']
-            ) ?>
+            <?php
 
+            $adminUser = $this->getRequest()->getSession()->read('Auth.AdminUser');
+            if ($adminUser):
+                echo $this->Html->link(
+                    'Admin',
+                    ['prefix' => 'Admin', 'controller' => 'ContactMessages', 'action' => 'index'],
+                    ['class' => 'btn', 'aria-label' => 'Open admin inbox']
+                );
+                echo $this->Html->link(
+                    'Logout',
+                    ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'logout'],
+                    ['class' => 'btn', 'aria-label' => 'Logout admin']
+                );
+            else:
+                echo $this->Html->link(
+                    'Admin Login',
+                    ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'login'],
+                    ['class' => 'btn', 'aria-label' => 'Go to admin login']
+                );
+            endif;
+            ?>
 
-            <button id="btn-read" class="btn btn-subtle" type="button" aria-pressed="false" aria-label="Read page aloud">
+            <!-- Read this page aloud -->
+            <button id="btn-read" class="btn btn-subtle" type="button"
+                    aria-pressed="false" aria-label="Read page aloud">
                 <span class="glyph glyph--play" aria-hidden="true"></span>
                 <span class="glyph glyph--pause-square" aria-hidden="true"></span>
                 <span class="label">Read</span>
             </button>
 
-
+            <!-- Accessibility tools -->
             <div class="a11y-tools" aria-label="Accessibility tools">
                 <button class="btn small" id="font-plus" type="button" title="Increase font size">A+</button>
                 <button class="btn small" id="font-minus" type="button" title="Decrease font size">A−</button>
@@ -71,17 +91,14 @@
 <style>
     /* ====== Topbar ====== */
     .topbar{position:sticky;top:0;z-index:1000;background:#fff;border-bottom:1px solid #e5e7eb}
-    .page.hc .topbar{background:#0f172a;border-color:#334155}
     .topbar__inner{max-width:1100px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
     .nav-actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
-
 
     .brand-link{display:flex;align-items:center;gap:.5rem;text-decoration:none}
     .brand-logo{height:28px;width:auto;border-radius:.25rem}
     .brand-name{font-weight:700;color:#0f172a}
-    .page.hc .brand-name{color:var(--text)}
 
-
+    /* Buttons */
     .btn{display:inline-block;padding:.55rem .9rem;border-radius:.6rem;border:1px solid transparent;background:#e5e7eb;color:#111;text-decoration:none}
     .btn:hover{filter:brightness(.98)}
     .btn:focus-visible{outline:3px solid rgba(44,123,229,.25);outline-offset:2px}
@@ -89,19 +106,36 @@
     .btn-subtle{background:transparent;border-color:#d1d5db;color:#374151}
     .small{font-size:.9rem;padding:.35rem .55rem}
 
+    /* Read glyphs */
+    .glyph{display:inline-block;width:12px;height:12px;margin-right:.35rem;vertical-align:-1px}
+    .glyph--play{clip-path:polygon(0 0,100% 50%,0 100%);background:currentColor}
+    .glyph--pause-square{display:none;position:relative;width:12px;height:12px;border-radius:2px;background:transparent;border:1.5px solid currentColor}
+    .glyph--pause-square::before,.glyph--pause-square::after{
+        content:"";position:absolute;top:2px;bottom:2px;width:2px;background:currentColor
+    }
+    .glyph--pause-square::before{left:3px}
+    .glyph--pause-square::after{right:3px}
 
     #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
     .footer{text-align:center;color:#6b7280;padding:1.25rem 1rem}
 
-    .page.hc .btn{background:#1f2937;color:#fff;border-color:#475569}
-    .page.hc .btn-primary{background:#60a5fa;color:#111}
-    @media (max-width:680px){.topbar__inner{padding:.5rem .75rem}.nav-actions{gap:.4rem}}
+    /* ====== High contrast mode ====== */
     .page.hc{background:#0b1220;color:#e5e7eb}
     .page.hc a{color:#93c5fd}
+    .page.hc .topbar{background:#0f172a;border-color:#334155}
+    .page.hc .brand-name{color:#e5e7eb}
+    .page.hc .btn{background:#1f2937;color:#fff;border-color:#475569}
+    .page.hc .btn-primary{background:#60a5fa;color:#111}
+    .page.hc .btn-subtle{background:transparent;border-color:#475569;color:#e5e7eb}
+
+    @media (max-width:680px){
+        .topbar__inner{padding:.5rem .75rem}
+        .nav-actions{gap:.4rem}
+    }
 </style>
 
 <script>
-
+    /* ===== A11y tools (font size & contrast) ===== */
     (function(){
         const root = document.querySelector('.page') || document.body;
         const plus = document.getElementById('font-plus');
@@ -121,8 +155,67 @@
             (root.classList || document.body.classList).toggle('hc');
         });
     })();
+
+    /* ===== Read this page aloud (SpeechSynthesis) ===== */
+    (function(){
+        const btn = document.getElementById('btn-read');
+        if (!btn) return;
+
+        const playIcon  = btn.querySelector('.glyph--play');
+        const pauseIcon = btn.querySelector('.glyph--pause-square');
+
+        let speaking = false;
+        let utterance = null;
+
+        function updateUI(){
+            btn.setAttribute('aria-pressed', speaking ? 'true' : 'false');
+            if (speaking) {
+                playIcon.style.display = 'none';
+                pauseIcon.style.display = 'inline-block';
+            } else {
+                playIcon.style.display = 'inline-block';
+                pauseIcon.style.display = 'none';
+            }
+        }
+        updateUI();
+
+        function buildText(){
+
+            const region = document.getElementById('content');
+            if (!region) return document.title || 'Curd and Culture';
+
+            return (region.innerText || region.textContent || '').replace(/\s+\n/g, '\n').trim();
+        }
+
+        btn.addEventListener('click', () => {
+            try {
+                if (!speaking) {
+                    window.speechSynthesis.cancel();
+                    utterance = new SpeechSynthesisUtterance(buildText());
+                    utterance.rate = 1;
+                    utterance.pitch = 1;
+                    utterance.onend = () => { speaking = false; updateUI(); };
+                    utterance.onerror = () => { speaking = false; updateUI(); };
+                    speaking = true; updateUI();
+                    window.speechSynthesis.speak(utterance);
+                } else {
+                    window.speechSynthesis.cancel();
+                    speaking = false; updateUI();
+                }
+            } catch(e) {
+
+                speaking = false; updateUI();
+            }
+        });
+
+
+        window.addEventListener('beforeunload', ()=> {
+            try { window.speechSynthesis.cancel(); } catch(e) {}
+        });
+    })();
 </script>
 
-<?= $this->Html->script('accessibility.js') ?>  <!-- Read 播放/暂停 -->
+
+<?= $this->Html->script('accessibility.js') ?>
 </body>
 </html>

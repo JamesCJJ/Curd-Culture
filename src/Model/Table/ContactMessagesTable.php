@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use ArrayObject;
+use Cake\Event\EventInterface;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
@@ -11,21 +13,56 @@ class ContactMessagesTable extends Table
     public function initialize(array $config): void
     {
         parent::initialize($config);
+
         $this->setTable('contact_messages');
         $this->setPrimaryKey('id');
+
         $this->addBehavior('Timestamp');
+
+        $this->belongsTo('Users', [
+            'foreignKey' => 'replied_by',
+            'joinType'   => 'LEFT',
+        ]);
     }
 
-    public function validationDefault(Validator $validator): Validator
+    public function validationDefault(Validator $v): Validator
     {
-        $validator
-            ->scalar('name')->maxLength('name', 100)->requirePresence('name')->notEmptyString('name')
-            ->email('email')->requirePresence('email')->notEmptyString('email')
-            ->scalar('message')->requirePresence('message')->notEmptyString('message');
 
-        // 'captcha' will be checked in controller (needs session), here we only require it
-        $validator->requirePresence('captcha')->notEmptyString('captcha', 'Please answer the captcha question.');
+        $v->scalar('name')
+            ->maxLength('name', 255)
+            ->requirePresence('name', 'create')
+            ->notEmptyString('name');
 
-        return $validator;
+        $v->email('email')
+            ->requirePresence('email', 'create')
+            ->notEmptyString('email');
+
+        $v->scalar('message')
+            ->requirePresence('message', 'create')
+            ->notEmptyString('message');
+
+
+        $v->scalar('status')
+            ->requirePresence('status', 'create')
+            ->notEmptyString('status')
+            ->inList('status', ['new', 'in_progress', 'closed'], 'Invalid status');
+
+        return $v;
+    }
+
+
+    public function beforeMarshal(EventInterface $event, ArrayObject $data, ArrayObject $options): void
+    {
+
+        foreach (['name', 'email', 'message'] as $f) {
+            if (isset($data[$f])) {
+                $data[$f] = trim((string)$data[$f]);
+            }
+        }
+
+
+        if (!isset($data['status']) || $data['status'] === '') {
+            $data['status'] = 'new';
+        }
     }
 }

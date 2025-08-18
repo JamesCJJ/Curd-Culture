@@ -15,9 +15,14 @@ return static function (RouteBuilder $routes) {
     });
 
     // Admin
-    $routes->prefix('Admin', function (RouteBuilder $builder) {
+    $routes->prefix('Admin', function ($builder) {
 
-        $builder->connect('/', ['controller' => 'Users', 'action' => 'login']);
-        $builder->fallbacks(DashedRoute::class);
+        $builder->connect('/login', ['controller' => 'Users', 'action' => 'login']);
+        $builder->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
+
+
+        $builder->connect('/', ['controller' => 'ContactMessages', 'action' => 'index']);
+
+        $builder->fallbacks();
     });
 };

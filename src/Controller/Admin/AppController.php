@@ -3,15 +3,34 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
-use App\Controller\AppController as BaseController;
+use App\Controller\AppController as Base;
+use Cake\Event\EventInterface;
 
-class AppController extends BaseController
+class AppController extends Base
 {
-    public function beforeFilter(\Cake\Event\EventInterface $event)
+    public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
-        // Require authentication for all admin by default.
-        // Controllers can allow specific actions.
-        $this->Authentication->addUnauthenticatedActions([]);
+
+        $controller = (string)$this->request->getParam('controller');
+        $action     = (string)$this->request->getParam('action');
+
+
+        if ($controller === 'Users' && in_array($action, ['login', 'logout'], true)) {
+            return;
+        }
+
+
+        $user = $this->request->getSession()->read('Auth.AdminUser');
+        if (empty($user) || (($user['role'] ?? '') !== 'admin')) {
+            $this->Flash->error('Admin only. Please login.');
+
+            $event->setResult($this->redirect([
+                'prefix' => 'Admin',
+                'controller' => 'Users',
+                'action' => 'login',
+            ]));
+            return;
+        }
     }
 }

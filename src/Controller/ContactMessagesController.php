@@ -10,8 +10,7 @@ class ContactMessagesController extends AppController
     public function beforeFilter(EventInterface $event)
     {
         parent::beforeFilter($event);
-        // 允许未登录访问“新增留言”页面
-        $this->Authentication->addUnauthenticatedActions(['add']);
+
     }
 
     public function add()
