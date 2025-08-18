@@ -73,3 +73,76 @@ hr {
 #url-rewriting-warning {
     display: none;
 }
+.brand-link{display:flex;align-items:center;gap:.5rem;text-decoration:none}
+.brand-logo{height:28px;width:auto;border-radius:.25rem}
+.brand-name{font-weight:700;color:#0f172a}
+.page.hc .brand-name{color:var(--text);}
+
+
+.topbar__inner{
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: .6rem 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.brand-link{
+    display: flex;
+    align-items: center;
+    gap: .55rem;
+    text-decoration: none;
+}
+
+.brand-logo{
+    height: 30px;
+    width: auto;
+    display: block;
+    border-radius: .35rem;
+}
+
+
+.page.hc .brand-name{ color: var(--text); }
+
+/* Read button icon/label swap */
+#btn-read .icon-pause { display: none; }
+#btn-read.is-reading .icon-play { display: none; }
+#btn-read.is-reading .icon-pause { display: inline; }
+#btn-read.is-paused  .icon-play { display: inline; }
+#btn-read.is-paused  .icon-pause { display: none; }
+
+.topbar__inner{max-width:none;margin:0;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
+
+/* Read button glyphs */
+#btn-read .glyph {
+    display: inline-block;
+    margin-right: .5rem;
+    vertical-align: -1px;
+}
+
+/* ▶ triangle (play) – pure CSS */
+#btn-read .glyph--play {
+    width: 0;
+    height: 0;
+    border-style: solid;
+    border-width: 6px 0 6px 10px;
+    border-color: transparent transparent transparent currentColor;
+}
+
+/* ■ square (pause) – shown while reading */
+#btn-read .glyph--pause-square {
+    display: none;
+    width: 12px;
+    height: 12px;
+    background: currentColor;
+    border-radius: 3px; /* soften edges a bit */
+}
+
+/* Toggle rules */
+#btn-read.is-reading .glyph--play { display: none; }
+#btn-read.is-reading .glyph--pause-square { display: inline-block; }
+
+#btn-read.is-paused .glyph--play { display: inline-block; }
+#btn-read.is-paused .glyph--pause-square { display: none; }
