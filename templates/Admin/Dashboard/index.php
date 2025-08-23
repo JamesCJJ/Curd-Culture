@@ -88,7 +88,7 @@ $todayCount   = $todayCount   ?? 0;
                                 </td>
                                 <td class="actions">
                                     <?= $this->Html->link('View',   ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'view',  $m->id], ['class'=>'btn tiny']) ?>
-                                    <?= $this->Html->link('Reply',  ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'reply', $m->id], ['class'=>'btn tiny btn-primary']) ?>
+                                    <?= $this->Html->link('Reply',  ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'view', $m->id], ['class'=>'btn tiny btn-primary']) ?>
                                     <?= $this->Form->postLink(
                                         'Delete',
                                         ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'delete', $m->id],

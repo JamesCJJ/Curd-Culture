@@ -200,7 +200,6 @@ $badge = function (?string $state): string {
 </style>
 
 <script>
-    // 自动提交：状态/日期改变时刷新
     document.addEventListener('change', (e) => {
         const ids = ['status','from','to'];
         if (ids.includes(e.target.id)) {
