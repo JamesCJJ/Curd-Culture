@@ -45,7 +45,7 @@
             if ($adminUser):
                 echo $this->Html->link(
                     'Admin',
-                    ['prefix' => 'Admin', 'controller' => 'ContactMessages', 'action' => 'index'],
+                    ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
                     ['class' => 'btn', 'aria-label' => 'Open admin inbox']
                 );
                 echo $this->Html->link(
