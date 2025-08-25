@@ -92,7 +92,7 @@ class ContactMessagesController extends AppController
             $this->Flash->error('Failed to save. Please check the form.');
         }
 
-        // 传入视图使用的选项
+
         $statuses = [
             'new'         => 'New',
             'in_progress' => 'In progress',

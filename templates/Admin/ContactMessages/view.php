@@ -11,7 +11,7 @@ $statuses = [
     'closed'      => 'Closed',
 ];
 
-// 状态色
+
 $badgeClass = [
     'new'         => 'chip chip--blue',
     'in_progress' => 'chip chip--amber',
@@ -186,7 +186,7 @@ $lbl = $statuses[$st] ?? ucfirst($st);
         .hero{ align-items:flex-start; flex-direction:column; }
     }
 
-    /* High-contrast（如果你的 layout 有 .page.hc 切换，可以自动适配） */
+
     .page.hc .view-wrap{
         --bg:#0b0f14; --card:#0f172a; --text:#e5e7eb; --muted:#cbd5e1; --line:#334155;
         --blue-weak:#102a5c; --green-weak:#0f3922; --amber-weak:#3c2f10;

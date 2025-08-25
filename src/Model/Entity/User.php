@@ -15,7 +15,7 @@ class User extends Entity
         'email'    => true,
         'password' => true,
         'role'     => true,
-        'status'   => true,   // 新增
+        'status'   => true,
         'created'  => true,
         'modified' => true,
     ];
