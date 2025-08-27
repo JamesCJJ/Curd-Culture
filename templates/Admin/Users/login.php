@@ -20,8 +20,8 @@ $this->assign('title', 'Admin Login');
             <?= $this->Form->label('email', 'Email') ?>
             <?= $this->Form->email('email', [
                 'placeholder' => 'you@curdandculture.com',
-                'required' => true,
-                'autofocus' => true,
+                'required'    => true,
+                'autofocus'   => true,
                 'aria-describedby' => 'emailHelp'
             ]) ?>
             <small id="emailHelp" class="muted">Use your admin account email.</small>
@@ -32,8 +32,8 @@ $this->assign('title', 'Admin Login');
             <div class="pw-input">
                 <?= $this->Form->password('password', [
                     'placeholder' => '••••••••',
-                    'required' => true,
-                    'id' => 'password'
+                    'required'    => true,
+                    'id'          => 'password'
                 ]) ?>
                 <button type="button" class="btn small btn-subtle" id="togglePw" aria-pressed="false" aria-controls="password" title="Show/Hide password">Show</button>
             </div>
@@ -115,12 +115,40 @@ $this->assign('title', 'Admin Login');
     .page.hc .btn-primary{background:#60a5fa;color:#111}
     .page.hc a{color:#93c5fd}
 
-
     .page.hc .flash,
     .page.hc .message{
         background:#0b1220;
         color:#e5e7eb;
         border:1px solid #334155;
+    }
+
+
+    .auth-card .field input{
+        height:54px;
+        font-size:16px;
+        padding:0 14px;
+        line-height:1;
+        box-sizing:border-box;
+    }
+    .auth-card .pw-input .btn.small{
+        height:54px;
+        font-size:16px;
+        padding:0 14px;
+        display:inline-flex;align-items:center;justify-content:center;
+        border-radius:.65rem;
+    }
+    .auth-card .actions .btn{
+        height:48px;
+        font-size:15px;
+        padding:0 16px;
+        line-height:1;
+        box-sizing:border-box;
+        display:inline-flex;align-items:center;justify-content:center;
+    }
+    @media (max-width:480px){
+        .auth-card .field input{ height:50px; font-size:15px; }
+        .auth-card .pw-input .btn.small{ height:50px; font-size:15px; }
+        .auth-card .actions .btn{ height:46px; font-size:15px; }
     }
 </style>
 
