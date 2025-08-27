@@ -1,0 +1,76 @@
+/* ===== Curd & Culture • Global micro‑interactions & page transitions ===== */
+:root{
+  --radius: 14px;
+  --duration-fast: 120ms;
+  --duration: 220ms;
+  --shadow-1: 0 6px 18px rgba(0,0,0,.06);
+  --shadow-2: 0 10px 32px rgba(0,0,0,.08);
+}
+
+html{ scroll-behavior:smooth; }
+
+/* Page enter/leave */
+.page{
+  opacity:0;
+  transform: translateY(6px);
+  transition: opacity var(--duration) ease, transform var(--duration) ease;
+}
+.is-ready .page{ opacity:1; transform:none; }
+.is-leaving .page{ opacity:0; transform: translateY(6px); }
+
+/* Topbar shadow on scroll */
+.topbar{
+  transition: box-shadow var(--duration) ease, background var(--duration) ease;
+}
+.topbar.is-scrolled{
+  box-shadow: 0 6px 16px rgba(0,0,0,.05);
+  background:#fff;
+}
+
+/* Subtle lift on cards */
+.card{
+  transition: transform var(--duration) ease, box-shadow var(--duration) ease;
+}
+.card:hover{
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-2);
+}
+
+/* Friendly button feedback */
+.btn{
+  transition: background var(--duration-fast) ease, border-color var(--duration-fast) ease,
+              color var(--duration-fast) ease, transform var(--duration-fast) ease,
+              box-shadow var(--duration-fast) ease;
+  will-change: transform;
+}
+.btn:active{ transform: translateY(1px); }
+
+/* Tables feel alive */
+.table tr:hover td,
+.tbl tr:hover td{ background:#fafbff; }
+
+/* Flash messages: slide/auto‑hide */
+.message{
+  opacity:0; transform: translateY(-6px);
+  transition: opacity var(--duration) ease, transform var(--duration) ease;
+}
+.message.show{ opacity:1; transform:none; }
+.message.hidden{ opacity:0; transform: translateY(-8px); }
+
+/* Lightweight loading veil (form submits, long navigations) */
+.page::after{
+  content:'Loading…';
+  position:fixed; inset:0;
+  display:grid; place-items:center;
+  font-weight:600;
+  background: rgba(255,255,255,.6);
+  backdrop-filter: blur(2px);
+  opacity:0; pointer-events:none;
+  transition: opacity var(--duration-fast) ease;
+}
+.is-loading .page::after{ opacity:1; pointer-events:auto; }
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce){
+  *{ transition:none !important; animation:none !important; }
+}

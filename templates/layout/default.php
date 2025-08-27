@@ -14,6 +14,7 @@
     <?= $this->fetch('meta') ?>
 
     <?= $this->Html->css('home') ?>
+    <?= $this->Html->css('app') ?>
     <?= $this->fetch('css') ?>
     <?= $this->fetch('script') ?>
 </head>
@@ -215,6 +216,65 @@
     })();
 </script>
 
+
+<script>
+    /* ===== Smooth page transitions & micro‑interactions ===== */
+    (function(){
+        const html = document.documentElement;
+        const page = document.querySelector('.page');
+
+        // Mark ready to trigger enter transition
+        window.addEventListener('DOMContentLoaded', () => {
+            html.classList.add('is-ready');
+
+            // Flash messages: animate in & auto‑dismiss
+            document.querySelectorAll('.message').forEach(msg => {
+                requestAnimationFrame(() => msg.classList.add('show'));
+                // Auto dismiss after 4.5s (click to close sooner)
+                setTimeout(() => msg.classList.add('hidden'), 4500);
+                msg.addEventListener('click', () => msg.classList.add('hidden'));
+            });
+        }, {once:true});
+
+        // Topbar shadow on scroll
+        const topbar = document.querySelector('.topbar');
+        if (topbar){
+            const onScroll = () => topbar.classList.toggle('is-scrolled', window.scrollY > 2);
+            window.addEventListener('scroll', onScroll, {passive:true});
+            onScroll();
+        }
+
+        // Graceful page leave on same‑origin links
+        document.addEventListener('click', function(e){
+            const a = e.target.closest('a');
+            if (!a) return;
+            if (a.hasAttribute('data-no-transition')) return;
+            if (a.hasAttribute('download') || a.getAttribute('href')?.startsWith('#')) return;
+            if (a.target && a.target !== '_self') return;
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+
+            const url = new URL(a.href, location.href);
+            if (url.origin !== location.origin) return;
+
+            // Skip if it's a JS link or no href
+            if (!a.href || a.getAttribute('href') === 'javascript:void(0)') return;
+
+            e.preventDefault();
+            html.classList.add('is-leaving');
+            setTimeout(() => { location.href = a.href; }, 120);
+        });
+
+        // Show loading veil on form submits
+        document.addEventListener('submit', function(e){
+            html.classList.add('is-loading');
+        }, true);
+
+        // If the browser is navigating anyway, try to cancel speech and let CSS fade do its job
+        window.addEventListener('beforeunload', () => {
+            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e) {}
+        });
+    })();
+</script>
 
 <?= $this->Html->script('accessibility.js') ?>
 </body>
