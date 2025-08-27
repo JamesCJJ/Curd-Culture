@@ -74,3 +74,14 @@ html{ scroll-behavior:smooth; }
 @media (prefers-reduced-motion: reduce){
   *{ transition:none !important; animation:none !important; }
 }
+
+
+/* ===== JS fallback to avoid blank page ===== */
+@supports (selector(:root)){
+  /* If for any reason .is-ready never gets added (e.g., BFCache edge case),
+     make sure the page can't be stuck invisible after a second. */
+  .page{ transition: opacity var(--duration) ease, transform var(--duration) ease; }
+}
+@media (prefers-reduced-motion: reduce){
+  .page{ opacity: 1 !important; transform: none !important; }
+}

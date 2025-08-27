@@ -236,7 +236,30 @@
             });
         }, {once:true});
 
+        // Handle BFCache restore & back/forward navigations
+        window.addEventListener('pageshow', function(e){
+            // If coming from BFCache, ensure we show the page
+            html.classList.add('is-ready');
+            html.classList.remove('is-leaving');
+            html.classList.remove('is-loading');
+            // Re-animate flash messages if needed
+            document.querySelectorAll('.message').forEach(msg => {
+                requestAnimationFrame(() => {
+                    msg.classList.remove('hidden');
+                    msg.classList.add('show');
+                });
+            });
+        });
+
+
         // Topbar shadow on scroll
+
+        // On history navigation ensure the page is visible
+        window.addEventListener('popstate', function(){
+            html.classList.add('is-ready');
+            html.classList.remove('is-leaving');
+            html.classList.remove('is-loading');
+        });
         const topbar = document.querySelector('.topbar');
         if (topbar){
             const onScroll = () => topbar.classList.toggle('is-scrolled', window.scrollY > 2);
