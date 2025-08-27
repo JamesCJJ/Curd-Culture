@@ -3,56 +3,78 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-
+use Cake\Core\Configure;
 use Cake\Event\EventInterface;
+
 class ContactMessagesController extends AppController
 {
+
     public function beforeFilter(EventInterface $event)
     {
         parent::beforeFilter($event);
-
     }
+
 
     public function add()
     {
         $contact = $this->ContactMessages->newEmptyEntity();
-        $session = $this->request->getSession();
-
-        if ($this->request->is('get')) {
-            // Generate simple math captcha: a + b
-            $a = random_int(1, 9);
-            $b = random_int(1, 9);
-            $session->write('Captcha.sum', $a + $b);
-            $this->set(compact('a', 'b'));
-        }
 
         if ($this->request->is('post')) {
-            $contact = $this->ContactMessages->patchEntity($contact, $this->request->getData());
-            // Validate the math captcha
-            $expected = (int)($session->read('Captcha.sum') ?? -1);
-            $given = (int)($this->request->getData('captcha') ?? -2);
-            if ($expected !== $given) {
-                $contact->setError('captcha', __('Incorrect captcha answer.'));
+
+            $token = $this->request->getData('g-recaptcha-response') ?? '';
+            if (!$this->verifyRecaptcha($token)) {
+                $this->Flash->error(__('Captcha validation failed. Please try again.'));
+
+                $contact = $this->ContactMessages->patchEntity($contact, $this->request->getData());
+                $this->set(compact('contact'));
+                return;
             }
 
-            if (!$contact->getErrors()) {
-                if ($this->ContactMessages->save($contact)) {
-                    $this->Flash->success(__('Thanks! Your message was sent.'));
-                    // regenerate captcha after success
-                    $session->delete('Captcha.sum');
-                    return $this->redirect(['action' => 'add']);
-                }
-                $this->Flash->error(__('Please correct the errors and try again.'));
-            } else {
-                $this->Flash->error(__('Please correct the errors and try again.'));
+
+            $contact = $this->ContactMessages->patchEntity($contact, $this->request->getData());
+            if ($this->ContactMessages->save($contact)) {
+                $this->Flash->success(__('Thanks! Your message was sent.'));
+                return $this->redirect(['action' => 'add']);
             }
-            // regenerate captcha after post (success or fail) to avoid replay
-            $a = random_int(1, 9);
-            $b = random_int(1, 9);
-            $session->write('Captcha.sum', $a + $b);
-            $this->set(compact('a', 'b'));
+            $this->Flash->error(__('Please correct the errors and try again.'));
         }
 
         $this->set(compact('contact'));
+    }
+
+
+    private function verifyRecaptcha(string $token): bool
+    {
+        if ($token === '') {
+            return false;
+        }
+
+        $secret = (string)Configure::read('Security.recaptcha.secret_key');
+        if ($secret === '') {
+
+            return false;
+        }
+
+
+        $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_POSTFIELDS => http_build_query([
+                'secret' => $secret,
+                'response' => $token,
+                'remoteip' => $this->request->clientIp(),
+            ]),
+        ]);
+        $raw = curl_exec($ch);
+        curl_close($ch);
+
+        if (!$raw) {
+            return false;
+        }
+
+        $json = json_decode($raw, true);
+        return !empty($json['success']);
     }
 }
