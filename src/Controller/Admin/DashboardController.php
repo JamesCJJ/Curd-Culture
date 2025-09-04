@@ -11,7 +11,7 @@ class DashboardController extends AppController
 
         $total        = $ContactMessages->find()->count();
         $unreadCount  = $ContactMessages->find()->where(['status' => 'unread'])->count();
-        $repliedCount = $ContactMessages->find()->where(['status' => 'replied'])->count();
+        $repliedCount = $ContactMessages->find()->where(['status IN' => ['read', 'in_progress', 'closed']])->count();
         $todayCount   = $ContactMessages->find()
             ->where(function ($exp, $q) {
                 return $exp->gte('created', (new \DateTime('today'))->format('Y-m-d 00:00:00'));

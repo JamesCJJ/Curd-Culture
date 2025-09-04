@@ -15,6 +15,20 @@ $total        = $total        ?? 0;
 $unreadCount  = $unreadCount  ?? 0;
 $repliedCount = $repliedCount ?? 0;
 $todayCount   = $todayCount   ?? 0;
+
+// Status badge function
+$badge = function (?string $state): string {
+    $state = strtolower((string)$state);
+    $map = [
+        'unread'      => ['Unread',       '#dbeafe', '#1d4ed8'], // Blue
+        'read'        => ['Read',         '#dcfce7', '#166534'], // Green
+        'in_progress' => ['In Progress',  '#fef3c7', '#92400e'], // Orange
+        'closed'      => ['Closed',       '#fee2e2', '#dc2626'], // Red
+        ''            => ['—',            '#e5e7eb', '#374151'],
+    ];
+    [$label, $bg, $fg] = $map[$state] ?? $map[''];
+    return sprintf('<span class="badge" style="background:%s;color:%s;padding:0.25rem 0.5rem;border-radius:0.375rem;font-size:0.75rem;font-weight:600">%s</span>', $bg, $fg, h($label));
+};
 ?>
 
 <div class="dash">
@@ -65,12 +79,13 @@ $todayCount   = $todayCount   ?? 0;
                         <th>From</th>
                         <th>Message</th>
                         <th>Received</th>
+                        <th>Status</th>
                         <th style="width:140px">Actions</th>
                     </tr>
                     </thead>
                     <tbody>
                     <?php if (count($latest) === 0): ?>
-                        <tr><td colspan="4" class="muted">No messages yet.</td></tr>
+                        <tr><td colspan="5" class="muted">No messages yet.</td></tr>
                     <?php else: ?>
                         <?php foreach ($latest as $m): ?>
                             <tr>
@@ -85,6 +100,9 @@ $todayCount   = $todayCount   ?? 0;
                                 </td>
                                 <td class="muted">
                                     <?= $m->created ? $m->created->format('M j, Y · g:i A') : '' ?>
+                                </td>
+                                <td>
+                                    <?= $badge($m->status ?? '') ?>
                                 </td>
                                 <td class="actions">
                                     <?= $this->Html->link('View',   ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'view',  $m->id], ['class'=>'btn tiny']) ?>
