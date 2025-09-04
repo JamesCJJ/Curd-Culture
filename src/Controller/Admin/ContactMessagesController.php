@@ -55,8 +55,9 @@ class ContactMessagesController extends AppController
 
         $statuses = [
             ''            => 'All',
-            'new'         => 'New',
-            'in_progress' => 'In progress',
+            'unread'      => 'Unread',
+            'read'        => 'Read',
+            'in_progress' => 'In Progress',
             'closed'      => 'Closed',
         ];
 
@@ -71,25 +72,51 @@ class ContactMessagesController extends AppController
         $table = $this->fetchTable('ContactMessages');
         $msg   = $table->get($id, contain: ['Users']);
 
+        // Auto-update status to 'read' when viewing (only on GET requests and only if currently 'unread')
+        if ($this->request->is('get') && $msg->status === 'unread') {
+            $msg->status = 'read';
+            $table->save($msg);
+        }
+
         if ($this->request->is(['post', 'put', 'patch'])) {
             $data = $this->request->getData();
 
-            $msg = $table->patchEntity($msg, $data, [
-                'fields' => ['status', 'reply_note'],
-            ]);
+            // Check if this is just a status update (no reply note)
+            if (empty($data['reply_note']) && !empty($data['status'])) {
+                // Handle status-only update - allow all valid status transitions
+                if (in_array($data['status'], ['read', 'in_progress', 'closed'])) {
+                    $oldStatus = $msg->status;
+                    $msg->status = $data['status'];
+                    
+                    if ($table->save($msg)) {
+                        $this->Flash->success("Status updated from '{$oldStatus}' to '{$data['status']}'.");
+                        // Force a complete page reload by redirecting
+                        return $this->redirect(['action' => 'view', $id]);
+                    } else {
+                        $this->Flash->error('Failed to update status.');
+                    }
+                } else {
+                    $this->Flash->error('Invalid status selected.');
+                }
+            } else {
+                // Handle reply with optional status update
+                $msg = $table->patchEntity($msg, $data, [
+                    'fields' => ['status', 'reply_note'],
+                ]);
 
-            $user = $this->request->getSession()->read('Auth.AdminUser');
+                $user = $this->request->getSession()->read('Auth.AdminUser');
 
-            if (!empty($data['reply_note'])) {
-                $msg->replied_at = \Cake\I18n\FrozenTime::now();
-                $msg->replied_by = $user['id'] ?? null;
+                if (!empty($data['reply_note'])) {
+                    $msg->replied_at = \Cake\I18n\FrozenTime::now();
+                    $msg->replied_by = $user['id'] ?? null;
+                }
+
+                if ($table->save($msg)) {
+                    $this->Flash->success('Saved reply.');
+                    return $this->redirect(['action' => 'index', '?' => $this->request->getQueryParams()]);
+                }
+                $this->Flash->error('Failed to save. Please check the form.');
             }
-
-            if ($table->save($msg)) {
-                $this->Flash->success('Saved reply.');
-                return $this->redirect(['action' => 'index', '?' => $this->request->getQueryParams()]);
-            }
-            $this->Flash->error('Failed to save. Please check the form.');
         }
 
 

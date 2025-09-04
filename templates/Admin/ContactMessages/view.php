@@ -6,18 +6,20 @@
 $this->assign('title', 'Message #' . (int)$msg->id);
 
 $statuses = [
-    'new'         => 'New',
-    'in_progress' => 'In progress',
+    'unread'      => 'Unread',
+    'read'        => 'Read',
+    'in_progress' => 'In Progress',
     'closed'      => 'Closed',
 ];
 
 
 $badgeClass = [
-    'new'         => 'chip chip--blue',
+    'unread'      => 'chip chip--blue',
+    'read'        => 'chip chip--green',
     'in_progress' => 'chip chip--amber',
-    'closed'      => 'chip chip--green',
+    'closed'      => 'chip chip--red',
 ];
-$st  = (string)($msg->status ?? 'new');
+$st  = (string)($msg->status ?? 'unread');
 $cls = $badgeClass[$st] ?? 'chip';
 $lbl = $statuses[$st] ?? ucfirst($st);
 ?>
@@ -40,6 +42,36 @@ $lbl = $statuses[$st] ?? ucfirst($st);
         <div class="meta__item">
             <div class="meta__label">Sent</div>
             <div class="meta__value"><?= $msg->created?->i18nFormat('yyyy-MM-dd HH:mm') ?></div>
+        </div>
+        <div class="meta__item">
+            <div class="meta__label">Status</div>
+            <div class="meta__value">
+                <?= $this->Form->create($msg, [
+                    'class' => 'status-form', 
+                    'url' => ['action' => 'view', $msg->id],
+                    'type' => 'post'
+                ]) ?>
+                <?php
+                // Build status options excluding the current status
+                $statusOptions = [];
+                $allStatuses = [
+                    'read' => 'Read',
+                    'in_progress' => 'In Progress', 
+                    'closed' => 'Closed'
+                ];
+                foreach ($allStatuses as $key => $label) {
+                    if ($key !== $msg->status) {
+                        $statusOptions[$key] = $label;
+                    }
+                }
+                ?>
+                <?= $this->Form->select('status', $statusOptions, [
+                    'empty' => 'Change status...',
+                    'class' => 'status-select',
+                    'onchange' => 'this.form.submit();'
+                ]) ?>
+                <?= $this->Form->end() ?>
+            </div>
         </div>
         <?php if ($msg->replied_at): ?>
             <div class="meta__item">
@@ -111,6 +143,8 @@ $lbl = $statuses[$st] ?? ucfirst($st);
         --green-weak:#e8f7ee;
         --amber:#f59e0b;
         --amber-weak:#fff3d6;
+        --red:#dc2626;
+        --red-weak:#fee2e2;
         color:var(--text);
         background:var(--bg);
         padding:24px 16px 48px;
@@ -133,11 +167,12 @@ $lbl = $statuses[$st] ?? ucfirst($st);
     .chip--blue{ background:var(--blue-weak); color:var(--blue) }
     .chip--green{ background:var(--green-weak); color:var(--green) }
     .chip--amber{ background:var(--amber-weak); color:var(--amber) }
+    .chip--red{ background:var(--red-weak); color:var(--red) }
     .hero__chip{ align-self:flex-start }
 
     /* meta row */
     .meta{
-        display:grid; grid-template-columns: 1.4fr .8fr .8fr; gap:.9rem;
+        display:grid; grid-template-columns: 1.4fr .8fr 1fr; gap:.9rem;
         margin:0 auto 12px;
     }
     .meta__item{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:.7rem .9rem; box-shadow: var(--shadow); }
@@ -169,6 +204,16 @@ $lbl = $statuses[$st] ?? ucfirst($st);
     .select:focus, .textarea:focus{ outline:3px solid rgba(37,99,235,.15); border-color:#b9c6ff }
     .help{ color:var(--muted) }
 
+    /* status container */
+    .status-container{ display:flex; flex-direction:column; gap:.6rem; align-items:flex-start }
+    .status-actions{ display:flex; align-items:center; gap:.5rem }
+    .status-form{ margin:0 }
+    .status-select{
+        border:1px solid var(--line); border-radius:8px; padding:.4rem .6rem; background:#fbfbfe;
+        font-size:.85rem; min-width:150px;
+    }
+    .status-select:focus{ outline:2px solid rgba(37,99,235,.15); border-color:#b9c6ff }
+
     .actions{ display:flex; gap:.5rem; justify-content:flex-end }
     .btn{
         background:#eef1f6; color:#111; border:1px solid #dfe4ef;
@@ -179,6 +224,9 @@ $lbl = $statuses[$st] ?? ucfirst($st);
     .btn--danger{ background:#fee2e2; border-color:#fecaca; color:#7f1d1d }
 
     @media (max-width: 880px){
+        .meta{ grid-template-columns: 1fr 1fr 1fr; }
+    }
+    @media (max-width: 650px){
         .meta{ grid-template-columns: 1fr 1fr; }
     }
     @media (max-width: 600px){

@@ -12,9 +12,10 @@ $this->assign('title', 'Contact Messages');
 $badge = function (?string $state): string {
     $state = strtolower((string)$state);
     $map = [
-        'new'         => ['New',          '#dbeafe', '#1d4ed8'], // 蓝
-        'in_progress' => ['In progress',  '#fef3c7', '#92400e'], // 橙
-        'closed'      => ['Closed',       '#dcfce7', '#166534'], // 绿
+        'unread'      => ['Unread',       '#dbeafe', '#1d4ed8'], // 蓝
+        'read'        => ['Read',         '#dcfce7', '#166534'], // 绿
+        'in_progress' => ['In Progress',  '#fef3c7', '#92400e'], // 橙
+        'closed'      => ['Closed',       '#fee2e2', '#dc2626'], // 红
         ''            => ['—',            '#e5e7eb', '#374151'],
     ];
     [$label, $bg, $fg] = $map[$state] ?? $map[''];
@@ -89,7 +90,7 @@ $badge = function (?string $state): string {
                     <th><?= $this->Paginator->sort('email', 'Email') ?></th>
                     <th class="col-message">Message</th>
                     <th><?= $this->Paginator->sort('created', 'Created') ?></th>
-                    <th><?= $this->Paginator->sort('status', 'Status') ?></th>
+                    <th class="col-status"><?= $this->Paginator->sort('status', 'Status') ?></th>
                     <th class="col-actions">Actions</th>
                 </tr>
                 </thead>
@@ -102,7 +103,13 @@ $badge = function (?string $state): string {
                             <?= h(mb_strimwidth((string)$m->message, 0, 70, '…')) ?>
                         </td>
                         <td><?= $m->created?->i18nFormat('yyyy-MM-dd HH:mm') ?></td>
-                        <td><?= $badge($m->status ?? '') ?></td>
+                        <td class="col-status">
+                            <?php if ($m->status): ?>
+                                <?= $badge($m->status) ?>
+                            <?php else: ?>
+                                <span class="badge" style="background:#e5e7eb;color:#374151">No Status</span>
+                            <?php endif; ?>
+                        </td>
                         <td class="col-actions">
                             <?= $this->Html->link('View', ['action' => 'view', $m->id], ['class' => 'link']) ?>
                             <?= $this->Form->postLink(
@@ -161,12 +168,13 @@ $badge = function (?string $state): string {
     .card{ background:#fff; border-radius:1rem; box-shadow:0 12px 36px rgba(0,0,0,.06); }
     .card__head{ padding:.8rem 1rem; border-bottom:1px solid #eef0f3; }
     .table-wrap{ overflow-x:auto; }
-    .tbl{ width:100%; border-collapse:separate; border-spacing:0 }
+    .tbl{ width:100%; border-collapse:separate; border-spacing:0; min-width: 800px; }
     .tbl th, .tbl td{ padding:.7rem .9rem; border-bottom:1px solid #eef0f3; text-align:left; }
     .tbl thead th{ font-weight:700; color:#111; white-space:nowrap; }
     .tbl tbody tr:hover{ background:#fafafa; }
     .col-message{ min-width: 320px; }
-    .col-actions{ white-space:nowrap; }
+    .col-actions{ white-space:nowrap; min-width: 180px; }
+    .col-status{ min-width: 100px; }
     .link{ color:#2563eb; text-decoration:none; margin-right:.55rem }
     .link:hover{ text-decoration:underline }
     .link-danger{ color:#b91c1c }

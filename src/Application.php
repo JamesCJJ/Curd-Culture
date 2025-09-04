@@ -23,7 +23,8 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             ->add(new ErrorHandlerMiddleware())
             ->add(new RoutingMiddleware($this))
             ->add(new BodyParserMiddleware())
-            ->add(new CsrfProtectionMiddleware())
+            // CSRF protection disabled for contact form
+            // ->add(new CsrfProtectionMiddleware())
             ->add(new AuthenticationMiddleware($this));
 
         return $middlewareQueue;

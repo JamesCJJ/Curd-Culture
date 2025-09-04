@@ -43,8 +43,7 @@ class ContactMessagesTable extends Table
 
 
         $v->scalar('status')
-            ->requirePresence('status', 'create')
-            ->notEmptyString('status')
+            ->allowEmptyString('status')
             ->inList('status', ['new', 'in_progress', 'closed'], 'Invalid status');
 
         return $v;
@@ -53,13 +52,11 @@ class ContactMessagesTable extends Table
 
     public function beforeMarshal(EventInterface $event, ArrayObject $data, ArrayObject $options): void
     {
-
         foreach (['name', 'email', 'message'] as $f) {
             if (isset($data[$f])) {
                 $data[$f] = trim((string)$data[$f]);
             }
         }
-
 
         if (!isset($data['status']) || $data['status'] === '') {
             $data['status'] = 'new';

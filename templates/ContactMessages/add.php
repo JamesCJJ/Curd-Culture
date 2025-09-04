@@ -21,7 +21,7 @@ $siteKey = h(Configure::read('Security.recaptcha.site_key')); // 从配置读取
     <?= $this->Flash->render() ?>
 
     <div class="cm-card">
-        <?= $this->Form->create($contact, ['novalidate' => true]) ?>
+        <?= $this->Form->create($contact, ['novalidate' => true, 'type' => 'post']) ?>
         <div class="grid">
             <div class="field">
                 <?= $this->Form->label('name', 'Name') ?>
