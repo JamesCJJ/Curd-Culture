@@ -25,6 +25,10 @@ return static function (RouteBuilder $routes) {
         ['_method'=>'GET']
     );
 
+    $routes->connect('/login', ['controller' => 'Customers', 'action' => 'login']);
+    $routes->connect('/register', ['controller' => 'Customers', 'action' => 'register']);
+    $routes->fallbacks(\Cake\Routing\Route\DashedRoute::class);
+
     $routes->connect('/settings', ['controller' => 'Settings', 'action' => 'index']);
 
     // Admin
