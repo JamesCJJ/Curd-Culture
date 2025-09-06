@@ -18,7 +18,12 @@
     <?= $this->fetch('css') ?>
     <?= $this->fetch('script') ?>
 </head>
-<body>
+<?php
+$cookies = $this->getRequest()->getCookieParams();
+$theme = $cookies['pref_theme'] ?? 'auto'; // auto | light | dark
+$bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-light' : '');
+?>
+<body class="<?= h($bodyClass) ?>">
 
 <header class="topbar" role="navigation" aria-label="Global">
     <div class="topbar__inner">
@@ -40,16 +45,15 @@
                 ['class' => 'btn btn-primary', 'aria-label' => 'Go to contact form']
             ) ?>
 
+            <?= $this->Html->link(
+                'Settings',
+                ['prefix' => false, 'controller' => 'Settings', 'action' => 'index'],
+                ['class' => 'btn', 'aria-label' => 'Open settings']
+            ) ?>
+
             <?php
             $adminUser = $this->getRequest()->getSession()->read('Auth.AdminUser');
             if ($adminUser):
-                // NEW: Settings in topbar (visible only for logged-in admins)
-                echo $this->Html->link(
-                    'Settings',
-                    ['prefix' => false, 'controller' => 'Settings', 'action' => 'index'],
-                    ['class' => 'btn', 'aria-label' => 'Open settings']
-                );
-
                 echo $this->Html->link(
                     'Admin',
                     ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
@@ -62,14 +66,13 @@
                 );
             else:
                 echo $this->Html->link(
-                    'Admin Login',
-                    ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'login'],
-                    ['class' => 'btn', 'aria-label' => 'Go to admin login']
+                    'Sign in',
+                    ['prefix' => false, 'controller' => 'Customers', 'action' => 'login'],
+                    ['class' => 'btn', 'aria-label' => 'Customer sign in']
                 );
             endif;
             ?>
 
-            <!-- Read this page aloud -->
             <button id="btn-read" class="btn btn-subtle" type="button"
                     aria-pressed="false" aria-label="Read page aloud">
                 <span class="glyph glyph--play" aria-hidden="true"></span>
@@ -77,7 +80,6 @@
                 <span class="label">Read</span>
             </button>
 
-            <!-- Accessibility tools -->
             <div class="a11y-tools" aria-label="Accessibility tools">
                 <button class="btn small" id="font-plus" type="button" title="Increase font size">A+</button>
                 <button class="btn small" id="font-minus" type="button" title="Decrease font size">A−</button>
@@ -96,7 +98,7 @@
 </footer>
 
 <style>
-    /* ====== Topbar ====== */
+    /* ===== Topbar ===== */
     .topbar{position:sticky;top:0;z-index:1000;background:#fff;border-bottom:1px solid #e5e7eb}
     .topbar__inner{max-width:1100px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
     .nav-actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
@@ -105,34 +107,53 @@
     .brand-logo{height:28px;width:auto;border-radius:.25rem}
     .brand-name{font-weight:700;color:#0f172a}
 
-    /* Buttons */
+    /* ===== Buttons (global) ===== */
     .btn{display:inline-block;padding:.55rem .9rem;border-radius:.6rem;border:1px solid transparent;background:#e5e7eb;color:#111;text-decoration:none}
     .btn:hover{filter:brightness(.98)}
     .btn:focus-visible{outline:3px solid rgba(44,123,229,.25);outline-offset:2px}
-    .btn-primary{background:#2c7be5;color:#fff}
     .btn-subtle{background:transparent;border-color:#d1d5db;color:#374151}
     .small{font-size:.9rem;padding:.35rem .55rem}
 
-    /* Read glyphs */
+    /* Primary in TOPBAR only — prevent auth-page widths leaking here */
+    .topbar .btn-primary{
+        background:#2c7be5;
+        color:#fff;
+        border-color:transparent;
+        width:auto !important;      /* key fix */
+        display:inline-block !important;
+        box-shadow:none;
+        padding:.55rem .9rem;       /* keep same size as .btn */
+        border-radius:.6rem;
+    }
+
+    /* ===== Glyphs ===== */
     .glyph{display:inline-block;width:12px;height:12px;margin-right:.35rem;vertical-align:-1px}
     .glyph--play{clip-path:polygon(0 0,100% 50%,0 100%);background:currentColor}
     .glyph--pause-square{display:none;position:relative;width:12px;height:12px;border-radius:2px;background:transparent;border:1.5px solid currentColor}
-    .glyph--pause-square::before,.glyph--pause-square::after{
-        content:"";position:absolute;top:2px;bottom:2px;width:2px;background:currentColor
-    }
+    .glyph--pause-square::before,.glyph--pause-square::after{content:"";position:absolute;top:2px;bottom:2px;width:2px;background:currentColor}
     .glyph--pause-square::before{left:3px}
     .glyph--pause-square::after{right:3px}
 
+    /* ===== Page container ===== */
     #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
     .footer{text-align:center;color:#6b7280;padding:1.25rem 1rem}
 
-    /* ====== High contrast mode ====== */
+    /* ===== Dark theme ===== */
+    .theme-dark{background:#0b1220;color:#e5e7eb}
+    .theme-dark .topbar{background:#111827;border-color:#1f2937}
+    .theme-dark .brand-name{color:#e5e7eb}
+    .theme-dark .btn{background:#374151;color:#f9fafb;border-color:#475569}
+    .theme-dark .btn-subtle{background:transparent;border-color:#475569;color:#e5e7eb}
+    .theme-dark .topbar .btn-primary{background:#60a5fa;color:#111}
+    .theme-dark .footer{color:#cbd5e1}
+
+    /* ===== High contrast ===== */
     .page.hc{background:#0b1220;color:#e5e7eb}
     .page.hc a{color:#93c5fd}
     .page.hc .topbar{background:#0f172a;border-color:#334155}
     .page.hc .brand-name{color:#e5e7eb}
     .page.hc .btn{background:#1f2937;color:#fff;border-color:#475569}
-    .page.hc .btn-primary{background:#60a5fa;color:#111}
+    .page.hc .topbar .btn-primary{background:#60a5fa;color:#111}
     .page.hc .btn-subtle{background:transparent;border-color:#475569;color:#e5e7eb}
 
     @media (max-width:680px){
@@ -142,7 +163,7 @@
 </style>
 
 <script>
-    /* ===== A11y tools (font size & contrast) ===== */
+    /* A11y: font size & contrast toggles */
     (function(){
         const root = document.querySelector('.page') || document.body;
         const plus = document.getElementById('font-plus');
@@ -163,7 +184,7 @@
         });
     })();
 
-    /* ===== Read this page aloud (SpeechSynthesis) ===== */
+    /* Read this page aloud */
     (function(){
         const btn = document.getElementById('btn-read');
         if (!btn) return;
@@ -176,13 +197,8 @@
 
         function updateUI(){
             btn.setAttribute('aria-pressed', speaking ? 'true' : 'false');
-            if (speaking) {
-                playIcon.style.display = 'none';
-                pauseIcon.style.display = 'inline-block';
-            } else {
-                playIcon.style.display = 'inline-block';
-                pauseIcon.style.display = 'none';
-            }
+            if (speaking) { playIcon.style.display='none'; pauseIcon.style.display='inline-block'; }
+            else { playIcon.style.display='inline-block'; pauseIcon.style.display='none'; }
         }
         updateUI();
 
@@ -207,9 +223,7 @@
                     window.speechSynthesis.cancel();
                     speaking = false; updateUI();
                 }
-            } catch(e) {
-                speaking = false; updateUI();
-            }
+            } catch(e) { speaking = false; updateUI(); }
         });
 
         window.addEventListener('beforeunload', ()=> {
@@ -219,14 +233,12 @@
 </script>
 
 <script>
-    /* ===== Smooth page transitions & micro-interactions ===== */
+    /* Smooth transitions & loading states */
     (function(){
         const html = document.documentElement;
 
         window.addEventListener('DOMContentLoaded', () => {
             html.classList.add('is-ready');
-
-            // Flash messages: animate in & auto-dismiss
             document.querySelectorAll('.message').forEach(msg => {
                 requestAnimationFrame(() => msg.classList.add('show'));
                 setTimeout(() => msg.classList.add('hidden'), 4500);
@@ -246,7 +258,6 @@
             });
         });
 
-        // Topbar shadow on scroll
         const topbar = document.querySelector('.topbar');
         if (topbar){
             const onScroll = () => topbar.classList.toggle('is-scrolled', window.scrollY > 2);
@@ -254,7 +265,6 @@
             onScroll();
         }
 
-        // Graceful page leave on same-origin links
         document.addEventListener('click', function(e){
             const a = e.target.closest('a');
             if (!a) return;
@@ -272,7 +282,6 @@
             setTimeout(() => { location.href = a.href; }, 120);
         });
 
-        // Show loading veil on form submits
         document.addEventListener('submit', function(){
             html.classList.add('is-loading');
         }, true);
