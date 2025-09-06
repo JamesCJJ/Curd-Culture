@@ -12,6 +12,7 @@ class User extends Entity
 {
 
     protected array $_accessible = [
+        'name' => true,
         'email'    => true,
         'password' => true,
         'role'     => true,
@@ -24,16 +25,18 @@ class User extends Entity
     protected array $_hidden = ['password'];
 
 
+    use Cake\Auth\DefaultPasswordHasher;
+
     protected function _setPassword(?string $value): ?string
     {
-        if ($value === null) {
+        if ($value === null || trim($value) === '') {
             return null;
         }
-        $trimmed = trim($value);
-        if ($trimmed === '') {
 
-            return null;
+        if (password_get_info($value)['algo'] !== 0) {
+            return $value;
         }
-        return password_hash($trimmed, PASSWORD_DEFAULT);
+        return (new DefaultPasswordHasher())->hash($value);
     }
+
 }
