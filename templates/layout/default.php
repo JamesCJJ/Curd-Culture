@@ -41,9 +41,15 @@
             ) ?>
 
             <?php
-
             $adminUser = $this->getRequest()->getSession()->read('Auth.AdminUser');
             if ($adminUser):
+                // NEW: Settings in topbar (visible only for logged-in admins)
+                echo $this->Html->link(
+                    'Settings',
+                    ['prefix' => false, 'controller' => 'Settings', 'action' => 'index'],
+                    ['class' => 'btn', 'aria-label' => 'Open settings']
+                );
+
                 echo $this->Html->link(
                     'Admin',
                     ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
@@ -181,10 +187,8 @@
         updateUI();
 
         function buildText(){
-
             const region = document.getElementById('content');
             if (!region) return document.title || 'Curd and Culture';
-
             return (region.innerText || region.textContent || '').replace(/\s+\n/g, '\n').trim();
         }
 
@@ -204,11 +208,9 @@
                     speaking = false; updateUI();
                 }
             } catch(e) {
-
                 speaking = false; updateUI();
             }
         });
-
 
         window.addEventListener('beforeunload', ()=> {
             try { window.speechSynthesis.cancel(); } catch(e) {}
@@ -216,33 +218,26 @@
     })();
 </script>
 
-
 <script>
-    /* ===== Smooth page transitions & micro‑interactions ===== */
+    /* ===== Smooth page transitions & micro-interactions ===== */
     (function(){
         const html = document.documentElement;
-        const page = document.querySelector('.page');
 
-        // Mark ready to trigger enter transition
         window.addEventListener('DOMContentLoaded', () => {
             html.classList.add('is-ready');
 
-            // Flash messages: animate in & auto‑dismiss
+            // Flash messages: animate in & auto-dismiss
             document.querySelectorAll('.message').forEach(msg => {
                 requestAnimationFrame(() => msg.classList.add('show'));
-                // Auto dismiss after 4.5s (click to close sooner)
                 setTimeout(() => msg.classList.add('hidden'), 4500);
                 msg.addEventListener('click', () => msg.classList.add('hidden'));
             });
         }, {once:true});
 
-        // Handle BFCache restore & back/forward navigations
-        window.addEventListener('pageshow', function(e){
-            // If coming from BFCache, ensure we show the page
+        window.addEventListener('pageshow', function(){
             html.classList.add('is-ready');
             html.classList.remove('is-leaving');
             html.classList.remove('is-loading');
-            // Re-animate flash messages if needed
             document.querySelectorAll('.message').forEach(msg => {
                 requestAnimationFrame(() => {
                     msg.classList.remove('hidden');
@@ -251,15 +246,7 @@
             });
         });
 
-
         // Topbar shadow on scroll
-
-        // On history navigation ensure the page is visible
-        window.addEventListener('popstate', function(){
-            html.classList.add('is-ready');
-            html.classList.remove('is-leaving');
-            html.classList.remove('is-loading');
-        });
         const topbar = document.querySelector('.topbar');
         if (topbar){
             const onScroll = () => topbar.classList.toggle('is-scrolled', window.scrollY > 2);
@@ -267,7 +254,7 @@
             onScroll();
         }
 
-        // Graceful page leave on same‑origin links
+        // Graceful page leave on same-origin links
         document.addEventListener('click', function(e){
             const a = e.target.closest('a');
             if (!a) return;
@@ -278,8 +265,6 @@
 
             const url = new URL(a.href, location.href);
             if (url.origin !== location.origin) return;
-
-            // Skip if it's a JS link or no href
             if (!a.href || a.getAttribute('href') === 'javascript:void(0)') return;
 
             e.preventDefault();
@@ -288,11 +273,10 @@
         });
 
         // Show loading veil on form submits
-        document.addEventListener('submit', function(e){
+        document.addEventListener('submit', function(){
             html.classList.add('is-loading');
         }, true);
 
-        // If the browser is navigating anyway, try to cancel speech and let CSS fade do its job
         window.addEventListener('beforeunload', () => {
             try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e) {}
         });

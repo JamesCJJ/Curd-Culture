@@ -6,7 +6,7 @@
 use Cake\Core\Configure;
 
 $this->assign('title', 'Contact Us');
-$siteKey = h(Configure::read('Security.recaptcha.site_key')); // 从配置读取
+$siteKey = h(Configure::read('Security.recaptcha.site_key'));
 ?>
 
 <section class="cm-wrap">
@@ -69,7 +69,6 @@ $siteKey = h(Configure::read('Security.recaptcha.site_key')); // 从配置读取
 </section>
 
 <style>
-    /* —— 保留你原来的样式 —— */
     .cm-wrap{max-width:780px;margin:0 auto;padding:1rem}
     .cm-head h2{margin:.25rem 0}
     .muted{color:#6b7280}
