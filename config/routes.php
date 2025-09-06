@@ -14,6 +14,19 @@ return static function (RouteBuilder $routes) {
         $builder->fallbacks(DashedRoute::class);
     });
 
+    $routes->connect(
+        '/contact-messages/export/prepare',
+        ['controller'=>'ContactMessages','action'=>'exportPrepare'],
+        ['_method'=>['GET','POST']]
+    );
+    $routes->connect(
+        '/contact-messages/export/download/*',
+        ['controller'=>'ContactMessages','action'=>'exportDownload'],
+        ['_method'=>'GET']
+    );
+
+    $routes->connect('/settings', ['controller' => 'Settings', 'action' => 'index']);
+
     // Admin
     $routes->prefix('Admin', function ($builder) {
 
