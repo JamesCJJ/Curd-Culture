@@ -1,7 +1,6 @@
 <?php
 /**
- * App default layout with global topbar + a11y tools
- * templates/layout/default.php
+ * App default layout — visual style matched to auth pages
  */
 ?>
 <!DOCTYPE html>
@@ -19,8 +18,8 @@
     <?= $this->fetch('script') ?>
 </head>
 <?php
-$cookies = $this->getRequest()->getCookieParams();
-$theme = $cookies['pref_theme'] ?? 'auto'; // auto | light | dark
+$cookies   = $this->getRequest()->getCookieParams();
+$theme     = $cookies['pref_theme'] ?? 'auto'; // auto | light | dark
 $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-light' : '');
 ?>
 <body class="<?= h($bodyClass) ?>">
@@ -52,23 +51,29 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
             ) ?>
 
             <?php
-            $adminUser = $this->getRequest()->getSession()->read('Auth.AdminUser');
-            if ($adminUser):
-                echo $this->Html->link(
-                    'Admin',
-                    ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
-                    ['class' => 'btn', 'aria-label' => 'Open admin inbox']
-                );
+            $identity  = $this->getRequest()->getAttribute('identity');
+            $adminSess = $this->getRequest()->getSession()->read('Auth.AdminUser');
+            $role      = $identity ? strtolower((string)$identity->get('role')) : strtolower((string)($adminSess['role'] ?? ''));
+
+            if ($identity || $adminSess):
+                if ($role === 'admin'):
+                    echo $this->Html->link(
+                        'Admin',
+                        ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
+                        ['class' => 'btn', 'aria-label' => 'Open admin dashboard']
+                    );
+                endif;
+
                 echo $this->Html->link(
                     'Logout',
-                    ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'logout'],
-                    ['class' => 'btn', 'aria-label' => 'Logout admin']
+                    ['prefix' => false, 'controller' => 'Users', 'action' => 'logout'],
+                    ['class' => 'btn', 'aria-label' => 'Logout']
                 );
             else:
                 echo $this->Html->link(
                     'Sign in',
-                    ['prefix' => false, 'controller' => 'Customers', 'action' => 'login'],
-                    ['class' => 'btn', 'aria-label' => 'Customer sign in']
+                    ['prefix' => false, 'controller' => 'Users', 'action' => 'login'],
+                    ['class' => 'btn', 'aria-label' => 'Sign in']
                 );
             endif;
             ?>
@@ -90,6 +95,7 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
 </header>
 
 <main id="content" class="page">
+    <?= $this->Flash->render() ?>
     <?= $this->fetch('content') ?>
 </main>
 
@@ -98,7 +104,11 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
 </footer>
 
 <style>
-    /* ===== Topbar ===== */
+    /* ===== Base container (aligns with auth pages) ===== */
+    #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
+    .footer{text-align:center;color:#6b7280;padding:1.25rem 1rem}
+
+    /* ===== Topbar (geometry & tones) ===== */
     .topbar{position:sticky;top:0;z-index:1000;background:#fff;border-bottom:1px solid #e5e7eb}
     .topbar__inner{max-width:1100px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
     .nav-actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
@@ -107,26 +117,21 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
     .brand-logo{height:28px;width:auto;border-radius:.25rem}
     .brand-name{font-weight:700;color:#0f172a}
 
-    /* ===== Buttons (global) ===== */
-    .btn{display:inline-block;padding:.55rem .9rem;border-radius:.6rem;border:1px solid transparent;background:#e5e7eb;color:#111;text-decoration:none}
-    .btn:hover{filter:brightness(.98)}
+    /* ===== Buttons (keep identical rhythm as auth) ===== */
+    .btn{display:inline-block;padding:.55rem .9rem;border-radius:.6rem;border:1px solid transparent;background:#e5e7eb;color:#111;text-decoration:none;font-size:.95rem}
+    .btn:hover{filter:brightness(.97)}
     .btn:focus-visible{outline:3px solid rgba(44,123,229,.25);outline-offset:2px}
     .btn-subtle{background:transparent;border-color:#d1d5db;color:#374151}
-    .small{font-size:.9rem;padding:.35rem .55rem}
+    .small{font-size:.85rem;padding:.3rem .6rem}
 
-    /* Primary in TOPBAR only — prevent auth-page widths leaking here */
+    /* Prevent Contact Us stretching (exact fix) */
     .topbar .btn-primary{
-        background:#2c7be5;
-        color:#fff;
-        border-color:transparent;
-        width:auto !important;      /* key fix */
-        display:inline-block !important;
-        box-shadow:none;
-        padding:.55rem .9rem;       /* keep same size as .btn */
-        border-radius:.6rem;
+        background:#2563eb;color:#fff;border-color:transparent;
+        width:auto !important;display:inline-block !important;
+        border-radius:.6rem;padding:.55rem .9rem;box-shadow:none;
     }
 
-    /* ===== Glyphs ===== */
+    /* Glyphs for Read */
     .glyph{display:inline-block;width:12px;height:12px;margin-right:.35rem;vertical-align:-1px}
     .glyph--play{clip-path:polygon(0 0,100% 50%,0 100%);background:currentColor}
     .glyph--pause-square{display:none;position:relative;width:12px;height:12px;border-radius:2px;background:transparent;border:1.5px solid currentColor}
@@ -134,11 +139,7 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
     .glyph--pause-square::before{left:3px}
     .glyph--pause-square::after{right:3px}
 
-    /* ===== Page container ===== */
-    #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
-    .footer{text-align:center;color:#6b7280;padding:1.25rem 1rem}
-
-    /* ===== Dark theme ===== */
+    /* ===== Dark / HC themes (match auth palette) ===== */
     .theme-dark{background:#0b1220;color:#e5e7eb}
     .theme-dark .topbar{background:#111827;border-color:#1f2937}
     .theme-dark .brand-name{color:#e5e7eb}
@@ -147,14 +148,12 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
     .theme-dark .topbar .btn-primary{background:#60a5fa;color:#111}
     .theme-dark .footer{color:#cbd5e1}
 
-    /* ===== High contrast ===== */
     .page.hc{background:#0b1220;color:#e5e7eb}
     .page.hc a{color:#93c5fd}
     .page.hc .topbar{background:#0f172a;border-color:#334155}
     .page.hc .brand-name{color:#e5e7eb}
     .page.hc .btn{background:#1f2937;color:#fff;border-color:#475569}
     .page.hc .topbar .btn-primary{background:#60a5fa;color:#111}
-    .page.hc .btn-subtle{background:transparent;border-color:#475569;color:#e5e7eb}
 
     @media (max-width:680px){
         .topbar__inner{padding:.5rem .75rem}
@@ -163,14 +162,14 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
 </style>
 
 <script>
-    /* A11y: font size & contrast toggles */
+    /* A11y tools */
     (function(){
         const root = document.querySelector('.page') || document.body;
         const plus = document.getElementById('font-plus');
         const minus = document.getElementById('font-minus');
         const contrast = document.getElementById('contrast-toggle');
-
         let scale = parseFloat(getComputedStyle(document.documentElement).fontSize)/16 || 1;
+
         plus && plus.addEventListener('click', function(){
             scale = Math.min(1.25, +(scale + 0.05).toFixed(2));
             document.documentElement.style.fontSize = (16 * scale) + 'px';
@@ -184,37 +183,32 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
         });
     })();
 
-    /* Read this page aloud */
+    /* Read aloud */
     (function(){
         const btn = document.getElementById('btn-read');
         if (!btn) return;
-
         const playIcon  = btn.querySelector('.glyph--play');
         const pauseIcon = btn.querySelector('.glyph--pause-square');
-
-        let speaking = false;
-        let utterance = null;
+        let speaking = false, utterance = null;
 
         function updateUI(){
             btn.setAttribute('aria-pressed', speaking ? 'true' : 'false');
-            if (speaking) { playIcon.style.display='none'; pauseIcon.style.display='inline-block'; }
-            else { playIcon.style.display='inline-block'; pauseIcon.style.display='none'; }
+            playIcon.style.display = speaking ? 'none' : 'inline-block';
+            pauseIcon.style.display = speaking ? 'inline-block' : 'none';
         }
         updateUI();
 
         function buildText(){
             const region = document.getElementById('content');
-            if (!region) return document.title || 'Curd and Culture';
-            return (region.innerText || region.textContent || '').replace(/\s+\n/g, '\n').trim();
+            return region ? (region.innerText || region.textContent || '').trim() : document.title;
         }
 
         btn.addEventListener('click', () => {
-            try {
-                if (!speaking) {
+            try{
+                if(!speaking){
                     window.speechSynthesis.cancel();
                     utterance = new SpeechSynthesisUtterance(buildText());
-                    utterance.rate = 1;
-                    utterance.pitch = 1;
+                    utterance.rate = 1; utterance.pitch = 1;
                     utterance.onend = () => { speaking = false; updateUI(); };
                     utterance.onerror = () => { speaking = false; updateUI(); };
                     speaking = true; updateUI();
@@ -223,20 +217,14 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
                     window.speechSynthesis.cancel();
                     speaking = false; updateUI();
                 }
-            } catch(e) { speaking = false; updateUI(); }
+            }catch(e){ speaking = false; updateUI(); }
         });
-
-        window.addEventListener('beforeunload', ()=> {
-            try { window.speechSynthesis.cancel(); } catch(e) {}
-        });
+        window.addEventListener('beforeunload', () => { try{ window.speechSynthesis.cancel(); }catch(e){} });
     })();
-</script>
 
-<script>
-    /* Smooth transitions & loading states */
+    /* Flash auto-dismiss */
     (function(){
         const html = document.documentElement;
-
         window.addEventListener('DOMContentLoaded', () => {
             html.classList.add('is-ready');
             document.querySelectorAll('.message').forEach(msg => {
@@ -245,50 +233,6 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
                 msg.addEventListener('click', () => msg.classList.add('hidden'));
             });
         }, {once:true});
-
-        window.addEventListener('pageshow', function(){
-            html.classList.add('is-ready');
-            html.classList.remove('is-leaving');
-            html.classList.remove('is-loading');
-            document.querySelectorAll('.message').forEach(msg => {
-                requestAnimationFrame(() => {
-                    msg.classList.remove('hidden');
-                    msg.classList.add('show');
-                });
-            });
-        });
-
-        const topbar = document.querySelector('.topbar');
-        if (topbar){
-            const onScroll = () => topbar.classList.toggle('is-scrolled', window.scrollY > 2);
-            window.addEventListener('scroll', onScroll, {passive:true});
-            onScroll();
-        }
-
-        document.addEventListener('click', function(e){
-            const a = e.target.closest('a');
-            if (!a) return;
-            if (a.hasAttribute('data-no-transition')) return;
-            if (a.hasAttribute('download') || a.getAttribute('href')?.startsWith('#')) return;
-            if (a.target && a.target !== '_self') return;
-            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-
-            const url = new URL(a.href, location.href);
-            if (url.origin !== location.origin) return;
-            if (!a.href || a.getAttribute('href') === 'javascript:void(0)') return;
-
-            e.preventDefault();
-            html.classList.add('is-leaving');
-            setTimeout(() => { location.href = a.href; }, 120);
-        });
-
-        document.addEventListener('submit', function(){
-            html.classList.add('is-loading');
-        }, true);
-
-        window.addEventListener('beforeunload', () => {
-            try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch(e) {}
-        });
     })();
 </script>
 
