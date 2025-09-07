@@ -57,6 +57,119 @@ html{ scroll-behavior:smooth; }
 .message.show{ opacity:1; transform:none; }
 .message.hidden{ opacity:0; transform: translateY(-8px); }
 
+/* Enhanced Flash Messages */
+.flash-message {
+  margin: 1rem 0;
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-1);
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity var(--duration) ease, transform var(--duration) ease;
+}
+
+.flash-message:not(.hidden) {
+  opacity: 1;
+  transform: none;
+}
+
+.flash-message.hidden {
+  opacity: 0;
+  transform: translateY(-8px);
+}
+
+.flash-content {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 1rem 1.25rem;
+  position: relative;
+}
+
+.flash-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.flash-text {
+  flex: 1;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.flash-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  cursor: pointer;
+  padding: 0;
+  width: 1.5rem;
+  height: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color var(--duration-fast) ease;
+  flex-shrink: 0;
+}
+
+.flash-close:hover {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Error flash message */
+.flash-error {
+  background: #fef2f2;
+  border: 1px solid #fecaca;
+  color: #dc2626;
+}
+
+.flash-error .flash-close {
+  color: #dc2626;
+}
+
+.flash-error .flash-close:hover {
+  background-color: rgba(220, 38, 38, 0.1);
+}
+
+/* Success flash message */
+.flash-success {
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  color: #16a34a;
+}
+
+.flash-success .flash-close {
+  color: #16a34a;
+}
+
+.flash-success .flash-close:hover {
+  background-color: rgba(22, 163, 74, 0.1);
+}
+
+/* Dark theme support */
+.theme-dark .flash-error {
+  background: #1f1b1b;
+  border-color: #7f1d1d;
+  color: #f87171;
+}
+
+.theme-dark .flash-error .flash-close:hover {
+  background-color: rgba(248, 113, 113, 0.1);
+}
+
+.theme-dark .flash-success {
+  background: #0f1f0f;
+  border-color: #166534;
+  color: #4ade80;
+}
+
+.theme-dark .flash-success .flash-close:hover {
+  background-color: rgba(74, 222, 128, 0.1);
+}
+
 /* Lightweight loading veil (form submits, long navigations) */
 .page::after{
   content:'Loading…';

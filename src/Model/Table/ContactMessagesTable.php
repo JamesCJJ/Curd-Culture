@@ -29,17 +29,17 @@ class ContactMessagesTable extends Table
     {
 
         $v->scalar('name')
-            ->maxLength('name', 255)
-            ->requirePresence('name', 'create')
-            ->notEmptyString('name');
+            ->maxLength('name', 255, 'Name must be 255 characters or less')
+            ->requirePresence('name', 'create', 'Name is required')
+            ->notEmptyString('name', 'Please enter your name');
 
-        $v->email('email')
-            ->requirePresence('email', 'create')
-            ->notEmptyString('email');
+        $v->email('email', false, 'Please enter a valid email address (e.g., user@example.com)')
+            ->requirePresence('email', 'create', 'Email address is required')
+            ->notEmptyString('email', 'Please enter your email address');
 
         $v->scalar('message')
-            ->requirePresence('message', 'create')
-            ->notEmptyString('message');
+            ->requirePresence('message', 'create', 'Message is required')
+            ->notEmptyString('message', 'Please enter your message');
 
 
         $v->scalar('status')
