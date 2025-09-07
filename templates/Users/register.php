@@ -1,14 +1,29 @@
 <?php
-$this->assign('title', 'Sign in');
+$this->assign('title', 'Create account');
 ?>
 <div class="auth-page">
     <div class="auth-card">
         <header class="auth-head">
-            <h1>Sign in</h1>
-            <p>Welcome back</p>
+            <h1>Create account</h1>
+            <p>Join us in seconds</p >
         </header>
 
-        <?= $this->Form->create(null) ?>
+        <?= $this->Form->create($user) ?>
+
+        <!-- Name -->
+        <div class="form-group">
+            <div class="field-block">
+                <div class="auth-row">
+                    <?= $this->Form->label('name', 'Name', ['class' => 'auth-label']) ?>
+                </div>
+                <?= $this->Form->control('name', [
+                    'label' => false,
+                    'autocomplete' => 'name',
+                    'placeholder' => 'Your name',
+                    'class' => 'auth-input'
+                ]) ?>
+            </div>
+        </div>
 
         <!-- Email -->
         <div class="form-group">
@@ -25,19 +40,15 @@ $this->assign('title', 'Sign in');
             </div>
         </div>
 
-        <!-- Password + Forgot -->
+        <!-- Password -->
         <div class="form-group">
             <div class="field-block">
                 <div class="auth-row">
                     <?= $this->Form->label('password', 'Password', ['class' => 'auth-label']) ?>
-                    <?= $this->Html->link('Forgot password?', '#', [
-                        'class' => 'auth-link-small',
-                        'data-no-transition' => true
-                    ]) ?>
                 </div>
                 <?= $this->Form->control('password', [
                     'label' => false,
-                    'autocomplete' => 'current-password',
+                    'autocomplete' => 'new-password',
                     'placeholder' => '••••••••',
                     'class' => 'auth-input'
                 ]) ?>
@@ -45,7 +56,7 @@ $this->assign('title', 'Sign in');
         </div>
 
         <div class="auth-actions">
-            <?= $this->Form->button('Sign in', ['class' => 'auth-btn auth-btn-primary']) ?>
+            <?= $this->Form->button('Create account', ['class' => 'auth-btn auth-btn-primary']) ?>
         </div>
 
         <?= $this->Form->end() ?>
@@ -54,8 +65,8 @@ $this->assign('title', 'Sign in');
 
         <div class="auth-actions">
             <?= $this->Html->link(
-                'Create a new account',
-                ['controller' => 'Customers', 'action' => 'register'],
+                'Back to sign in',
+                ['controller' => 'Users', 'action' => 'login'],
                 ['class' => 'auth-btn auth-btn-ghost', 'data-no-transition' => true]
             ) ?>
         </div>
@@ -63,7 +74,7 @@ $this->assign('title', 'Sign in');
 </div>
 
 <style>
-    /* ===== Scoped to .auth-page ===== */
+    /* 与 login 同步，保持对齐 */
     .auth-page{
         min-height:calc(100vh - 120px);
         display:grid; place-items:center;
@@ -92,14 +103,13 @@ $this->assign('title', 'Sign in');
     .auth-head p{margin:.2rem 0 1.1rem;color:#6b7280}
     .theme-dark .auth-head p{color:#cbd5e1}
 
-    /* —— Layout fix: keep label-row and input inside one block —— */
     .form-group{margin-bottom:1.05rem}
     .field-block{width:320px;max-width:100%;margin:0 auto}
     .auth-row{display:flex;align-items:center;justify-content:space-between;margin:0 0 .32rem}
     .auth-label{margin:0;font-weight:700;font-size:.92rem;color:#374151}
     .theme-dark .auth-label{color:#e5e7eb}
 
-    /* Inputs (single layer) */
+    /* Inputs */
     .auth-input{
         display:block; width:100%;
         padding:12px 14px; font-size:15px; border-radius:.7rem;
@@ -111,11 +121,7 @@ $this->assign('title', 'Sign in');
     .theme-dark .auth-input{background:#0f172a;color:#e5e7eb;box-shadow: inset 0 1px 2px rgba(0,0,0,.2)}
     .theme-dark .auth-input:focus{background:#0b1220; box-shadow:0 0 0 3px rgba(96,165,250,.32)}
 
-    .auth-link-small{font-size:.88rem;color:#2563eb;text-decoration:none}
-    .auth-link-small:hover{text-decoration:underline}
-    .theme-dark .auth-link-small{color:#93c5fd}
-
-    /* Buttons (scoped) */
+    /* Buttons */
     .auth-actions{display:flex;justify-content:center;margin-top:.2rem}
     .auth-btn{display:block;width:320px;text-align:center;border-radius:.75rem;padding:.72rem .9rem;font-weight:700;text-decoration:none;cursor:pointer}
     .auth-btn-primary{border:0;background:#2563eb;color:#fff;box-shadow:0 6px 18px rgba(37,99,235,.25);transition:transform .06s,filter .2s,box-shadow .2s}
@@ -131,7 +137,6 @@ $this->assign('title', 'Sign in');
     .theme-dark .auth-divider{color:#94a3b8}
     .theme-dark .auth-divider::before,.theme-dark .auth-divider::after{background:#334155}
 
-    /* Small screen */
     @media (max-width:420px){
         .field-block{width:100%}
         .auth-btn{width:100%}

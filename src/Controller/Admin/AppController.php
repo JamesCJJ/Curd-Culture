@@ -8,29 +8,60 @@ use Cake\Event\EventInterface;
 
 class AppController extends Base
 {
+    public function initialize(): void
+    {
+        parent::initialize();
+        $this->loadComponent('Authentication.Authentication');
+    }
+
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
 
-        $controller = (string)$this->request->getParam('controller');
-        $action     = (string)$this->request->getParam('action');
-
-
-        if ($controller === 'Users' && in_array($action, ['login', 'logout'], true)) {
+        if ((string)$this->request->getParam('controller') === 'Error') {
             return;
         }
 
+        $identity = $this->request->getAttribute('identity');
+        $isAdmin = false;
 
-        $user = $this->request->getSession()->read('Auth.AdminUser');
-        if (empty($user) || (($user['role'] ?? '') !== 'admin')) {
-            $this->Flash->error('Admin only. Please login.');
+        if ($identity) {
+            $role = strtolower((string)($identity->get('role') ?? ''));
+            $isAdmin = ($role === 'admin');
+        }
 
-            $event->setResult($this->redirect([
-                'prefix' => 'Admin',
-                'controller' => 'Users',
-                'action' => 'login',
-            ]));
+        if (!$isAdmin) {
+            $legacy = $this->request->getSession()->read('Auth.AdminUser');
+            if (is_array($legacy) && strtolower((string)($legacy['role'] ?? '')) === 'admin') {
+                $isAdmin = true;
+            }
+        }
+
+        if ($isAdmin) {
             return;
         }
+
+        $target = $this->request->getRequestTarget();
+        $acceptsJson = $this->request->is('ajax')
+            || strpos((string)$this->request->getHeaderLine('Accept'), 'application/json') !== false;
+
+        if ($acceptsJson) {
+            $event->setResult(
+                $this->response
+                    ->withStatus(401, 'Unauthorized')
+                    ->withType('application/json')
+                    ->withStringBody(json_encode(['error' => 'Admin only. Please sign in.']))
+            );
+            return;
+        }
+
+        $this->Flash->error('Admin only. Please sign in.');
+        // ★ 使用数组 URL，Cake 会自动带上 basePath；redirect 参数放在 '?'
+        $event->setResult($this->redirect([
+            'prefix' => false,
+            'controller' => 'Users',
+            'action' => 'login',
+            '?' => ['redirect' => $target],
+        ]));
     }
 }
