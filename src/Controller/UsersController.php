@@ -75,10 +75,13 @@ class UsersController extends AppController
 
         if ($this->request->is('post')) {
             $data = (array)$this->request->getData();
-            $data['role'] = 'customer';
+
+            // 默认角色 / 状态（按你的库实际情况）
+            $data['role']   = 'customer';
+            $data['status'] = $data['status'] ?? 'active';
 
             $user = $Users->patchEntity($user, $data, [
-                'fields' => ['name', 'email', 'password', 'role'],
+                'fields'   => ['name', 'email', 'password', 'role', 'status'],
                 'validate' => 'default',
             ]);
 
@@ -88,11 +91,24 @@ class UsersController extends AppController
                 return $this->redirect(['action' => 'dashboard']);
             }
 
-            $this->Flash->error('Failed to create account. Please check the form.');
+            // —— 关键：把具体验证/规则错误打出来 —— //
+            $errors = $user->getErrors(); // array
+            $flat   = [];
+            foreach ($errors as $field => $msgs) {
+                foreach ((array)$msgs as $msg) {
+                    $flat[] = sprintf('%s: %s', ucfirst($field), $msg);
+                }
+            }
+            if ($flat) {
+                $this->Flash->error('Failed to create account: ' . implode(' | ', $flat));
+            } else {
+                $this->Flash->error('Failed to create account. Please check the form.');
+            }
         }
 
         $this->set(compact('user'));
     }
+
 
     /**
      * GET /users/dashboard

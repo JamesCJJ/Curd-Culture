@@ -5,17 +5,16 @@ namespace App\Model\Table;
 
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
+use Cake\ORM\RulesChecker;
 
 class UsersTable extends Table
 {
     public function initialize(array $config): void
     {
         parent::initialize($config);
-
         $this->setTable('users');
         $this->setPrimaryKey('id');
         $this->setDisplayField('email');
-
 
         $this->addBehavior('Timestamp');
     }
@@ -23,28 +22,29 @@ class UsersTable extends Table
     public function validationDefault(Validator $validator): Validator
     {
         $validator
-            ->email('email', false, 'Invalid email.')
-            ->requirePresence('email', 'create')
-            ->notEmptyString('email');
+            ->scalar('name')
+            ->maxLength('name', 120)
+            ->allowEmptyString('name');
+
+        $validator
+            ->email('email', false, 'Please enter a valid email address.')
+            ->notEmptyString('email', 'Email is required.');
 
         $validator
             ->scalar('password')
-            ->requirePresence('password', 'create')
-            ->notEmptyString('password', 'Password is required');
-
-        $validator
-            ->scalar('role')
-            ->requirePresence('role', 'create')
-            ->notEmptyString('role')
-            ->inList('role', ['admin', 'user'], 'Role must be admin or user');
+            ->minLength('password', 6, 'Use 6+ characters for your password.')
+            ->notEmptyString('password', 'Password is required.');
 
 
-        $validator
-            ->scalar('status')
-            ->requirePresence('status', 'create')
-            ->notEmptyString('status')
-            ->inList('status', ['active', 'inactive', 'banned'], 'Invalid status');
+        $validator->allowEmptyString('status');
 
         return $validator;
+    }
+
+    public function buildRules(RulesChecker $rules): RulesChecker
+    {
+
+        $rules->add($rules->isUnique(['email'], 'This email is already registered.'));
+        return $rules;
     }
 }
