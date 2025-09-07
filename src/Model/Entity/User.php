@@ -5,18 +5,20 @@ namespace App\Model\Entity;
 
 use Cake\ORM\Entity;
 
-/**
- * User entity
- */
 class User extends Entity
 {
 
     protected array $_accessible = [
-        'name' => true,
+        'name'     => true,
         'email'    => true,
         'password' => true,
         'role'     => true,
         'status'   => true,
+        'timezone' => true,
+        'language' => true,
+        'theme'    => true,
+        'notify_email' => true,
+        'notify_push'  => true,
         'created'  => true,
         'modified' => true,
     ];
@@ -24,19 +26,20 @@ class User extends Entity
 
     protected array $_hidden = ['password'];
 
-
-    use Cake\Auth\DefaultPasswordHasher;
-
+    /**
+     * Hash password on assignment.
+     * - null: keep as-is
+     * - "": return null
+     */
     protected function _setPassword(?string $value): ?string
     {
-        if ($value === null || trim($value) === '') {
+        if ($value === null) {
             return null;
         }
-
-        if (password_get_info($value)['algo'] !== 0) {
-            return $value;
+        $trimmed = trim($value);
+        if ($trimmed === '') {
+            return null;
         }
-        return (new DefaultPasswordHasher())->hash($value);
+        return password_hash($trimmed, PASSWORD_DEFAULT);
     }
-
 }
