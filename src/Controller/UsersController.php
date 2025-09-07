@@ -30,15 +30,11 @@ class UsersController extends AppController
         $result = $this->Authentication->getResult();
 
         if ($result && $result->isValid()) {
-            // ★ 核心修正：显式持久化身份到 Session
-            //   某些环境下如果不手动 setIdentity，下一跳请求拿不到 identity
             $this->Authentication->setIdentity($result->getData());
 
             $identity = $this->request->getAttribute('identity');
-            // 如果上一句还没把 request attribute 刷新，可以直接用 $result->getData()
             $role     = strtolower((string)($identity?->get('role') ?? $result->getData()?->get('role') ?? ''));
 
-            // 优先尊重 redirect 参数（AuthenticationService 的 queryParam）
             $redirect = $this->request->getQuery('redirect');
             if (!empty($redirect)) {
                 return $this->redirect($redirect);
@@ -51,7 +47,6 @@ class UsersController extends AppController
         }
 
         if ($this->request->is('post')) {
-            // 诊断分支（你原来的逻辑保留即可）
             $email = trim((string)$this->request->getData('email'));
             $pwd   = (string)$this->request->getData('password');
 

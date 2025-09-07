@@ -56,7 +56,7 @@ class AppController extends Base
         }
 
         $this->Flash->error('Admin only. Please sign in.');
-        // ★ 使用数组 URL，Cake 会自动带上 basePath；redirect 参数放在 '?'
+
         $event->setResult($this->redirect([
             'prefix' => false,
             'controller' => 'Users',

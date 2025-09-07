@@ -74,7 +74,7 @@ $this->assign('title', 'Create account');
 </div>
 
 <style>
-    /* 与 login 同步，保持对齐 */
+
     .auth-page{
         min-height:calc(100vh - 120px);
         display:grid; place-items:center;
