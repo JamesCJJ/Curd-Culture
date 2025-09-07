@@ -1,59 +1,14 @@
 <?php
 /**
+ * Custom 404 Page Not Found Error Template
  * @var \App\View\AppView $this
- * @var \Cake\Database\StatementInterface $error
  * @var string $message
  * @var string $url
  */
 use Cake\Core\Configure;
-use Cake\Error\Debugger;
 
 $this->layout = 'error';
-
-// Check if this is actually a 404 error (missing page/controller)
-$is404 = false;
-if (isset($message) && (
-    $message === 'Not Found' || 
-    strpos($message, 'Missing Controller') !== false ||
-    strpos($message, 'Missing Action') !== false ||
-    strpos($message, 'Missing Route') !== false
-)) {
-    $is404 = true;
-    $this->assign('title', 'Page Not Found - 404');
-}
-
-if (Configure::read('debug')) :
-    $this->layout = 'dev_error';
-
-    $this->assign('title', $message);
-    $this->assign('templateName', 'error500.php');
-
-    $this->start('file');
-?>
-<?php if (!empty($error->queryString)) : ?>
-    <p class="notice">
-        <strong>SQL Query: </strong>
-        <?= h($error->queryString) ?>
-    </p>
-<?php endif; ?>
-<?php if (!empty($error->params)) : ?>
-    <strong>SQL Query Params: </strong>
-    <?php Debugger::dump($error->params) ?>
-<?php endif; ?>
-<?php if ($error instanceof Error) : ?>
-    <?php $file = $error->getFile() ?>
-    <?php $line = $error->getLine() ?>
-    <strong>Error in: </strong>
-    <?= $this->Html->link(sprintf('%s, line %s', Debugger::trimPath($file), $line), Debugger::editorUrl($file, $line)); ?>
-<?php endif; ?>
-<?php
-    echo $this->element('auto_table_warning');
-
-    $this->end();
-endif;
-
-// Show 404 page content if this is a missing page error
-if ($is404) :
+$this->assign('title', 'Page Not Found - 404');
 ?>
 
 <section class="error-404">
@@ -70,7 +25,7 @@ if ($is404) :
         </p>
         
         <div class="error-details">
-            <p><strong>Requested URL:</strong> <code><?= h($url ?? 'Unknown') ?></code></p>
+            <p><strong>Requested URL:</strong> <code><?= h($url) ?></code></p>
         </div>
         
         <div class="error-actions">
@@ -343,11 +298,3 @@ if ($is404) :
     }
 }
 </style>
-
-<?php else : ?>
-<h2><?= __d('cake', 'An Internal Error Has Occurred.') ?></h2>
-<p class="error">
-    <strong><?= __d('cake', 'Error') ?>: </strong>
-    <?= h($message) ?>
-</p>
-<?php endif; ?>
