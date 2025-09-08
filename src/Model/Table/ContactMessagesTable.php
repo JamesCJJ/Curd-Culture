@@ -44,7 +44,7 @@ class ContactMessagesTable extends Table
 
         $v->scalar('status')
             ->allowEmptyString('status')
-            ->inList('status', ['new', 'in_progress', 'closed'], 'Invalid status');
+            ->inList('status', ['unread', 'read', 'in_progress', 'closed'], 'Invalid status');
 
         return $v;
     }
@@ -59,7 +59,7 @@ class ContactMessagesTable extends Table
         }
 
         if (!isset($data['status']) || $data['status'] === '') {
-            $data['status'] = 'new';
+            $data['status'] = 'unread';
         }
     }
 }

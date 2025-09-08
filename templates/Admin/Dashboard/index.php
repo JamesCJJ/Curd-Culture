@@ -23,9 +23,10 @@ $badge = function (?string $state): string {
         'read'        => ['Read',         '#dcfce7', '#166534'], // Green
         'in_progress' => ['In Progress',  '#fef3c7', '#92400e'], // Orange
         'closed'      => ['Closed',       '#fee2e2', '#dc2626'], // Red
-        ''            => ['—',            '#e5e7eb', '#374151'],
+        'new'         => ['Unread',       '#dbeafe', '#1d4ed8'], // Blue (for backward compatibility)
+        ''            => ['Unread',       '#dbeafe', '#1d4ed8'], // Default to Unread for empty status
     ];
-    [$label, $bg, $fg] = $map[$state] ?? $map[''];
+    [$label, $bg, $fg] = $map[$state] ?? $map['unread'];
     return sprintf(
         '<span class="badge" style="background:%s;color:%s;padding:0.25rem 0.5rem;border-radius:0.375rem;font-size:0.75rem;font-weight:600">%s</span>',
         $bg,

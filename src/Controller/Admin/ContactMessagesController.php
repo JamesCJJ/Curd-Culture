@@ -113,8 +113,9 @@ class ContactMessagesController extends AppController
         }
 
         $statuses = [
-            'new'         => 'New',
-            'in_progress' => 'In progress',
+            'unread'      => 'Unread',
+            'read'        => 'Read',
+            'in_progress' => 'In Progress',
             'closed'      => 'Closed',
         ];
 
@@ -172,7 +173,7 @@ class ContactMessagesController extends AppController
 
         $updated = $this->ContactMessages->updateAll(
             ['status' => 'read', 'modified' => $now],
-            ['status IN' => ['unread', 'in_progress']]
+            ['status' => 'unread']
         );
 
         $updated === false
