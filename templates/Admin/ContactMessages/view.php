@@ -29,9 +29,15 @@ $lbl = $statuses[$st] ?? ucfirst($st);
     <header class="hero">
         <div class="hero__title">
             <h1>Message #<?= h($msg->id) ?></h1>
-            <p class="muted">View the details, update status, and leave a reply note.</p>
+            <p class="muted">View message details and update status.</p>
         </div>
-        <div class="hero__chip <?= h($cls) ?>"><?= h($lbl) ?></div>
+        <div class="hero__actions">
+            <?= $this->Html->link('Reply to Message', ['action' => 'reply', $msg->id], [
+                'class' => 'btn btn--primary btn--large',
+                'title' => 'Reply to this message'
+            ]) ?>
+            <div class="hero__chip <?= h($cls) ?>"><?= h($lbl) ?></div>
+        </div>
     </header>
 
     <section class="meta">
@@ -90,41 +96,41 @@ $lbl = $statuses[$st] ?? ucfirst($st);
         </div>
     </section>
 
-    <?= $this->Form->create($msg, ['class' => 'card form', 'novalidate' => true]) ?>
-    <div class="card__head">
-        <h2>Reply / Update</h2>
-    </div>
-
-    <div class="card__body grid">
-        <div class="field">
-            <?= $this->Form->label('status', 'Status') ?>
-            <?= $this->Form->select('status', $statuses, [
-                'empty' => false,
-                'value' => $msg->status,
-                'class' => 'select'
-            ]) ?>
+    <?php if ($msg->replied_at && $msg->reply_note): ?>
+    <section class="card reply">
+        <div class="card__head">
+            <h2>Previous Reply</h2>
+            <span class="reply-date"><?= $msg->replied_at?->i18nFormat('yyyy-MM-dd HH:mm') ?></span>
         </div>
-
-        <div class="field field--full">
-            <?= $this->Form->label('reply_note', 'Reply note') ?>
-            <?= $this->Form->textarea('reply_note', [
-                'rows'        => 6,
-                'placeholder' => 'Write a concise note for the customer and for internal record…',
-                'class'       => 'textarea'
-            ]) ?>
-            <small class="help">When you save, <code>replied_at</code> and <code>replied_by</code> will be recorded automatically (if you wrote a note).</small>
+        <div class="card__body">
+            <pre class="bubble bubble--reply"><?= h($msg->reply_note) ?></pre>
+            <?php if ($msg->user): ?>
+                <p class="reply-author">Replied by: <?= h($msg->user->name ?? $msg->user->email) ?></p>
+            <?php endif; ?>
         </div>
-    </div>
+    </section>
+    <?php endif; ?>
 
-    <div class="card__foot actions">
-        <?= $this->Form->button('Save', ['class' => 'btn btn--primary']) ?>
-        <?= $this->Html->link('Back', ['action' => 'index', '?' => $this->request->getQueryParams()], ['class' => 'btn']) ?>
-        <?= $this->Form->postLink('Delete', ['action' => 'delete', $msg->id], [
-            'confirm' => 'Delete this message?',
-            'class'   => 'btn btn--danger'
-        ]) ?>
-    </div>
-    <?= $this->Form->end() ?>
+    <section class="card actions-card">
+        <div class="card__head">
+            <h2>Actions</h2>
+        </div>
+        <div class="card__body">
+            <div class="action-buttons">
+                <?= $this->Html->link('Reply to Message', ['action' => 'reply', $msg->id], [
+                    'class' => 'btn btn--primary btn--large',
+                    'title' => 'Reply to this message'
+                ]) ?>
+                <?= $this->Html->link('Back to Messages', ['action' => 'index', '?' => $this->request->getQueryParams()], [
+                    'class' => 'btn btn--secondary'
+                ]) ?>
+                <?= $this->Form->postLink('Delete Message', ['action' => 'delete', $msg->id], [
+                    'confirm' => 'Are you sure you want to delete this message? This action cannot be undone.',
+                    'class'   => 'btn btn--danger'
+                ]) ?>
+            </div>
+        </div>
+    </section>
 </div>
 
 <style>
@@ -159,6 +165,7 @@ $lbl = $statuses[$st] ?? ucfirst($st);
         gap:1rem; margin: 6px auto 18px;
     }
     .hero__title h1{ font-size: clamp(1.25rem, 2.3vw, 1.6rem); margin:.25rem 0 4px; }
+    .hero__actions{ display:flex; align-items:center; gap:1rem; }
     .muted{ color:var(--muted); margin:0; }
 
     /* status chip */
@@ -214,14 +221,28 @@ $lbl = $statuses[$st] ?? ucfirst($st);
     }
     .status-select:focus{ outline:2px solid rgba(37,99,235,.15); border-color:#b9c6ff }
 
+    /* reply section */
+    .reply .card__head{ display:flex; justify-content:space-between; align-items:center; }
+    .reply-date{ color:var(--muted); font-size:.85rem; }
+    .bubble--reply{ 
+        background:linear-gradient(180deg, #f0f9ff, #e0f2fe); 
+        border-color:#a7d8f0; 
+    }
+    .reply-author{ color:var(--muted); font-size:.85rem; margin:.5rem 0 0; font-style:italic; }
+
+    /* actions */
     .actions{ display:flex; gap:.5rem; justify-content:flex-end }
+    .action-buttons{ display:flex; gap:.75rem; flex-wrap:wrap; justify-content:center; }
     .btn{
         background:#eef1f6; color:#111; border:1px solid #dfe4ef;
         padding:.65rem 1rem; border-radius:12px; text-decoration:none; display:inline-flex; gap:.5rem; align-items:center;
+        font-weight:600; transition: all .15s ease;
     }
-    .btn:hover{ filter:brightness(.98); transform: translateY(-1px); transition:.15s }
+    .btn:hover{ filter:brightness(.98); transform: translateY(-1px); }
     .btn--primary{ background:var(--blue); border-color:var(--blue); color:#fff }
+    .btn--secondary{ background:#f8fafc; border-color:#e2e8f0; color:#374151; }
     .btn--danger{ background:#fee2e2; border-color:#fecaca; color:#7f1d1d }
+    .btn--large{ padding:.85rem 1.5rem; font-size:1.05rem; }
 
     @media (max-width: 880px){
         .meta{ grid-template-columns: 1fr 1fr 1fr; }

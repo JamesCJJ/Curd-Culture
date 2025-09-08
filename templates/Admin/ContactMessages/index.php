@@ -111,11 +111,18 @@ $badge = function (?string $state): string {
                             <?php endif; ?>
                         </td>
                         <td class="col-actions">
-                            <?= $this->Html->link('View', ['action' => 'view', $m->id], ['class' => 'link']) ?>
+                            <?= $this->Html->link('View', ['action' => 'view', $m->id], [
+                                'class' => 'link',
+                                'title' => 'View message details'
+                            ]) ?>
+                            <?= $this->Html->link('Reply', ['action' => 'reply', $m->id], [
+                                'class' => 'link link-primary',
+                                'title' => 'Reply to message'
+                            ]) ?>
                             <?= $this->Form->postLink(
                                 'Delete',
                                 ['action' => 'delete', $m->id],
-                                ['confirm' => 'Delete this message?', 'class' => 'link link-danger']
+                                ['confirm' => 'Are you sure you want to delete this message?', 'class' => 'link link-danger']
                             ) ?>
                         </td>
                     </tr>
@@ -177,6 +184,7 @@ $badge = function (?string $state): string {
     .col-status{ min-width: 100px; }
     .link{ color:#2563eb; text-decoration:none; margin-right:.55rem }
     .link:hover{ text-decoration:underline }
+    .link-primary{ color:#2563eb; font-weight:600; }
     .link-danger{ color:#b91c1c }
 
     /* ====== Badges ====== */

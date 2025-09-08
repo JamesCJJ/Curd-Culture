@@ -144,16 +144,16 @@ $badge = function (?string $state): string {
                                 <td class="actions">
                                     <?= $this->Html->link('View',
                                         ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'view', $m->id],
-                                        ['class'=>'btn tiny']
+                                        ['class'=>'btn tiny', 'title'=>'View message details']
                                     ) ?>
                                     <?= $this->Html->link('Reply',
-                                        ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'view', $m->id],
-                                        ['class'=>'btn tiny btn-primary']
+                                        ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'reply', $m->id],
+                                        ['class'=>'btn tiny btn-primary', 'title'=>'Reply to message']
                                     ) ?>
                                     <?= $this->Form->postLink(
                                         'Delete',
                                         ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'delete', $m->id],
-                                        ['class'=>'btn tiny danger', 'confirm'=>'Delete this message?']
+                                        ['class'=>'btn tiny danger', 'confirm'=>'Are you sure you want to delete this message?']
                                     ) ?>
                                 </td>
                             </tr>

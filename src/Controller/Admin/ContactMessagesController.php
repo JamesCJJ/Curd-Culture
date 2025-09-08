@@ -61,9 +61,55 @@ class ContactMessagesController extends AppController
     }
 
     /**
-     * GET/POST /admin/contact-messages/view/{id}
+     * GET /admin/contact-messages/view/{id}
+     * View-only page for contact message
      */
     public function view(int $id)
+    {
+        $table = $this->fetchTable('ContactMessages');
+        $msg   = $table->get($id, contain: ['Users']);
+
+        // Auto mark as read on GET if currently unread
+        if ($this->request->is('get') && $msg->status === 'unread') {
+            $msg->status = 'read';
+            $table->save($msg);
+        }
+
+        // Handle status-only updates via AJAX
+        if ($this->request->is(['post', 'put', 'patch'])) {
+            $data = $this->request->getData();
+
+            if (!empty($data['status'])) {
+                if (in_array($data['status'], ['unread', 'read', 'in_progress', 'closed'], true)) {
+                    $oldStatus = $msg->status;
+                    $msg->status = $data['status'];
+
+                    if ($table->save($msg)) {
+                        $this->Flash->success("Status updated from '{$oldStatus}' to '{$data['status']}'.");
+                        return $this->redirect(['action' => 'view', $id]);
+                    }
+                    $this->Flash->error('Failed to update status.');
+                } else {
+                    $this->Flash->error('Invalid status selected.');
+                }
+            }
+        }
+
+        $statuses = [
+            'unread'      => 'Unread',
+            'read'        => 'Read',
+            'in_progress' => 'In Progress',
+            'closed'      => 'Closed',
+        ];
+
+        $this->set(compact('msg', 'statuses'));
+    }
+
+    /**
+     * GET/POST /admin/contact-messages/reply/{id}
+     * Reply page for contact message
+     */
+    public function reply(int $id)
     {
         $table = $this->fetchTable('ContactMessages');
         $msg   = $table->get($id, contain: ['Users']);
@@ -77,39 +123,23 @@ class ContactMessagesController extends AppController
         if ($this->request->is(['post', 'put', 'patch'])) {
             $data = $this->request->getData();
 
-            // Status-only update
-            if (empty($data['reply_note']) && !empty($data['status'])) {
-                if (in_array($data['status'], ['read', 'in_progress', 'closed'], true)) {
-                    $oldStatus = $msg->status;
-                    $msg->status = $data['status'];
+            // Reply + optional status update
+            $msg = $table->patchEntity($msg, $data, [
+                'fields' => ['status', 'reply_note'],
+            ]);
 
-                    if ($table->save($msg)) {
-                        $this->Flash->success("Status updated from '{$oldStatus}' to '{$data['status']}'.");
-                        return $this->redirect(['action' => 'view', $id]);
-                    }
-                    $this->Flash->error('Failed to update status.');
-                } else {
-                    $this->Flash->error('Invalid status selected.');
-                }
-            } else {
-                // Reply + optional status
-                $msg = $table->patchEntity($msg, $data, [
-                    'fields' => ['status', 'reply_note'],
-                ]);
+            $user = $this->request->getSession()->read('Auth.AdminUser');
 
-                $user = $this->request->getSession()->read('Auth.AdminUser');
-
-                if (!empty($data['reply_note'])) {
-                    $msg->replied_at = DateTime::now();
-                    $msg->replied_by = $user['id'] ?? null;
-                }
-
-                if ($table->save($msg)) {
-                    $this->Flash->success('Saved reply.');
-                    return $this->redirect(['action' => 'index', '?' => $this->request->getQueryParams()]);
-                }
-                $this->Flash->error('Failed to save. Please check the form.');
+            if (!empty($data['reply_note'])) {
+                $msg->replied_at = DateTime::now();
+                $msg->replied_by = $user['id'] ?? null;
             }
+
+            if ($table->save($msg)) {
+                $this->Flash->success('Reply saved successfully.');
+                return $this->redirect(['action' => 'index', '?' => $this->request->getQueryParams()]);
+            }
+            $this->Flash->error('Failed to save reply. Please check the form.');
         }
 
         $statuses = [
