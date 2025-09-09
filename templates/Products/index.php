@@ -121,6 +121,8 @@ $this->assign('title', 'Products');
     .pager .ellipsis{display:flex;align-items:center;padding:0 .25rem;color:#9aa3af}
     .theme-dark .pager .nums a,.theme-dark .pager .nums span{background:#0f172a;border-color:#334155;color:#e5e7eb}
     .theme-dark .pager .nums .on{background:#60a5fa;border-color:#60a5fa;color:#111}
+    .modal-dialog{background:#fff;border:1px solid #eef0f3}
+    .theme-dark .modal-dialog{background:#111827;border-color:#1f2937}
 
     .modal-host{position:fixed;inset:0;display:none;align-items:center;justify-content:center;z-index:1050}
     .modal-host.show{display:flex}
