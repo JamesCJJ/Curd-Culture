@@ -19,8 +19,35 @@
 </head>
 <?php
 $cookies   = $this->getRequest()->getCookieParams();
-$theme     = $cookies['pref_theme'] ?? 'auto'; // auto | light | dark
+$theme     = $cookies['pref_theme'] ?? 'auto';
 $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-light' : '');
+
+$identity  = $this->getRequest()->getAttribute('identity');
+$role      = $identity ? strtolower((string)$identity->get('role')) : '';
+
+$cartQty = 0;
+if ($identity && $role === 'customer') {
+    try {
+        $locator   = \Cake\ORM\TableRegistry::getTableLocator();
+        $Carts     = $locator->get('Carts');
+        $CartItems = $locator->get('CartItems');
+
+        $cart = $Carts->find()
+            ->select(['id'])
+            ->where(['user_id' => (int)$identity->get('id'), 'status' => 'open'])
+            ->first();
+
+        if ($cart) {
+            $row = $CartItems->find()
+                ->select(['sum_qty' => $CartItems->find()->func()->sum('qty')])
+                ->where(['cart_id' => $cart->id])
+                ->first();
+            $cartQty = (int)($row->sum_qty ?? 0);
+        }
+    } catch (\Throwable $e) {
+        $cartQty = 0;
+    }
+}
 ?>
 <body class="<?= h($bodyClass) ?>">
 
@@ -50,6 +77,15 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
                 ['class' => 'btn', 'aria-label' => 'Browse products']
             ) ?>
 
+            <?php if ($identity && $role === 'customer'): ?>
+                <?= $this->Html->link(
+                    '<span class="cart-icon" aria-hidden="true"></span><span class="label">Cart</span>' .
+                    ($cartQty ? '<span class="cart-badge">'.(int)$cartQty.'</span>' : ''),
+                    ['prefix' => false, 'controller' => 'Cart', 'action' => 'index'],
+                    ['escape' => false, 'class' => 'btn btn-subtle cart-link', 'aria-label' => 'Open shopping cart']
+                ) ?>
+            <?php endif; ?>
+
             <?= $this->Html->link(
                 'Settings',
                 ['prefix' => false, 'controller' => 'Settings', 'action' => 'index'],
@@ -57,12 +93,10 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
             ) ?>
 
             <?php
-            $identity  = $this->getRequest()->getAttribute('identity');
             $adminSess = $this->getRequest()->getSession()->read('Auth.AdminUser');
-            $role      = $identity ? strtolower((string)$identity->get('role')) : strtolower((string)($adminSess['role'] ?? ''));
-
+            $adminRole = strtolower((string)($adminSess['role'] ?? ''));
             if ($identity || $adminSess):
-                if ($role === 'admin'):
+                if ($adminSess && $adminRole === 'admin'):
                     echo $this->Html->link(
                         'Admin',
                         ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
@@ -110,11 +144,9 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
 </footer>
 
 <style>
-    /* ===== Base container (aligns with auth pages) ===== */
     #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
     .footer{text-align:center;color:#6b7280;padding:1.25rem 1rem}
 
-    /* ===== Topbar (geometry & tones) ===== */
     .topbar{position:sticky;top:0;z-index:1000;background:#fff;border-bottom:1px solid #e5e7eb}
     .topbar__inner{max-width:1100px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
     .nav-actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
@@ -123,21 +155,18 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
     .brand-logo{height:28px;width:auto;border-radius:.25rem}
     .brand-name{font-weight:700;color:#0f172a}
 
-    /* ===== Buttons (keep identical rhythm as auth) ===== */
     .btn{display:inline-block;padding:.55rem .9rem;border-radius:.6rem;border:1px solid transparent;background:#e5e7eb;color:#111;text-decoration:none;font-size:.95rem}
     .btn:hover{filter:brightness(.97)}
     .btn:focus-visible{outline:3px solid rgba(44,123,229,.25);outline-offset:2px}
     .btn-subtle{background:transparent;border-color:#d1d5db;color:#374151}
     .small{font-size:.85rem;padding:.3rem .6rem}
 
-    /* Prevent Contact Us stretching (exact fix) */
     .topbar .btn-primary{
         background:#2563eb;color:#fff;border-color:transparent;
         width:auto !important;display:inline-block !important;
         border-radius:.6rem;padding:.55rem .9rem;box-shadow:none;
     }
 
-    /* Glyphs for Read */
     .glyph{display:inline-block;width:12px;height:12px;margin-right:.35rem;vertical-align:-1px}
     .glyph--play{clip-path:polygon(0 0,100% 50%,0 100%);background:currentColor}
     .glyph--pause-square{display:none;position:relative;width:12px;height:12px;border-radius:2px;background:transparent;border:1.5px solid currentColor}
@@ -145,7 +174,6 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
     .glyph--pause-square::before{left:3px}
     .glyph--pause-square::after{right:3px}
 
-    /* ===== Dark / HC themes (match auth palette) ===== */
     .theme-dark{background:#0b1220;color:#e5e7eb}
     .theme-dark .topbar{background:#111827;border-color:#1f2937}
     .theme-dark .brand-name{color:#e5e7eb}
@@ -165,17 +193,23 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
         .topbar__inner{padding:.5rem .75rem}
         .nav-actions{gap:.4rem}
     }
+
+    /* Cart button */
+    .cart-link{position:relative;display:inline-flex;align-items:center;gap:.35rem}
+    .cart-icon{width:16px;height:14px;border:1.5px solid currentColor;border-radius:3px;position:relative;display:inline-block}
+    .cart-icon::before{content:"";position:absolute;left:2px;top:-6px;width:12px;height:6px;border:1.5px solid currentColor;border-bottom:none;border-radius:3px 3px 0 0}
+    .cart-badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;line-height:18px;padding:0 6px;border-radius:9px;background:#ef4444;color:#fff;font-size:12px;font-weight:700;text-align:center}
+    .theme-dark .cart-badge{background:#f87171;color:#111}
+    .page.hc .cart-badge{background:#fca5a5;color:#111}
 </style>
 
 <script>
-    /* A11y tools */
     (function(){
         const root = document.querySelector('.page') || document.body;
         const plus = document.getElementById('font-plus');
         const minus = document.getElementById('font-minus');
         const contrast = document.getElementById('contrast-toggle');
         let scale = parseFloat(getComputedStyle(document.documentElement).fontSize)/16 || 1;
-
         plus && plus.addEventListener('click', function(){
             scale = Math.min(1.25, +(scale + 0.05).toFixed(2));
             document.documentElement.style.fontSize = (16 * scale) + 'px';
@@ -189,26 +223,22 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
         });
     })();
 
-    /* Read aloud */
     (function(){
         const btn = document.getElementById('btn-read');
         if (!btn) return;
         const playIcon  = btn.querySelector('.glyph--play');
         const pauseIcon = btn.querySelector('.glyph--pause-square');
         let speaking = false, utterance = null;
-
         function updateUI(){
             btn.setAttribute('aria-pressed', speaking ? 'true' : 'false');
             playIcon.style.display = speaking ? 'none' : 'inline-block';
             pauseIcon.style.display = speaking ? 'inline-block' : 'none';
         }
         updateUI();
-
         function buildText(){
             const region = document.getElementById('content');
             return region ? (region.innerText || region.textContent || '').trim() : document.title;
         }
-
         btn.addEventListener('click', () => {
             try{
                 if(!speaking){
@@ -228,7 +258,6 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
         window.addEventListener('beforeunload', () => { try{ window.speechSynthesis.cancel(); }catch(e){} });
     })();
 
-    /* Flash auto-dismiss */
     (function(){
         const html = document.documentElement;
         window.addEventListener('DOMContentLoaded', () => {
