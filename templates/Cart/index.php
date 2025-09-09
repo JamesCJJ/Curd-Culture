@@ -1,6 +1,10 @@
 <?php
 $this->assign('title', 'Your cart');
+$csrf = (string)($this->getRequest()->getAttribute('csrfToken') ?? '');
 ?>
+<!-- 提供 CSRF 给前端 fetch 使用 -->
+<meta name="csrf-token" content="<?= h($csrf) ?>">
+
 <div class="cart-page">
     <h1>Your cart</h1>
 
@@ -10,7 +14,7 @@ $this->assign('title', 'Your cart');
             <a class="btn btn-primary" href="<?= $this->Url->build(['controller'=>'Products','action'=>'index']) ?>">Browse products</a>
         </div>
     <?php else: ?>
-        <?= $this->Form->create(null, ['url' => ['action' => 'update']]) ?>
+        <?= $this->Form->create(null, ['url' => ['action' => 'update'], 'id' => 'cartUpdate']) ?>
         <div class="cart-wrap">
             <div class="card">
                 <table class="table">
@@ -37,7 +41,12 @@ $this->assign('title', 'Your cart');
                             <td class="pricec"><?= $this->Number->currency((float)$it['price'], $it['currency']) ?></td>
                             <td class="pricec"><?= $this->Number->currency((float)$it['price']*(int)$it['qty'], $it['currency']) ?></td>
                             <td class="actions">
-                                <?= $this->Form->postLink('Remove', ['action'=>'remove',$id], ['class'=>'btn small danger', 'confirm'=>'Remove this item?']) ?>
+                                <!-- 用 data-remove 携带删除 URL，JS 用 fetch POST 提交 -->
+                                <button type="button"
+                                        class="btn small danger js-remove"
+                                        data-remove="<?= $this->Url->build(['action'=>'remove', (int)$id]) ?>">
+                                    Remove
+                                </button>
                             </td>
                         </tr>
                     <?php endforeach; ?>
@@ -45,7 +54,7 @@ $this->assign('title', 'Your cart');
                 </table>
 
                 <div class="cart-actions">
-                    <button class="btn">Update cart</button>
+                    <button class="btn" type="submit">Update cart</button>
                     <a class="btn btn-subtle" href="<?= $this->Url->build(['controller'=>'Products','action'=>'index']) ?>">Continue shopping</a>
                 </div>
             </div>
@@ -94,7 +103,7 @@ $this->assign('title', 'Your cart');
     .summary .total{padding-top:.35rem;border-top:1px solid #eef0f3;margin-top:.35rem}
 
     .btn{display:inline-block;padding:.45rem .75rem;border-radius:.55rem;border:1px solid #e4e7ec;background:#f3f5f7;color:#111;text-decoration:none;cursor:pointer}
-    .btn-subtle{background:transparent;border-color:#d1d5db;color:#374151}
+    .btn-subtle{背景:transparent;border-color:#d1d5db;color:#374151}
     .btn.primary{background:#2c7be5;color:#fff;border-color:transparent}
     .btn-primary{background:#2c7be5;color:#fff;border-color:transparent}
     .small{font-size:.9rem;padding:.35rem .55rem}
@@ -102,3 +111,28 @@ $this->assign('title', 'Your cart');
     .theme-dark .btn{background:#1f2937;color:#fff;border-color:#475569}
     .theme-dark .btn-primary{background:#60a5fa;color:#111}
 </style>
+
+<script>
+    (function(){
+        const csrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+        document.addEventListener('click', async (e) => {
+            const btn = e.target.closest('.js-remove');
+            if (!btn) return;
+            if (!confirm('Remove this item?')) return;
+
+            try{
+                const res = await fetch(btn.dataset.remove, {
+                    method: 'POST',
+                    headers: {
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'X-CSRF-Token': csrf
+                    }
+                });
+                // 无论返回 200/302，刷新以显示最新数据
+                location.reload();
+            }catch(err){
+                location.reload();
+            }
+        });
+    })();
+</script>

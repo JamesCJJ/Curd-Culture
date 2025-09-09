@@ -4,7 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use Cake\Event\EventInterface;
-use Cake\ORM\TableRegistry;
+use Cake\Http\Exception\NotFoundException;
 
 class CartController extends AppController
 {
@@ -17,64 +17,81 @@ class CartController extends AppController
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
+
         $this->Authentication->addUnauthenticatedActions(['index']);
     }
 
-    protected function getOpenCart(int $userId)
-    {
-        $locator = TableRegistry::getTableLocator();
-        $Carts   = $locator->get('Carts');
 
-        $cart = $Carts->find()->where(['user_id' => $userId, 'status' => 'open'])->first();
-        if (!$cart) {
-            $cart = $Carts->newEntity(['user_id' => $userId, 'status' => 'open', 'currency' => 'AUD']);
-            $Carts->saveOrFail($cart);
-        }
-        return $cart;
+    private function findOpenCart(int $userId)
+    {
+        $Carts = $this->getTableLocator()->get('Carts');
+        return $Carts->find()
+            ->where(['user_id' => $userId, 'status' => 'open'])
+            ->first();
     }
 
+    /** GET /cart */
     public function index()
     {
         $identity = $this->request->getAttribute('identity');
-        $userId   = (int)($identity?->get('id') ?? 0);
+        $userId = $identity ? (int)$identity->get('id') : 0;
 
-        $items    = [];
+        $items = [];
         $currency = 'AUD';
         $subtotal = 0.0;
 
         if ($userId) {
-            $locator   = TableRegistry::getTableLocator();
-            $CartItems = $locator->get('CartItems');
-            $Products  = $locator->get('Products');
+            $cart = $this->findOpenCart($userId);
 
-            $cart = $this->getOpenCart($userId);
+            if ($cart) {
+                $CartItems = $this->getTableLocator()->get('CartItems');
+                $Products = $this->getTableLocator()->get('Products');
 
-            $rows = $CartItems->find()
-                ->select(['id','product_id','qty','price','currency'])
-                ->where(['cart_id' => $cart->id])
-                ->all();
+                $rows = $CartItems->find()
+                    ->select(['id', 'product_id', 'qty', 'price', 'currency'])
+                    ->where(['cart_id' => $cart->id])
+                    ->enableHydration(false)
+                    ->all()
+                    ->toArray();
 
-            foreach ($rows as $row) {
-                $p = $Products->find()->select(['id','name','slug'])->where(['id' => $row->product_id])->first();
-                if (!$p) { continue; }
-                $items[$row->product_id] = [
-                    'product_id' => (int)$row->product_id,
-                    'name'       => (string)$p->name,
-                    'slug'       => (string)$p->slug,
-                    'price'      => (float)$row->price,
-                    'currency'   => (string)($row->currency ?: 'AUD'),
-                    'qty'        => (int)$row->qty,
-                ];
-                $subtotal += ((float)$row->price) * ((int)$row->qty);
-                $currency = (string)($row->currency ?: $currency);
+                if ($rows) {
+                    $pids = array_column($rows, 'product_id');
+                    $map = [];
+                    $pRows = $Products->find()
+                        ->select(['id', 'name', 'slug'])
+                        ->where(['id IN' => $pids])
+                        ->enableHydration(false)
+                        ->all();
+                    foreach ($pRows as $p) {
+                        $map[(int)$p['id']] = $p;
+                    }
+
+                    foreach ($rows as $r) {
+                        $pid = (int)$r['product_id'];
+                        $curr = $r['currency'] ?: 'AUD';
+                        $item = [
+                            'id' => (int)$r['id'],
+                            'product_id' => $pid,
+                            'name' => $map[$pid]['name'] ?? ('#' . $pid),
+                            'slug' => $map[$pid]['slug'] ?? '',
+                            'price' => (float)$r['price'],
+                            'currency' => $curr,
+                            'qty' => (int)$r['qty'],
+                        ];
+                        $items[$item['id']] = $item;
+                        $currency = $curr ?: $currency;
+                        $subtotal += $item['price'] * $item['qty'];
+                    }
+                }
             }
         }
 
         $shipping = $subtotal > 0 ? 12.90 : 0.0;
-        $total    = $subtotal + $shipping;
+        $total = $subtotal + $shipping;
 
         $this->set(compact('items', 'currency', 'subtotal', 'shipping', 'total'));
     }
+
 
     public function update()
     {
@@ -82,27 +99,31 @@ class CartController extends AppController
 
         $identity = $this->request->getAttribute('identity');
         if (!$identity) {
+            $this->Flash->error('Please sign in to update your cart.');
             return $this->redirect(['action' => 'index']);
         }
 
-        $qtys = (array)$this->request->getData('qty');
-        $locator   = TableRegistry::getTableLocator();
-        $CartItems = $locator->get('CartItems');
+        $userId = (int)$identity->get('id');
+        $cart = $this->findOpenCart($userId);
+        if (!$cart) {
+            $this->Flash->info('Your cart is empty.');
+            return $this->redirect(['action' => 'index']);
+        }
 
-        $cart = $this->getOpenCart((int)$identity->get('id'));
+        $qtys = (array)$this->request->getData('qty'); // ['cart_item_id' => qty]
+        $CartItems = $this->getTableLocator()->get('CartItems');
 
-        foreach ($qtys as $productId => $qty) {
-            $productId = (int)$productId;
-            $qty       = max(0, (int)$qty);
-            $item = $CartItems->find()
-                ->where(['cart_id' => $cart->id, 'product_id' => $productId])
-                ->first();
-            if (!$item) { continue; }
+        foreach ($qtys as $itemId => $qty) {
+            $itemId = (int)$itemId;
+            $qty = max(0, (int)$qty);
+
             if ($qty === 0) {
-                $CartItems->delete($item);
+                $CartItems->deleteAll(['id' => $itemId, 'cart_id' => $cart->id]);
             } else {
-                $item->qty = $qty;
-                $CartItems->save($item);
+                $CartItems->updateAll(
+                    ['qty' => $qty],
+                    ['id' => $itemId, 'cart_id' => $cart->id]
+                );
             }
         }
 
@@ -110,123 +131,30 @@ class CartController extends AppController
         return $this->redirect(['action' => 'index']);
     }
 
-    public function remove(int $productId)
+
+    public function remove(int $id)
     {
         $this->request->allowMethod(['post']);
+
         $identity = $this->request->getAttribute('identity');
         if (!$identity) {
+            $this->Flash->error('Please sign in to modify your cart.');
             return $this->redirect(['action' => 'index']);
         }
 
-        $locator   = TableRegistry::getTableLocator();
-        $CartItems = $locator->get('CartItems');
+        $userId = (int)$identity->get('id');
+        $cart = $this->findOpenCart($userId);
+        if ($cart) {
+            $CartItems = $this->getTableLocator()->get('CartItems');
+            $CartItems->deleteAll(['id' => (int)$id, 'cart_id' => $cart->id]);
+        }
 
-        $cart = $this->getOpenCart((int)$identity->get('id'));
-        $item = $CartItems->find()->where(['cart_id' => $cart->id, 'product_id' => $productId])->first();
-        if ($item) {
-            $CartItems->delete($item);
+
+        if ($this->request->is('ajax')) {
+            return $this->response->withStatus(204);
         }
 
         $this->Flash->success('Item removed.');
         return $this->redirect(['action' => 'index']);
-    }
-
-    public function checkout()
-    {
-        $identity = $this->request->getAttribute('identity');
-        $role     = strtolower((string)($identity?->get('role') ?? ''));
-
-        if (!$identity || $role !== 'customer') {
-            $this->Flash->error('Please sign in as a customer to checkout.');
-            return $this->redirect([
-                'controller' => 'Users',
-                'action' => 'login',
-                '?' => ['redirect' => $this->request->getRequestTarget()]
-            ]);
-        }
-
-        $userId  = (int)$identity->get('id');
-        $locator = TableRegistry::getTableLocator();
-        $CartItems = $locator->get('CartItems');
-        $Products  = $locator->get('Products');
-
-        $cart = $this->getOpenCart($userId);
-        $rows = $CartItems->find()->where(['cart_id' => $cart->id])->all();
-        if ($rows->isEmpty()) {
-            $this->Flash->info('Your cart is empty.');
-            return $this->redirect(['controller' => 'Products', 'action' => 'index']);
-        }
-
-        if ($this->request->is('post')) {
-            $data = (array)$this->request->getData();
-            foreach (['full_name','email','address','city','postcode','country'] as $f) {
-                if (empty(trim((string)($data[$f] ?? '')))) {
-                    $this->Flash->error('Please fill all required fields.');
-                    return;
-                }
-            }
-
-            $Orders      = $locator->get('Orders');
-            $OrderItems  = $locator->get('OrderItems');
-            $ContactMsgs = $locator->get('ContactMessages');
-
-            $subtotal = 0.0; $currency = 'AUD';
-            foreach ($rows as $r) { $subtotal += (float)$r->price * (int)$r->qty; $currency = $r->currency ?: $currency; }
-            $shipping = 12.90;
-            $total    = $subtotal + $shipping;
-
-            $order = $Orders->newEntity([
-                'user_id'    => $userId,
-                'status'     => 'paid',
-                'currency'   => $currency,
-                'subtotal'   => $subtotal,
-                'shipping'   => $shipping,
-                'total'      => $total,
-                'full_name'  => $data['full_name'],
-                'email'      => $data['email'],
-                'address'    => $data['address'],
-                'city'       => $data['city'],
-                'postcode'   => $data['postcode'],
-                'country'    => $data['country'],
-            ]);
-            $Orders->saveOrFail($order);
-
-            foreach ($rows as $r) {
-                $p = $Products->find()->select(['id','name','slug'])->where(['id' => $r->product_id])->first();
-                if (!$p) { continue; }
-                $OrderItems->saveOrFail($OrderItems->newEntity([
-                    'order_id'   => $order->id,
-                    'product_id' => (int)$p->id,
-                    'name'       => (string)$p->name,
-                    'slug'       => (string)$p->slug,
-                    'qty'        => (int)$r->qty,
-                    'price'      => (float)$r->price,
-                    'currency'   => (string)($r->currency ?: $currency),
-                ]));
-            }
-
-            $locator->get('Carts')->updateAll(['status' => 'ordered'], ['id' => $cart->id]);
-            $CartItems->deleteAll(['cart_id' => $cart->id]);
-
-            $ContactMsgs->save($ContactMsgs->newEntity([
-                'name'    => (string)$data['full_name'],
-                'email'   => (string)$data['email'],
-                'message' => 'New order #'.$order->id.' placed. Total: '.$currency.' '.$total,
-            ]));
-
-            $this->Flash->success('Order placed! Thank you for your purchase.');
-            return $this->redirect(['action' => 'complete']);
-        }
-
-        $prefill = [
-            'full_name' => (string)($identity->get('name') ?? ''),
-            'email'     => (string)($identity->get('email') ?? ''),
-        ];
-        $this->set(compact('prefill'));
-    }
-
-    public function complete()
-    {
-        $this->request->allowMethod(['get']);
     }
 }
