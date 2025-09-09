@@ -45,6 +45,12 @@ $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-lig
             ) ?>
 
             <?= $this->Html->link(
+                'Products',
+                ['prefix' => false, 'controller' => 'Products', 'action' => 'index'],
+                ['class' => 'btn', 'aria-label' => 'Browse products']
+            ) ?>
+
+            <?= $this->Html->link(
                 'Settings',
                 ['prefix' => false, 'controller' => 'Settings', 'action' => 'index'],
                 ['class' => 'btn', 'aria-label' => 'Open settings']
