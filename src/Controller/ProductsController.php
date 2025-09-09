@@ -55,9 +55,26 @@ class ProductsController extends AppController
         $this->set(compact('products', 'paging'));
     }
 
-    // GET /products/:key
-    public function view(string $key)
+
+    public function view(?string $key = null)
     {
+        $req  = $this->request;
+
+
+        if ($key === null || $key === '') {
+            $pass = (array)$req->getParam('pass');
+            $key  = (string)($req->getParam('key')
+                ?? ($pass[0] ?? '')
+                ?? $req->getQuery('key')
+                ?? $req->getQuery('slug')
+                ?? '');
+        }
+
+        if ($key === '') {
+
+            return $this->redirect(['action' => 'index']);
+        }
+
         $query = ctype_digit($key)
             ? $this->Products->find()->where(['id' => (int)$key])
             : $this->Products->find()->where(['slug' => $key]);
@@ -68,12 +85,12 @@ class ProductsController extends AppController
         }
 
 
-        if ($this->request->is('ajax') || $this->request->getQuery('modal')) {
+        if ($req->is('ajax') || $req->getQuery('modal')) {
             $this->viewBuilder()->setLayout('ajax');
             $this->set(compact('product'));
+
             return $this->render('view_modal');
         }
-
 
         $this->set(compact('product'));
 
