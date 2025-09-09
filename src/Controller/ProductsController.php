@@ -5,6 +5,7 @@ namespace App\Controller;
 
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
+use Cake\ORM\TableRegistry;
 
 class ProductsController extends AppController
 {
@@ -20,7 +21,6 @@ class ProductsController extends AppController
         $this->Authentication->addUnauthenticatedActions(['index', 'view']);
     }
 
-    // GET /products
     public function index()
     {
         $this->request->allowMethod(['get']);
@@ -31,15 +31,14 @@ class ProductsController extends AppController
 
         $query = $this->Products->find()
             ->select([
-                'id', 'name', 'slug', 'price', 'currency',
-                'summary', 'image_url', 'rating', 'origin_country', 'milk_type', 'age'
+                'id','name','slug','price','currency','summary','image_url',
+                'rating','origin_country','milk_type','age'
             ])
             ->orderByDesc('created')
             ->limit($limit)
             ->offset($offset);
 
         $products = $query->all();
-
         $count = $this->Products->find()->count();
         $pages = (int)ceil($count / $limit);
 
@@ -55,26 +54,8 @@ class ProductsController extends AppController
         $this->set(compact('products', 'paging'));
     }
 
-
-    public function view(?string $key = null)
+    public function view(string $key)
     {
-        $req  = $this->request;
-
-
-        if ($key === null || $key === '') {
-            $pass = (array)$req->getParam('pass');
-            $key  = (string)($req->getParam('key')
-                ?? ($pass[0] ?? '')
-                ?? $req->getQuery('key')
-                ?? $req->getQuery('slug')
-                ?? '');
-        }
-
-        if ($key === '') {
-
-            return $this->redirect(['action' => 'index']);
-        }
-
         $query = ctype_digit($key)
             ? $this->Products->find()->where(['id' => (int)$key])
             : $this->Products->find()->where(['slug' => $key]);
@@ -84,19 +65,15 @@ class ProductsController extends AppController
             throw new NotFoundException('Product not found.');
         }
 
-
-        if ($req->is('ajax') || $req->getQuery('modal')) {
+        if ($this->request->is('ajax') || $this->request->getQuery('modal')) {
             $this->viewBuilder()->setLayout('ajax');
             $this->set(compact('product'));
-
             return $this->render('view_modal');
         }
 
         $this->set(compact('product'));
-
     }
 
-    // POST /products/add-to-cart/:id
     public function addToCart(int $id)
     {
         $this->request->allowMethod(['post']);
@@ -125,19 +102,39 @@ class ProductsController extends AppController
 
         $qty = max(1, (int)$this->request->getData('qty'));
 
-        $session = $this->request->getSession();
-        $cart = (array)$session->read('Cart.items');
+        $locator   = TableRegistry::getTableLocator();
+        $Carts     = $locator->get('Carts');
+        $CartItems = $locator->get('CartItems');
 
-        $cart[$id] = [
-            'id'       => $product->id,
-            'name'     => (string)$product->name,
-            'slug'     => (string)$product->slug,
-            'price'    => (float)$product->price,
-            'currency' => (string)($product->currency ?: 'AUD'),
-            'qty'      => (int)(($cart[$id]['qty'] ?? 0) + $qty),
-        ];
+        $cart = $Carts->find()
+            ->where(['user_id' => (int)$identity->get('id'), 'status' => 'open'])
+            ->first();
 
-        $session->write('Cart.items', $cart);
+        if (!$cart) {
+            $cart = $Carts->newEntity([
+                'user_id'  => (int)$identity->get('id'),
+                'status'   => 'open',
+                'currency' => (string)($product->currency ?: 'AUD'),
+            ]);
+            $Carts->saveOrFail($cart);
+        }
+
+        $item = $CartItems->find()
+            ->where(['cart_id' => $cart->id, 'product_id' => $product->id])
+            ->first();
+
+        if ($item) {
+            $item->qty = (int)$item->qty + $qty;
+        } else {
+            $item = $CartItems->newEntity([
+                'cart_id'    => $cart->id,
+                'product_id' => $product->id,
+                'qty'        => $qty,
+                'price'      => (float)$product->price,
+                'currency'   => (string)($product->currency ?: 'AUD'),
+            ]);
+        }
+        $CartItems->saveOrFail($item);
 
         $this->Flash->success('Added to your cart.');
         return $this->redirect(['controller' => 'Cart', 'action' => 'index']);
