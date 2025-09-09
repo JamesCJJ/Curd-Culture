@@ -9,11 +9,9 @@ $this->assign('title', 'Products');
 
     <div class="grid">
         <?php foreach ($products as $p): ?>
-            <?php
-
-            $viewUrl = $this->Url->build(['controller' => 'Products', 'action' => 'view', (string)$p->slug]);
-            ?>
+            <?php $viewUrl = $this->Url->build(['controller' => 'Products', 'action' => 'view', (string)$p->slug]); ?>
             <div class="card product-card">
+
                 <a class="product-media js-product-view" href="<?= h($viewUrl) ?>">
                     <?php if (!empty($p->image_url)): ?>
                         <img src="<?= h($p->image_url) ?>" alt="<?= h($p->name) ?>">
@@ -21,10 +19,13 @@ $this->assign('title', 'Products');
                         <div class="ph">No Image</div>
                     <?php endif; ?>
                 </a>
+
                 <div class="product-body">
+
                     <h3 class="product-title">
-                        <a class="js-product-view" href="<?= h($viewUrl) ?>"><?= h($p->name) ?></a>
+                        <a href="<?= h($viewUrl) ?>"><?= h($p->name) ?></a>
                     </h3>
+
                     <div class="product-meta">
                         <span><?= h($p->milk_type ?: 'Dairy') ?></span>
                         <?php if (!empty($p->origin_country)): ?>
@@ -34,10 +35,15 @@ $this->assign('title', 'Products');
                             <span>• Aged <?= h($p->age) ?></span>
                         <?php endif; ?>
                     </div>
+
                     <p class="product-summary"><?= h(mb_strimwidth((string)$p->summary, 0, 120, '…')) ?></p>
+
                     <div class="product-foot">
-                        <div class="price"><?= $this->Number->currency((float)($p->price ?? 0), $p->currency ?: 'AUD') ?></div>
-                        <a class="btn small btn-primary js-product-view" href="<?= h($viewUrl) ?>">View</a>
+                        <div class="price">
+                            <?= $this->Number->currency((float)($p->price ?? 0), $p->currency ?: 'AUD') ?>
+                        </div>
+
+                        <a class="btn small btn-primary" href="<?= h($viewUrl) ?>">View</a>
                     </div>
                 </div>
             </div>
@@ -47,21 +53,23 @@ $this->assign('title', 'Products');
     <?php if (!empty($paging) && ($paging['pages'] ?? 1) > 1): ?>
         <nav class="pager" aria-label="Pagination">
             <?php
-            $cur   = (int)($paging['page']  ?? 1);
-            $pages = (int)($paging['pages'] ?? 1);
+            $cur     = (int)($paging['page']  ?? 1);
+            $pages   = (int)($paging['pages'] ?? 1);
             $hasPrev = !empty($paging['hasPrev']);
             $hasNext = !empty($paging['hasNext']);
-            $prevUrl = $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page' => max(1, $cur - 1)]]);
-            $nextUrl = $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page' => min($pages, $cur + 1)]]);
+            $prevUrl = $this->Url->build(['controller' => 'Products','action' => 'index','?' => ['page' => max(1, $cur - 1)]]);
+            $nextUrl = $this->Url->build(['controller' => 'Products','action' => 'index','?' => ['page' => min($pages, $cur + 1)]]);
             $start = max(1, $cur - 2);
             $end   = min($pages, $cur + 2);
             ?>
             <a class="pg btn small <?= $hasPrev ? '' : 'disabled' ?>" <?= $hasPrev ? 'href="' . h($prevUrl) . '"' : 'aria-disabled="true"' ?>>« Prev</a>
+
             <ul class="nums">
                 <?php if ($start > 1): ?>
                     <li><a href="<?= $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page'=>1]]) ?>">1</a></li>
                     <?php if ($start > 2): ?><li class="ellipsis">…</li><?php endif; ?>
                 <?php endif; ?>
+
                 <?php for ($i = $start; $i <= $end; $i++): ?>
                     <li>
                         <?php if ($i === $cur): ?>
@@ -71,11 +79,13 @@ $this->assign('title', 'Products');
                         <?php endif; ?>
                     </li>
                 <?php endfor; ?>
+
                 <?php if ($end < $pages): ?>
                     <?php if ($end < $pages - 1): ?><li class="ellipsis">…</li><?php endif; ?>
                     <li><a href="<?= $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page'=>$pages]]) ?>"><?= $pages ?></a></li>
                 <?php endif; ?>
             </ul>
+
             <a class="pg btn small <?= $hasNext ? '' : 'disabled' ?>" <?= $hasNext ? 'href="' . h($nextUrl) . '"' : 'aria-disabled="true"' ?>>Next »</a>
         </nav>
     <?php endif; ?>
@@ -121,6 +131,7 @@ $this->assign('title', 'Products');
     .pager .ellipsis{display:flex;align-items:center;padding:0 .25rem;color:#9aa3af}
     .theme-dark .pager .nums a,.theme-dark .pager .nums span{background:#0f172a;border-color:#334155;color:#e5e7eb}
     .theme-dark .pager .nums .on{background:#60a5fa;border-color:#60a5fa;color:#111}
+
     .modal-dialog{background:#fff;border:1px solid #eef0f3}
     .theme-dark .modal-dialog{background:#111827;border-color:#1f2937}
 
@@ -165,10 +176,8 @@ $this->assign('title', 'Products');
         async function handleClick(e){
             const a = e.target.closest('a.js-product-view');
             if (!a) return;
-
             const url = new URL(a.href, location.href);
             if (url.origin !== location.origin) return;
-
             e.preventDefault();
             lastFocused = a;
 
