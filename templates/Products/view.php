@@ -1,6 +1,13 @@
 <?php
 $this->assign('title', $product->name);
 $currency = $product->currency ?: 'AUD';
+$yn10 = function($v) {
+    if ($v === null || $v === '') return null;
+    if ((string)$v === '1') return 'Yes';
+    if ((string)$v === '0') return 'No';
+    return (string)$v;
+};
+
 ?>
 <div class="product-page">
     <div class="product-wrap">
@@ -55,9 +62,9 @@ $currency = $product->currency ?: 'AUD';
                 'Rennet'        => $product->rennet ?? null,
                 'Pasteurised'   => $product->pasteurised ?? null,
                 'Fat content'   => $product->fat_content ?? null,
-                'Vegetarian'    => $product->vegetarian ?? null,
-                'Gluten free'   => $product->gluten_free ?? null,
-                'Lactose free'  => $product->lactose_free ?? null,
+                'Vegetarian'    => $yn10($product->vegetarian),
+                'Gluten free'   => $yn10($product->gluten_free),
+                'Lactose free'  => $yn10($product->lactose_free),
                 'Allergens'     => $product->allergens ?? null,
                 'Pairings'      => $product->pairing_notes ?? null,
                 'Awards'        => $product->awards ?? null,
