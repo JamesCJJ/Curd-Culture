@@ -97,6 +97,12 @@ if ($identity && $role === 'customer') {
                             ['class' => 'nav-link' . ($this->request->getParam('action') === 'profile' ? ' active' : ''), 'escape' => false]
                         ) ?>
 
+                        <?= $this->Html->link(
+                            '<i class="bi bi-gear"></i>Settings',
+                            ['controller' => 'Customer', 'action' => 'settings'],
+                            ['class' => 'nav-link' . ($this->request->getParam('action') === 'settings' ? ' active' : ''), 'escape' => false]
+                        ) ?>
+
                         <div class="mt-auto p-3">
                             <?= $this->Html->link(
                                 '<i class="bi bi-box-arrow-right"></i>Logout',
