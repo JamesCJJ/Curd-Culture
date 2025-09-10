@@ -96,12 +96,19 @@ if ($identity && $role === 'customer') {
             $adminSess = $this->getRequest()->getSession()->read('Auth.AdminUser');
             $adminRole = strtolower((string)($adminSess['role'] ?? ''));
             
-            // Admin Dashboard link (only for admins)
+            // Admin Dashboard link and logout (only for admins)
             if ($adminSess && $adminRole === 'admin'):
                 echo $this->Html->link(
                     'Admin',
                     ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
                     ['class' => 'btn', 'aria-label' => 'Open admin dashboard']
+                );
+                
+                // Admin logout button
+                echo $this->Html->link(
+                    'Logout',
+                    ['prefix' => false, 'controller' => 'Users', 'action' => 'logout'],
+                    ['class' => 'btn', 'aria-label' => 'Admin logout']
                 );
             endif;
 
@@ -113,8 +120,8 @@ if ($identity && $role === 'customer') {
                     ['prefix' => false, 'controller' => 'Customer', 'action' => 'index'],
                     ['class' => 'btn', 'aria-label' => 'Go to customer dashboard']
                 );
-            else:
-                // User is not logged in - go to login page
+            elseif (!$adminSess):
+                // User is not logged in and not admin - show login
                 echo $this->Html->link(
                     'My Account',
                     ['prefix' => false, 'controller' => 'Users', 'action' => 'login'],
