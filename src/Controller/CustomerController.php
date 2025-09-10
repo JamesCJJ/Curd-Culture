@@ -118,6 +118,12 @@ class CustomerController extends AppController
         $resolvedId = $id
             ?? $this->request->getParam('id')
             ?? $this->request->getQuery('id');
+        if ($resolvedId === null) {
+            $pass = (array)$this->request->getParam('pass');
+            if (!empty($pass[0])) {
+                $resolvedId = $pass[0];
+            }
+        }
 
         if ($resolvedId === null || !is_numeric($resolvedId)) {
             $this->Flash->error('Invalid order ID.');
@@ -228,6 +234,12 @@ class CustomerController extends AppController
         $resolvedId = $orderId
             ?? $this->request->getParam('id')
             ?? $this->request->getQuery('id');
+        if ($resolvedId === null) {
+            $pass = (array)$this->request->getParam('pass');
+            if (!empty($pass[0])) {
+                $resolvedId = $pass[0];
+            }
+        }
 
         if ($resolvedId === null || !is_numeric($resolvedId)) {
             $this->Flash->error('Invalid order ID.');
