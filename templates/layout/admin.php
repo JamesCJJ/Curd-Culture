@@ -290,7 +290,7 @@
                         [
                             'class' => 'nav-link' . (
                                 $currentController === 'Orders'
-                                && $currentAction !== 'analytics'   // 🚨 避免 analytics 时高亮
+                                && $currentAction !== 'analytics'
                                     ? ' active' : ''
                                 ),
                             'escape' => false
