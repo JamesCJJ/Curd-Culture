@@ -14,23 +14,23 @@ $this->assign('title', 'Profile');
             </div>
             <div class="card-body">
                 <?= $this->Form->create($user) ?>
-                    <div class="mb-3">
-                        <label for="email" class="form-label">Email Address</label>
-                        <?= $this->Form->email('email', [
-                            'class' => 'form-control',
-                            'required' => true
-                        ]) ?>
-                    </div>
-                    
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="bi bi-check me-2"></i>Update Profile
-                        </button>
-                    </div>
+                <div class="mb-3">
+                    <label for="email" class="form-label">Email Address</label>
+                    <?= $this->Form->email('email', [
+                        'class' => 'form-control',
+                        'required' => true
+                    ]) ?>
+                </div>
+
+                <div class="d-flex justify-content-end">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check me-2"></i>Update Profile
+                    </button>
+                </div>
                 <?= $this->Form->end() ?>
             </div>
         </div>
-        
+
         <!-- Address Management -->
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -58,7 +58,7 @@ $this->assign('title', 'Profile');
                                             <span class="badge bg-primary">Default</span>
                                         </div>
                                     <?php endif; ?>
-                                    
+
                                     <div class="position-absolute top-0 end-0 p-2">
                                         <div class="dropdown">
                                             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
@@ -66,39 +66,35 @@ $this->assign('title', 'Profile');
                                             </button>
                                             <ul class="dropdown-menu">
                                                 <li>
-                                                    <button class="dropdown-item" onclick="editAddress(<?= $address->id ?>)">
+                                                    <button class="dropdown-item" onclick="editAddress(<?= (int)$address->id ?>)">
                                                         <i class="bi bi-pencil me-2"></i>Edit
                                                     </button>
                                                 </li>
                                                 <?php if (!$address->is_default): ?>
                                                     <li>
-                                                        <?= $this->Form->postLink(
-                                                            '<i class="bi bi-check me-2"></i>Set as Default',
-                                                            ['action' => 'setDefaultAddress', $address->id],
-                                                            [
-                                                                'class' => 'dropdown-item',
-                                                                'escape' => false,
-                                                                'confirm' => 'Set this address as default?'
-                                                            ]
-                                                        ) ?>
+
+                                                        <button class="dropdown-item" onclick="setDefaultAddressSoon(<?= (int)$address->id ?>)">
+                                                            <i class="bi bi-check me-2"></i>Set as Default
+                                                        </button>
                                                     </li>
                                                 <?php endif; ?>
                                                 <li><hr class="dropdown-divider"></li>
                                                 <li>
                                                     <?= $this->Form->postLink(
                                                         '<i class="bi bi-trash me-2"></i>Delete',
-                                                        ['action' => 'deleteAddress', $address->id],
+                                                        ['action' => 'deleteAddress', (int)$address->id],
                                                         [
-                                                            'class' => 'dropdown-item text-danger',
-                                                            'escape' => false,
-                                                            'confirm' => 'Are you sure you want to delete this address?'
+                                                            'class'   => 'dropdown-item text-danger',
+                                                            'escape'  => false,
+                                                            'confirm' => 'Are you sure you want to delete this address?',
+                                                            'data'    => ['id' => (int)$address->id],
                                                         ]
                                                     ) ?>
                                                 </li>
                                             </ul>
                                         </div>
                                     </div>
-                                    
+
                                     <address class="mb-0" style="margin-top: <?= $address->is_default ? '1.5rem' : '0' ?>;">
                                         <strong><?= h($address->full_name) ?></strong><br>
                                         <?php if (!empty($address->company)): ?>
@@ -118,7 +114,7 @@ $this->assign('title', 'Profile');
                             </div>
                         <?php endforeach; ?>
                     <?php endif; ?>
-                    
+
                     <div class="col-md-6 mb-3">
                         <div class="border border-dashed rounded p-3 d-flex align-items-center justify-content-center text-muted" style="min-height: 120px; cursor: pointer;" data-bs-toggle="modal" data-bs-target="#addAddressModal">
                             <div class="text-center">
@@ -131,7 +127,7 @@ $this->assign('title', 'Profile');
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4">
         <!-- Account Settings -->
         <div class="card mb-4">
@@ -145,7 +141,7 @@ $this->assign('title', 'Profile');
                         <input class="form-check-input" type="checkbox" id="emailNotifications" checked>
                     </div>
                 </div>
-                
+
                 <div class="d-flex justify-content-between align-items-center py-2">
                     <span>SMS notifications</span>
                     <div class="form-check form-switch">
@@ -154,7 +150,7 @@ $this->assign('title', 'Profile');
                 </div>
             </div>
         </div>
-        
+
         <!-- Security -->
         <div class="card">
             <div class="card-header">
@@ -182,109 +178,109 @@ $this->assign('title', 'Profile');
                     'url' => ['action' => 'addAddress'],
                     'id' => 'addAddressForm'
                 ]) ?>
-                    <div class="mb-3">
-                        <label for="country" class="form-label">Country/region</label>
-                        <?= $this->Form->select('country', ['Australia' => 'Australia'], [
-                            'value' => 'Australia',
-                            'class' => 'form-select',
-                            'required' => true
-                        ]) ?>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="first_name" class="form-label">First name</label>
-                                <?= $this->Form->text('first_name', [
-                                    'class' => 'form-control',
-                                    'required' => true
-                                ]) ?>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="last_name" class="form-label">Last name</label>
-                                <?= $this->Form->text('last_name', [
-                                    'class' => 'form-control',
-                                    'required' => true
-                                ]) ?>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="company" class="form-label">Company/attention</label>
-                        <?= $this->Form->text('company', [
-                            'class' => 'form-control'
-                        ]) ?>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="address_line_1" class="form-label">Address</label>
-                        <?= $this->Form->text('address_line_1', [
-                            'class' => 'form-control',
-                            'required' => true
-                        ]) ?>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="address_line_2" class="form-label">Apartment, suite, etc (optional)</label>
-                        <?= $this->Form->text('address_line_2', [
-                            'class' => 'form-control'
-                        ]) ?>
-                    </div>
-                    
-                    <div class="row">
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="suburb" class="form-label">Suburb</label>
-                                <?= $this->Form->text('suburb', [
-                                    'class' => 'form-control',
-                                    'required' => true
-                                ]) ?>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="state" class="form-label">State/territory</label>
-                                <?= $this->Form->select('state', [
-                                    '' => 'Select state',
-                                    'NSW' => 'New South Wales',
-                                    'VIC' => 'Victoria',
-                                    'QLD' => 'Queensland',
-                                    'WA' => 'Western Australia',
-                                    'SA' => 'South Australia',
-                                    'TAS' => 'Tasmania',
-                                    'ACT' => 'Australian Capital Territory',
-                                    'NT' => 'Northern Territory'
-                                ], [
-                                    'class' => 'form-select',
-                                    'required' => true
-                                ]) ?>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="mb-3">
-                                <label for="postcode" class="form-label">Postcode</label>
-                                <?= $this->Form->text('postcode', [
-                                    'class' => 'form-control',
-                                    'pattern' => '[0-9]{4}',
-                                    'required' => true
-                                ]) ?>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="mb-3">
-                        <label for="phone" class="form-label">Phone</label>
-                        <div class="input-group">
-                            <span class="input-group-text">🇦🇺 +61</span>
-                            <?= $this->Form->tel('phone', [
+                <div class="mb-3">
+                    <label for="country" class="form-label">Country/region</label>
+                    <?= $this->Form->select('country', ['Australia' => 'Australia'], [
+                        'value' => 'Australia',
+                        'class' => 'form-select',
+                        'required' => true
+                    ]) ?>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="first_name" class="form-label">First name</label>
+                            <?= $this->Form->text('first_name', [
                                 'class' => 'form-control',
-                                'placeholder' => '400 000 000'
+                                'required' => true
                             ]) ?>
                         </div>
                     </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="last_name" class="form-label">Last name</label>
+                            <?= $this->Form->text('last_name', [
+                                'class' => 'form-control',
+                                'required' => true
+                            ]) ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="company" class="form-label">Company/attention</label>
+                    <?= $this->Form->text('company', [
+                        'class' => 'form-control'
+                    ]) ?>
+                </div>
+
+                <div class="mb-3">
+                    <label for="address_line_1" class="form-label">Address</label>
+                    <?= $this->Form->text('address_line_1', [
+                        'class' => 'form-control',
+                        'required' => true
+                    ]) ?>
+                </div>
+
+                <div class="mb-3">
+                    <label for="address_line_2" class="form-label">Apartment, suite, etc (optional)</label>
+                    <?= $this->Form->text('address_line_2', [
+                        'class' => 'form-control'
+                    ]) ?>
+                </div>
+
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="suburb" class="form-label">Suburb</label>
+                            <?= $this->Form->text('suburb', [
+                                'class' => 'form-control',
+                                'required' => true
+                            ]) ?>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="state" class="form-label">State/territory</label>
+                            <?= $this->Form->select('state', [
+                                '' => 'Select state',
+                                'NSW' => 'New South Wales',
+                                'VIC' => 'Victoria',
+                                'QLD' => 'Queensland',
+                                'WA' => 'Western Australia',
+                                'SA' => 'South Australia',
+                                'TAS' => 'Tasmania',
+                                'ACT' => 'Australian Capital Territory',
+                                'NT' => 'Northern Territory'
+                            ], [
+                                'class' => 'form-select',
+                                'required' => true
+                            ]) ?>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="postcode" class="form-label">Postcode</label>
+                            <?= $this->Form->text('postcode', [
+                                'class' => 'form-control',
+                                'pattern' => '[0-9]{4}',
+                                'required' => true
+                            ]) ?>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <label for="phone" class="form-label">Phone</label>
+                    <div class="input-group">
+                        <span class="input-group-text">🇦🇺 +61</span>
+                        <?= $this->Form->tel('phone', [
+                            'class' => 'form-control',
+                            'placeholder' => '400 000 000'
+                        ]) ?>
+                    </div>
+                </div>
                 <?= $this->Form->end() ?>
             </div>
             <div class="modal-footer">
@@ -296,22 +292,22 @@ $this->assign('title', 'Profile');
 </div>
 
 <script>
-function editAddress(id) {
-    // TODO: Implement edit functionality with modal population
-    alert('Edit functionality coming soon!');
-}
-
-// Auto-close modal after successful form submission
-document.addEventListener('DOMContentLoaded', function() {
-    const modal = document.getElementById('addAddressModal');
-    if (modal) {
-        modal.addEventListener('hidden.bs.modal', function () {
-            // Reset form when modal is closed
-            const form = document.getElementById('addAddressForm');
-            if (form) {
-                form.reset();
-            }
-        });
+    function editAddress(id) {
+        alert('Edit functionality coming soon!');
     }
-});
+
+    function setDefaultAddressSoon(id) {
+        alert('Set as default functionality coming soon!');
+    }
+
+    // Auto-reset the add-address form when the modal closes
+    document.addEventListener('DOMContentLoaded', function() {
+        const modal = document.getElementById('addAddressModal');
+        if (modal) {
+            modal.addEventListener('hidden.bs.modal', function () {
+                const form = document.getElementById('addAddressForm');
+                if (form) form.reset();
+            });
+        }
+    });
 </script>

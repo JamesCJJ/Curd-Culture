@@ -330,17 +330,40 @@ class CustomerController extends AppController
     {
         $this->request->allowMethod(['post', 'delete']);
 
+
+        if ($id === null) {
+            $pass = (array)$this->request->getParam('pass');
+            if (!empty($pass[0])) {
+                $id = $pass[0];
+            }
+        }
+
+        if ($id === null) {
+            $id = $this->request->getData('id')
+                ?? $this->request->getQuery('id')
+                ?? null;
+        }
+
+        if ($id === null || !is_numeric($id)) {
+            $this->Flash->error('Invalid address ID.');
+            return $this->redirect(['action' => 'profile']);
+        }
+
         $identity = $this->request->getAttribute('identity');
-        $userId   = $identity->get('id');
+        $userId   = (int)$identity->get('id');
 
         $Addresses = $this->fetchTable('Addresses');
-        $address   = $Addresses->find()
-            ->where(['id' => $id, 'user_id' => $userId])
+
+        $address = $Addresses->find()
+            ->where(['id' => (int)$id, 'user_id' => $userId])
             ->first();
 
         if (!$address) {
-            $this->Flash->error('Address not found.');
-        } elseif ($Addresses->delete($address)) {
+            $this->Flash->error('Address not found or not owned by you.');
+            return $this->redirect(['action' => 'profile']);
+        }
+
+        if ($Addresses->delete($address)) {
             $this->Flash->success('Address deleted successfully.');
         } else {
             $this->Flash->error('Unable to delete address.');
@@ -348,6 +371,7 @@ class CustomerController extends AppController
 
         return $this->redirect(['action' => 'profile']);
     }
+
 
     /** Set default address */
     public function setDefaultAddress($id = null)
