@@ -273,6 +273,58 @@ INSERT INTO `products` (`id`, `name`, `slug`, `price`, `currency`, `summary`, `d
 -- --------------------------------------------------------
 
 --
+-- 表的结构 `contacts`
+--
+
+CREATE TABLE `contacts` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `name` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `email` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `message` text COLLATE utf8mb4_unicode_ci NOT NULL,
+  `created` datetime NOT NULL,
+  `modified` datetime NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=7 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+--
+-- 转存表中的数据 `contacts`
+--
+
+INSERT INTO `contacts` (`id`, `name`, `email`, `message`, `created`, `modified`) VALUES
+(1, 'John Smith', 'john.smith@example.com', 'Hello! I am interested in your services. Could you please provide more information about your pricing plans?', '2025-08-22 09:24:25', '2025-08-22 09:24:25'),
+(2, 'Sarah Johnson', 'sarah.j@email.com', 'I had a great experience with your team last month. I would like to schedule another consultation to discuss expanding our current project scope. When would be a good time to connect?', '2025-08-23 09:24:25', '2025-08-23 09:24:25'),
+(3, 'Michael Brown', 'mbrown@company.org', 'Technical support needed - experiencing issues with login functionality.', '2025-08-24 04:24:25', '2025-08-24 04:24:25'),
+(4, 'Lisa Davis', 'lisa.davis@startup.co', 'We are a new startup looking for development partners. Would love to discuss potential collaboration opportunities. Our budget is flexible and we are looking for long-term partnership.', '2025-08-24 07:24:25', '2025-08-24 07:24:25'),
+(5, 'David Wilson', 'david.w@consulting.net', 'Question about API integration.', '2025-08-24 08:54:25', '2025-08-24 08:54:25');
+
+-- --------------------------------------------------------
+
+--
+-- 表的结构 `addresses`
+--
+
+CREATE TABLE `addresses` (
+  `id` int NOT NULL AUTO_INCREMENT,
+  `user_id` int NOT NULL,
+  `type` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'billing',
+  `first_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `last_name` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `company` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `address_line_1` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `address_line_2` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `suburb` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `state` varchar(50) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `postcode` varchar(10) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `country` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'Australia',
+  `phone` varchar(20) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `is_default` tinyint(1) NOT NULL DEFAULT '0',
+  `created` datetime DEFAULT NULL,
+  `modified` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- --------------------------------------------------------
+
+--
 -- 表的结构 `tags`
 --
 
@@ -334,6 +386,14 @@ ALTER TABLE `articles_tags`
   ADD KEY `tag_key` (`tag_id`);
 
 --
+-- 表的索引 `addresses`
+--
+ALTER TABLE `addresses`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_addresses_user` (`user_id`),
+  ADD KEY `idx_addresses_user_type` (`user_id`,`type`);
+
+--
 -- 表的索引 `carts`
 --
 ALTER TABLE `carts`
@@ -352,6 +412,12 @@ ALTER TABLE `cart_items`
 -- 表的索引 `contact_messages`
 --
 ALTER TABLE `contact_messages`
+  ADD PRIMARY KEY (`id`);
+
+--
+-- 表的索引 `contacts`
+--
+ALTER TABLE `contacts`
   ADD PRIMARY KEY (`id`);
 
 --
@@ -409,6 +475,12 @@ ALTER TABLE `articles`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
 
 --
+-- 使用表AUTO_INCREMENT `addresses`
+--
+ALTER TABLE `addresses`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
+
+--
 -- 使用表AUTO_INCREMENT `carts`
 --
 ALTER TABLE `carts`
@@ -425,6 +497,12 @@ ALTER TABLE `cart_items`
 --
 ALTER TABLE `contact_messages`
   MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+
+--
+-- 使用表AUTO_INCREMENT `contacts`
+--
+ALTER TABLE `contacts`
+  MODIFY `id` int NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
 --
 -- 使用表AUTO_INCREMENT `orders`
@@ -472,6 +550,12 @@ ALTER TABLE `articles`
 ALTER TABLE `articles_tags`
   ADD CONSTRAINT `article_key` FOREIGN KEY (`article_id`) REFERENCES `articles` (`id`),
   ADD CONSTRAINT `tag_key` FOREIGN KEY (`tag_id`) REFERENCES `tags` (`id`);
+
+--
+-- 限制表 `addresses`
+--
+ALTER TABLE `addresses`
+  ADD CONSTRAINT `fk_addresses_users` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`);
 
 --
 -- 限制表 `carts`
