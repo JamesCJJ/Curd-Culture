@@ -79,18 +79,18 @@ $badge = function (?string $state): string {
     <!-- Table -->
     <div class="card">
         <div class="card__head">
-            <strong><?= $this->Paginator->counter('{{count}} message(s) total') ?></strong>
+            <strong><?= $pagination['count'] ?> message(s) total</strong>
         </div>
 
         <div class="table-wrap">
             <table class="tbl">
                 <thead>
                 <tr>
-                    <th><?= $this->Paginator->sort('name', 'Name') ?></th>
-                    <th><?= $this->Paginator->sort('email', 'Email') ?></th>
+                    <th>Name</th>
+                    <th>Email</th>
                     <th class="col-message">Message</th>
-                    <th><?= $this->Paginator->sort('created', 'Created') ?></th>
-                    <th class="col-status"><?= $this->Paginator->sort('status', 'Status') ?></th>
+                    <th>Created</th>
+                    <th class="col-status">Status</th>
                     <th class="col-actions">Actions</th>
                 </tr>
                 </thead>
