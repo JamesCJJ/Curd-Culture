@@ -69,10 +69,7 @@ class UsersController extends AppController
             $data['role']   = 'customer';
             $data['status'] = $data['status'] ?? 'active';
 
-            $user = $Users->patchEntity($user, $data, [
-                'fields'   => ['name', 'email', 'password', 'role', 'status'],
-                'validate' => 'default',
-            ]);
+            $user = $Users->patchEntity($user, $data);
 
             if ($Users->save($user)) {
                 $this->Authentication->setIdentity($user);

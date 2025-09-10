@@ -96,8 +96,8 @@ $this->assign('title', 'Orders');
         </div>
     <?php endforeach; ?>
 
-    <!-- Pagination -->
-    <?php if ($this->Paginator->total() > $this->Paginator->getLimit()): ?>
+    <!-- Pagination temporarily disabled -->
+    <?php if (false): // Pagination disabled for now ?>
         <nav aria-label="Orders pagination" class="mt-4">
             <ul class="pagination justify-content-center">
                 <?= $this->Paginator->prev('« Previous', ['class' => 'page-link']) ?>

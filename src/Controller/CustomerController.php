@@ -11,30 +11,34 @@ class CustomerController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
-        $this->loadComponent('Paginator');
+        // Remove Paginator component for now - we'll add it back if needed
     }
 
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
         
-        // Require authentication for all customer actions
-        $this->Authentication->requireIdentity();
+        // All actions require authentication (no unauthenticated actions)
+        // This means users must be logged in to access any customer actions
+        
+        // Check if user is authenticated
+        $identity = $this->request->getAttribute('identity');
+        if (!$identity) {
+            $this->Flash->error('Please log in to access your account.');
+            $event->setResult($this->redirect(['controller' => 'Users', 'action' => 'login']));
+            return;
+        }
         
         // Debug: Check what role is being set
-        $identity = $this->request->getAttribute('identity');
-        if ($identity) {
-            $role = $identity->get('role');
-            // Temporarily log the role to debug
-            error_log("Customer Controller - User role: " . ($role ?? 'null'));
-            
-            // Allow both 'customer' and 'user' roles for now
-            $allowedRoles = ['customer', 'user'];
-            if ($role && !in_array(strtolower($role), $allowedRoles)) {
-                $this->Flash->error('Access denied. Customer access required.');
-                $this->redirect(['controller' => 'Users', 'action' => 'login']);
-                return;
-            }
+        $role = $identity->get('role');
+        error_log("Customer Controller - User role: " . ($role ?? 'null'));
+        
+        // Allow both 'customer' and 'user' roles for now
+        $allowedRoles = ['customer', 'user'];
+        if ($role && !in_array(strtolower($role), $allowedRoles)) {
+            $this->Flash->error('Access denied. Customer access required.');
+            $event->setResult($this->redirect(['controller' => 'Users', 'action' => 'login']));
+            return;
         }
     }
 
@@ -91,7 +95,8 @@ class CustomerController extends AppController
             $query->where(['Orders.created <=' => $dateTo . ' 23:59:59']);
         }
         
-        $orders = $this->paginate($query);
+        // Simple limit instead of pagination for now
+        $orders = $query->limit(50)->all();
         
         // Get status options for filter
         $statusOptions = [

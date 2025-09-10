@@ -1,5 +1,5 @@
 <?php
-$this->extend('/layout/default');
+$this->extend('/layout/customer');
 $this->assign('title', 'Dashboard');
 ?>
 
