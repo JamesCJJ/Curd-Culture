@@ -65,16 +65,22 @@ if ($identity && $role === 'customer') {
         </div>
 
         <div class="nav-actions">
+            <?php
+            // Get current controller to determine active navigation
+            $currentController = $this->request->getParam('controller');
+            $currentPrefix = $this->request->getParam('prefix');
+            ?>
+            
             <?= $this->Html->link(
                 'Contact Us',
                 ['prefix' => false, 'controller' => 'ContactMessages', 'action' => 'add'],
-                ['class' => 'btn btn-primary', 'aria-label' => 'Go to contact form']
+                ['class' => 'btn' . ($currentController === 'ContactMessages' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Go to contact form']
             ) ?>
 
             <?= $this->Html->link(
                 'Products',
                 ['prefix' => false, 'controller' => 'Products', 'action' => 'index'],
-                ['class' => 'btn', 'aria-label' => 'Browse products']
+                ['class' => 'btn' . ($currentController === 'Products' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Browse products']
             ) ?>
 
             <?php if ($identity && $role === 'customer'): ?>
@@ -82,14 +88,14 @@ if ($identity && $role === 'customer') {
                     '<span class="cart-icon" aria-hidden="true"></span><span class="label">Cart</span>' .
                     ($cartQty ? '<span class="cart-badge">'.(int)$cartQty.'</span>' : ''),
                     ['prefix' => false, 'controller' => 'Cart', 'action' => 'index'],
-                    ['escape' => false, 'class' => 'btn btn-subtle cart-link', 'aria-label' => 'Open shopping cart']
+                    ['escape' => false, 'class' => 'btn btn-subtle cart-link' . ($currentController === 'Cart' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Open shopping cart']
                 ) ?>
             <?php endif; ?>
 
             <?= $this->Html->link(
                 'Settings',
                 ['prefix' => false, 'controller' => 'Settings', 'action' => 'index'],
-                ['class' => 'btn', 'aria-label' => 'Open settings']
+                ['class' => 'btn' . ($currentController === 'Settings' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Open settings']
             ) ?>
 
             <?php
@@ -112,7 +118,7 @@ if ($identity && $role === 'customer') {
                 echo $this->Html->link(
                     'Admin',
                     ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
-                    ['class' => 'btn', 'aria-label' => 'Open admin dashboard']
+                    ['class' => 'btn' . ($currentPrefix === 'Admin' ? ' btn-primary' : ''), 'aria-label' => 'Open admin dashboard']
                 );
                 
                 // Admin logout button
@@ -129,14 +135,14 @@ if ($identity && $role === 'customer') {
                 echo $this->Html->link(
                     'My Account',
                     ['prefix' => false, 'controller' => 'Customer', 'action' => 'index'],
-                    ['class' => 'btn', 'aria-label' => 'Go to customer dashboard']
+                    ['class' => 'btn' . ($currentController === 'Customer' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Go to customer dashboard']
                 );
             elseif (!$isAdmin):
                 // User is not logged in and not admin - show login
                 echo $this->Html->link(
                     'My Account',
                     ['prefix' => false, 'controller' => 'Users', 'action' => 'login'],
-                    ['class' => 'btn', 'aria-label' => 'Sign in to your account']
+                    ['class' => 'btn' . ($currentController === 'Users' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Sign in to your account']
                 );
             endif;
             ?>
