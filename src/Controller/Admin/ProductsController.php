@@ -95,6 +95,7 @@ class ProductsController extends AppController
         
         if ($this->request->is('post')) {
             $data = $this->request->getData();
+            $data = $this->normalizeProductData($data);
             
             // Generate slug from name if not provided
             if (empty($data['slug']) && !empty($data['name'])) {
@@ -132,6 +133,7 @@ class ProductsController extends AppController
         
         if ($this->request->is(['patch', 'post', 'put'])) {
             $data = $this->request->getData();
+            $data = $this->normalizeProductData($data);
             
             // Generate slug from name if not provided
             if (empty($data['slug']) && !empty($data['name'])) {
@@ -308,5 +310,50 @@ class ProductsController extends AppController
         if (file_exists($imagePath)) {
             unlink($imagePath);
         }
+    }
+
+    /**
+     * Normalize incoming product data to satisfy database constraints
+     * - Convert empty enum values to null
+     * - Coerce booleans to 0/1
+     * - Cast numeric fields
+     *
+     * @param array $data
+     * @return array
+     */
+    private function normalizeProductData(array $data): array
+    {
+        $normalized = $data;
+        
+        // pasteurised is ENUM('yes','no') NULLable
+        $p = $normalized['pasteurised'] ?? null;
+        if ($p === '' || $p === null) {
+            $normalized['pasteurised'] = null;
+        } else {
+            $p = strtolower((string)$p);
+            $normalized['pasteurised'] = in_array($p, ['yes', 'no'], true) ? $p : null;
+        }
+
+        // Booleans from checkboxes
+        foreach (['vegetarian', 'gluten_free', 'lactose_free'] as $flag) {
+            if (array_key_exists($flag, $normalized)) {
+                $normalized[$flag] = (int)!empty($normalized[$flag]);
+            }
+        }
+
+        // Numeric casts
+        if (isset($normalized['price']) && $normalized['price'] !== '') {
+            $normalized['price'] = (float)$normalized['price'];
+        }
+        if (isset($normalized['stock']) && $normalized['stock'] !== '') {
+            $normalized['stock'] = (int)$normalized['stock'];
+        }
+
+        // Default currency
+        if (empty($normalized['currency'])) {
+            $normalized['currency'] = 'AUD';
+        }
+
+        return $normalized;
     }
 }
