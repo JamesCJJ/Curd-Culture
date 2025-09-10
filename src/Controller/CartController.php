@@ -17,10 +17,8 @@ class CartController extends AppController
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
-
         $this->Authentication->addUnauthenticatedActions(['index']);
     }
-
 
     private function findOpenCart(int $userId)
     {
@@ -112,7 +110,7 @@ class CartController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
-        $qtys = (array)$this->request->getData('qty'); // ['cart_item_id' => qty]
+        $qtys = (array)$this->request->getData('qty');
         $CartItems = $this->getTableLocator()->get('CartItems');
 
         foreach ($qtys as $itemId => $qty) {
@@ -159,7 +157,6 @@ class CartController extends AppController
         return $this->redirect(['action' => 'index']);
     }
 
-
     public function checkout()
     {
         $identity = $this->request->getAttribute('identity');
@@ -178,7 +175,6 @@ class CartController extends AppController
             $this->Flash->info('Your cart is empty.');
             return $this->redirect(['controller' => 'Products', 'action' => 'index']);
         }
-
 
         $CartItems = $this->getTableLocator()->get('CartItems');
         $Products  = $this->getTableLocator()->get('Products');
@@ -233,6 +229,18 @@ class CartController extends AppController
         $shipping = $subtotal > 0 ? 12.90 : 0.0;
         $total    = $subtotal + $shipping;
 
+        // ---------- Bank transfer details (persist in session during checkout) ----------
+        $session = $this->request->getSession();
+        $bank = (array)$session->read('Checkout.bank');
+        if (empty($bank)) {
+            $bank = [
+                'account_name' => 'Curd & Culture Pty Ltd',
+                'bsb'          => sprintf('%03d-%03d', random_int(100, 999), random_int(100, 999)),
+                'account_no'   => (string)random_int(100000000, 999999999), // 9 digits
+            ];
+            $session->write('Checkout.bank', $bank);
+        }
+        // -------------------------------------------------------------------------------
 
         if ($this->request->is('post')) {
             $data = (array)$this->request->getData();
@@ -246,7 +254,15 @@ class CartController extends AppController
                         'full_name' => (string)($identity->get('name')  ?? ''),
                         'email'     => (string)($identity->get('email') ?? ''),
                     ];
-                    $this->set(compact('items','currency','subtotal','shipping','total','prefill'));
+                    // re-render with bank info
+                    $bankAccountName = $bank['account_name'];
+                    $bankBsb         = $bank['bsb'];
+                    $bankAccountNo   = $bank['account_no'];
+
+                    $this->set(compact(
+                        'items','currency','subtotal','shipping','total','prefill',
+                        'bankAccountName','bankBsb','bankAccountNo'
+                    ));
                     return;
                 }
             }
@@ -287,11 +303,9 @@ class CartController extends AppController
                 ]));
             }
 
-
             $Carts = $this->getTableLocator()->get('Carts');
             $Carts->updateAll(['status' => 'ordered'], ['id' => $cart->id]);
             $CartItems->deleteAll(['cart_id' => $cart->id]);
-
 
             try {
                 $ContactMsgs = $this->getTableLocator()->get('ContactMessages');
@@ -301,19 +315,27 @@ class CartController extends AppController
                     'message' => 'New order #' . $order->id . ' placed. Total: ' . $currency . ' ' . number_format($total, 2),
                 ]));
             } catch (\Throwable $e) {
-
+                // ignore
             }
 
             $this->Flash->success('Order placed! Thank you for your purchase.');
             return $this->redirect(['action' => 'complete']);
         }
 
-
         $prefill = [
             'full_name' => (string)($identity->get('name')  ?? ''),
             'email'     => (string)($identity->get('email') ?? ''),
         ];
-        $this->set(compact('items','currency','subtotal','shipping','total','prefill'));
+
+        // pass bank info to view
+        $bankAccountName = $bank['account_name'];
+        $bankBsb         = $bank['bsb'];
+        $bankAccountNo   = $bank['account_no'];
+
+        $this->set(compact(
+            'items','currency','subtotal','shipping','total','prefill',
+            'bankAccountName','bankBsb','bankAccountNo'
+        ));
     }
 
     /** GET /checkout/complete */

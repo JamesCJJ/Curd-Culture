@@ -1,11 +1,15 @@
 <?php
 $this->assign('title', 'Checkout');
-$items = $items ?? [];
+$items    = $items ?? [];
 $currency = $currency ?? 'AUD';
 $subtotal = $subtotal ?? 0;
 $shipping = $shipping ?? 0;
-$total = $total ?? ($subtotal + $shipping);
+$total    = $total ?? ($subtotal + $shipping);
 
+// bank transfer variables coming from controller
+$bankAccountName = $bankAccountName ?? 'Curd & Culture Pty Ltd';
+$bankBsb         = $bankBsb ?? '000-000';
+$bankAccountNo   = $bankAccountNo ?? '000000000';
 ?>
 <div class="checkout-page">
     <div class="grid">
@@ -53,6 +57,20 @@ $total = $total ?? ($subtotal + $shipping);
                 <?php endforeach; ?>
             </ul>
             <p class="muted">No payment gateway is connected in this demo.</p>
+
+            <hr class="sep">
+
+            <div class="bank-block">
+                <h4 style="margin:0 0 .4rem">Pay by bank transfer</h4>
+                <div class="kv"><span>Account name</span><strong><?= h($bankAccountName) ?></strong></div>
+                <div class="kv"><span>BSB</span><strong><?= h($bankBsb) ?></strong></div>
+                <div class="kv"><span>Account number</span><strong><?= h($bankAccountNo) ?></strong></div>
+                <p class="muted" style="margin-top:.5rem">
+                    Please include your email as the payment reference so we can match your order.
+                    <br>
+                    Once we receive your payment we will update the order status as soon as possible.
+                </p>
+            </div>
         </aside>
     </div>
 </div>
@@ -81,4 +99,8 @@ $total = $total ?? ($subtotal + $shipping);
     .theme-dark .btn{background:#1f2937;color:#fff;border-color:#475569}
     .theme-dark .btn-primary{background:#60a5fa;color:#111}
     .actions{display:flex;justify-content:space-between;margin-top:.6rem}
+
+    .sep{border:none;border-top:1px solid #eef0f3;margin:1rem 0}
+    .bank-block .kv{display:flex;justify-content:space-between;padding:.25rem 0}
+    .bank-block .kv span{color:#6b7280}
 </style>
