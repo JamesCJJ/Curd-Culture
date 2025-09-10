@@ -66,57 +66,48 @@ if ($identity && $role === 'customer') {
 
         <div class="nav-actions">
             <?php
-            // Get current controller to determine active navigation
             $currentController = $this->request->getParam('controller');
-            $currentPrefix = $this->request->getParam('prefix');
+            $currentPrefix     = $this->request->getParam('prefix');
+
+
+            $identity = $this->getRequest()->getAttribute('identity');
+            $isAdmin  = ($identity && strtolower((string)$identity->get('role')) === 'admin');
+
+
             ?>
-            
+
             <?= $this->Html->link(
                 'Contact Us',
                 ['prefix' => false, 'controller' => 'ContactMessages', 'action' => 'add'],
                 ['class' => 'btn' . ($currentController === 'ContactMessages' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Go to contact form']
             ) ?>
 
-            <?= $this->Html->link(
-                'Products',
-                ['prefix' => false, 'controller' => 'Products', 'action' => 'index'],
-                ['class' => 'btn' . ($currentController === 'Products' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Browse products']
-            ) ?>
+            <?php if (!$isAdmin):  ?>
+                <?= $this->Html->link(
+                    'Products',
+                    ['prefix' => false, 'controller' => 'Products', 'action' => 'index'],
+                    ['class' => 'btn' . ($currentController === 'Products' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Browse products']
+                ) ?>
+            <?php endif; ?>
 
-            <?php if ($identity && $role === 'customer'): ?>
+            <?php if ($identity && strtolower((string)$identity->get('role')) === 'customer'): ?>
                 <?= $this->Html->link(
                     '<span class="cart-icon" aria-hidden="true"></span><span class="label">Cart</span>' .
-                    ($cartQty ? '<span class="cart-badge">'.(int)$cartQty.'</span>' : ''),
+                    (!empty($cartQty) ? '<span class="cart-badge">'.(int)$cartQty.'</span>' : ''),
                     ['prefix' => false, 'controller' => 'Cart', 'action' => 'index'],
                     ['escape' => false, 'class' => 'btn btn-subtle cart-link' . ($currentController === 'Cart' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Open shopping cart']
                 ) ?>
             <?php endif; ?>
 
-
             <?php
-            // Check if user is admin (same logic as Admin AppController)
-            $isAdmin = false;
-            if ($identity) {
-                $identityRole = strtolower((string)($identity->get('role') ?? ''));
-                $isAdmin = ($identityRole === 'admin');
-            }
-            
-            if (!$isAdmin) {
-                $adminSess = $this->getRequest()->getSession()->read('Auth.AdminUser');
-                if (is_array($adminSess) && strtolower((string)($adminSess['role'] ?? '')) === 'admin') {
-                    $isAdmin = true;
-                }
-            }
-            
-            // Admin Dashboard link and logout (only for admins)
+
             if ($isAdmin):
                 echo $this->Html->link(
                     'Admin',
                     ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
                     ['class' => 'btn' . ($currentPrefix === 'Admin' ? ' btn-primary' : ''), 'aria-label' => 'Open admin dashboard']
                 );
-                
-                // Admin logout button
+
                 echo $this->Html->link(
                     'Logout',
                     ['prefix' => false, 'controller' => 'Users', 'action' => 'logout'],
@@ -124,16 +115,14 @@ if ($identity && $role === 'customer') {
                 );
             endif;
 
-            // My Account button - handles both login and dashboard access
+            $role = $identity ? strtolower((string)$identity->get('role')) : '';
             if ($identity && $role === 'customer'):
-                // User is logged in as customer - go to dashboard
                 echo $this->Html->link(
                     'My Account',
                     ['prefix' => false, 'controller' => 'Customer', 'action' => 'index'],
                     ['class' => 'btn' . ($currentController === 'Customer' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Go to customer dashboard']
                 );
             elseif (!$isAdmin):
-                // User is not logged in and not admin - show login
                 echo $this->Html->link(
                     'My Account',
                     ['prefix' => false, 'controller' => 'Users', 'action' => 'login'],
@@ -157,6 +146,7 @@ if ($identity && $role === 'customer') {
         </div>
     </div>
 </header>
+
 
 <main id="content" class="page">
     <?= $this->Flash->render() ?>
