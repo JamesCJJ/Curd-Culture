@@ -92,11 +92,6 @@ if ($identity && $role === 'customer') {
                 ) ?>
             <?php endif; ?>
 
-            <?= $this->Html->link(
-                'Settings',
-                ['prefix' => false, 'controller' => 'Settings', 'action' => 'index'],
-                ['class' => 'btn' . ($currentController === 'Settings' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Open settings']
-            ) ?>
 
             <?php
             // Check if user is admin (same logic as Admin AppController)
