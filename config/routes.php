@@ -12,6 +12,14 @@ return static function (RouteBuilder $routes): void {
     $routes->connect('/login',    ['controller' => 'Users', 'action' => 'login']);
     $routes->connect('/register', ['controller' => 'Users', 'action' => 'register']);
     $routes->connect('/settings', ['controller' => 'Settings', 'action' => 'index']);
+    
+    // Customer Dashboard
+    $routes->connect('/dashboard', ['controller' => 'Customer', 'action' => 'index']);
+    $routes->connect('/dashboard/orders', ['controller' => 'Customer', 'action' => 'orders']);
+    $routes->connect('/dashboard/orders/:id', ['controller' => 'Customer', 'action' => 'orderDetails'], ['pass' => ['id'], 'id' => '[0-9]+']);
+    $routes->connect('/dashboard/profile', ['controller' => 'Customer', 'action' => 'profile']);
+    $routes->connect('/dashboard/buy-again/:id', ['controller' => 'Customer', 'action' => 'buyAgain'], ['pass' => ['id'], 'id' => '[0-9]+']);
+    $routes->connect('/logout', ['controller' => 'Customer', 'action' => 'logout']);
 
     // Products
     $routes->connect('/products', ['controller' => 'Products', 'action' => 'index']);

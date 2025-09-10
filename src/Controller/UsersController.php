@@ -43,7 +43,7 @@ class UsersController extends AppController
             if ($role === 'admin') {
                 return $this->redirect(['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index']);
             }
-            return $this->redirect(['action' => 'dashboard']);
+            return $this->redirect(['controller' => 'Customer', 'action' => 'index']);
         }
 
         if ($this->request->is('post')) {
@@ -88,7 +88,7 @@ class UsersController extends AppController
             if ($Users->save($user)) {
                 $this->Authentication->setIdentity($user);
                 $this->Flash->success('Account created successfully. Welcome!');
-                return $this->redirect(['action' => 'dashboard']);
+                return $this->redirect(['controller' => 'Customer', 'action' => 'index']);
             }
 
             // —— 关键：把具体验证/规则错误打出来 —— //
