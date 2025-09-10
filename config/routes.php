@@ -18,6 +18,7 @@ return static function (RouteBuilder $routes): void {
     $routes->connect('/dashboard/orders', ['controller' => 'Customer', 'action' => 'orders']);
     $routes->connect('/dashboard/orders/:id', ['controller' => 'Customer', 'action' => 'orderDetails'], ['pass' => ['id'], 'id' => '[0-9]+']);
     $routes->connect('/dashboard/profile', ['controller' => 'Customer', 'action' => 'profile']);
+    $routes->connect('/dashboard/settings', ['controller' => 'Customer', 'action' => 'settings']);
     $routes->connect('/dashboard/buy-again/:id', ['controller' => 'Customer', 'action' => 'buyAgain'], ['pass' => ['id'], 'id' => '[0-9]+']);
     $routes->connect('/dashboard/address/add', ['controller' => 'Customer', 'action' => 'addAddress']);
     $routes->connect('/dashboard/address/edit/:id', ['controller' => 'Customer', 'action' => 'editAddress'], ['pass' => ['id'], 'id' => '[0-9]+']);

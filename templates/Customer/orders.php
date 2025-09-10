@@ -29,7 +29,7 @@ $this->assign('title', 'Orders');
     </div>
 <?php else: ?>
     <?php foreach ($orders as $order): ?>
-        <div class="order-card" onclick="window.location.href='<?= $this->Url->build(['action' => 'orderDetails', $order->id]) ?>'">
+        <div class="order-card" onclick="window.location.href='<?= $this->Url->build(['controller' => 'Customer', 'action' => 'orderDetails', 'id' => $order->id]) ?>'">
             <div class="row align-items-center">
                 <div class="col-md-2">
                     <div class="d-flex">
@@ -74,14 +74,14 @@ $this->assign('title', 'Orders');
                             <li>
                                 <?= $this->Html->link(
                                     '<i class="bi bi-eye me-2"></i>View Details',
-                                    ['action' => 'orderDetails', $order->id],
+                                    ['controller' => 'Customer', 'action' => 'orderDetails', 'id' => $order->id],
                                     ['class' => 'dropdown-item', 'escape' => false]
                                 ) ?>
                             </li>
                             <li>
                                 <?= $this->Html->link(
                                     '<i class="bi bi-arrow-repeat me-2"></i>Buy Again',
-                                    ['action' => 'buyAgain', $order->id],
+                                    ['controller' => 'Customer', 'action' => 'buyAgain', 'id' => $order->id],
                                     [
                                         'class' => 'dropdown-item',
                                         'escape' => false,

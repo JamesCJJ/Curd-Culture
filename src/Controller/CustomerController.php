@@ -114,6 +114,17 @@ class CustomerController extends AppController
         $identity = $this->request->getAttribute('identity');
         $userId   = $identity->get('id');
 
+        // Resolve and validate ID from any source
+        $resolvedId = $id
+            ?? $this->request->getParam('id')
+            ?? $this->request->getQuery('id');
+
+        if ($resolvedId === null || !is_numeric($resolvedId)) {
+            $this->Flash->error('Invalid order ID.');
+            return $this->redirect(['action' => 'orders']);
+        }
+        $id = (int)$resolvedId;
+
         $Orders = $this->fetchTable('Orders');
 
         $order = $Orders->find()
@@ -212,6 +223,17 @@ class CustomerController extends AppController
     {
         $identity = $this->request->getAttribute('identity');
         $userId   = $identity->get('id');
+
+        // Resolve and validate order ID from any source
+        $resolvedId = $orderId
+            ?? $this->request->getParam('id')
+            ?? $this->request->getQuery('id');
+
+        if ($resolvedId === null || !is_numeric($resolvedId)) {
+            $this->Flash->error('Invalid order ID.');
+            return $this->redirect(['action' => 'orders']);
+        }
+        $orderId = (int)$resolvedId;
 
         $Orders    = $this->fetchTable('Orders');
         $Carts     = $this->fetchTable('Carts');

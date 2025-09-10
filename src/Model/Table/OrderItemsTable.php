@@ -3,6 +3,9 @@ declare(strict_types=1);
 
 namespace App\Model\Table;
 
+use ArrayObject;
+use Cake\Datasource\EntityInterface;
+use Cake\Event\EventInterface;
 use Cake\ORM\Table;
 use Cake\Validation\Validator;
 
@@ -28,5 +31,15 @@ class OrderItemsTable extends Table
             ->numeric('line_total');
 
         return $validator;
+    }
+
+    public function beforeSave(EventInterface $event, EntityInterface $entity, ArrayObject $options)
+    {
+        $lineTotal = $entity->get('line_total');
+        if ($lineTotal === null || $entity->isDirty('price') || $entity->isDirty('qty')) {
+            $price = (float)($entity->get('price') ?? 0);
+            $qty   = (int)($entity->get('qty') ?? 0);
+            $entity->set('line_total', round($price * $qty, 2));
+        }
     }
 }
