@@ -7,22 +7,101 @@ class DashboardController extends AppController
 {
     public function index()
     {
+        // Contact Messages Stats
         $ContactMessages = $this->fetchTable('ContactMessages');
+        $contactStats = [
+            'total' => $ContactMessages->find()->count(),
+            'unread' => $ContactMessages->find()->where(['status' => 'unread'])->count(),
+            'read' => $ContactMessages->find()->where(['status' => 'read'])->count(),
+            'today' => $ContactMessages->find()
+                ->where(function ($exp, $q) {
+                    return $exp->gte('created', (new \DateTime('today'))->format('Y-m-d 00:00:00'));
+                })
+                ->count(),
+        ];
 
-        $total        = $ContactMessages->find()->count();
-        $unreadCount  = $ContactMessages->find()->where(['status' => 'unread'])->count();
-        $readCount    = $ContactMessages->find()->where(['status' => 'read'])->count();
-        $todayCount   = $ContactMessages->find()
-            ->where(function ($exp, $q) {
-                return $exp->gte('created', (new \DateTime('today'))->format('Y-m-d 00:00:00'));
-            })
-            ->count();
-
-        $latest = $ContactMessages->find()
-            ->orderByDesc('created')
-            ->limit(10)
+        $latestMessages = $ContactMessages->find()
+            ->orderByDesc('ContactMessages.created')
+            ->limit(5)
             ->all();
 
-        $this->set(compact('total','unreadCount','readCount','todayCount','latest'));
+        // Products Stats
+        $Products = $this->fetchTable('Products');
+        $productStats = [
+            'total' => $Products->find()->count(),
+            'in_stock' => $Products->find()->where(['stock >' => 0])->count(),
+            'low_stock' => $Products->find()->where(['stock <=' => 10, 'stock >' => 0])->count(),
+            'out_of_stock' => $Products->find()->where(['stock' => 0])->count(),
+        ];
+
+        // Orders Stats
+        $Orders = $this->fetchTable('Orders');
+        $orderStats = [
+            'total' => $Orders->find()->count(),
+            'pending' => $Orders->find()->where(['status' => 'pending'])->count(),
+            'completed' => $Orders->find()->where(['status' => 'completed'])->count(),
+            'total_revenue' => (float)$Orders->find()
+                ->where(['status' => 'completed'])
+                ->select(function ($query) {
+                    return ['sum' => $query->func()->sum('total')];
+                })
+                ->enableHydration(false)
+                ->first()['sum'] ?: 0,
+        ];
+
+        $latestOrders = $Orders->find()
+            ->contain(['Users'])
+            ->orderByDesc('Orders.created')
+            ->limit(5)
+            ->all();
+
+        // Users Stats
+        $Users = $this->fetchTable('Users');
+        $userStats = [
+            'total' => $Users->find()->count(),
+            'customers' => $Users->find()->where(['role' => 'customer'])->count(),
+            'admins' => $Users->find()->where(['role' => 'admin'])->count(),
+            'active' => $Users->find()->where(['status' => 'active'])->count(),
+        ];
+
+        // Recent Activity
+        $recentActivity = [
+            'new_orders_today' => $Orders->find()
+                ->where(function ($exp, $q) {
+                    return $exp->gte('created', (new \DateTime('today'))->format('Y-m-d 00:00:00'));
+                })
+                ->count(),
+            'new_users_week' => $Users->find()
+                ->where(function ($exp, $q) {
+                    return $exp->gte('created', (new \DateTime('-7 days'))->format('Y-m-d 00:00:00'));
+                })
+                ->count(),
+            'revenue_today' => (float)$Orders->find()
+                ->where([
+                    'status' => 'completed',
+                    function ($exp, $q) {
+                        return $exp->gte('created', (new \DateTime('today'))->format('Y-m-d 00:00:00'));
+                    }
+                ])
+                ->select(function ($query) {
+                    return ['sum' => $query->func()->sum('total')];
+                })
+                ->enableHydration(false)
+                ->first()['sum'] ?: 0,
+        ];
+
+        // Set individual contact stats variables for the template
+        $total = $contactStats['total'];
+        $unreadCount = $contactStats['unread'];
+        $readCount = $contactStats['read'];
+        $todayCount = $contactStats['today'];
+        $latest = $latestMessages;
+
+        $this->set(compact(
+            'contactStats', 'latestMessages', 'latest',
+            'productStats', 'orderStats', 'latestOrders',
+            'userStats', 'recentActivity',
+            'total', 'unreadCount', 'readCount', 'todayCount'
+        ));
     }
 }

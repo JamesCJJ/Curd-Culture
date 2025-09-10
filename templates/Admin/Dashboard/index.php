@@ -1,12 +1,15 @@
 <?php
 /**
- * Admin Dashboard
- *
- * - int   $total
- * - int   $unreadCount
- * - int   $readCount
- * - int   $todayCount
- * - \Cake\Collection\CollectionInterface|\App\Model\Entity\ContactMessage[] $latest
+ * Enhanced Admin Dashboard
+ * 
+ * @var \App\View\AppView $this
+ * @var array $contactStats
+ * @var array $productStats
+ * @var array $orderStats
+ * @var array $userStats
+ * @var array $recentActivity
+ * @var iterable $latestMessages
+ * @var iterable $latestOrders
  */
 $this->assign('title', 'Dashboard');
 

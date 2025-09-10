@@ -12,6 +12,9 @@ class AppController extends Base
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
+        
+        // Use admin layout for all admin controllers
+        $this->viewBuilder()->setLayout('admin');
     }
 
     public function beforeFilter(EventInterface $event): void
