@@ -314,9 +314,9 @@
                     <div class="nav-title">System</div>
                     <?= $this->Html->link(
                         '<i class="icon-settings"></i>Settings',
-                        ['prefix' => false, 'controller' => 'Settings', 'action' => 'index'],
+                        ['prefix' => 'Admin', 'controller' => 'Settings', 'action' => 'index'],
                         [
-                            'class' => 'nav-link',
+                            'class' => 'nav-link' . ($this->request->getParam('controller') === 'Settings' ? ' active' : ''),
                             'escape' => false
                         ]
                     ) ?>
