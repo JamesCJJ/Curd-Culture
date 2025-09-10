@@ -21,22 +21,38 @@ class CustomerController extends AppController
         // Require authentication for all customer actions
         $this->Authentication->requireIdentity();
         
-        // Ensure only customers can access this controller
+        // Debug: Check what role is being set
         $identity = $this->request->getAttribute('identity');
-        $role = strtolower((string)($identity?->get('role') ?? ''));
-        
-        if ($role !== 'customer') {
-            $this->Flash->error('Access denied. Customer access required.');
-            return $this->redirect(['controller' => 'Users', 'action' => 'login']);
+        if ($identity) {
+            $role = $identity->get('role');
+            // Temporarily log the role to debug
+            error_log("Customer Controller - User role: " . ($role ?? 'null'));
+            
+            // Allow both 'customer' and 'user' roles for now
+            $allowedRoles = ['customer', 'user'];
+            if ($role && !in_array(strtolower($role), $allowedRoles)) {
+                $this->Flash->error('Access denied. Customer access required.');
+                $this->redirect(['controller' => 'Users', 'action' => 'login']);
+                return;
+            }
         }
     }
 
     /**
-     * Customer Dashboard - Orders page (default)
+     * Customer Dashboard - Welcome page
      */
     public function index()
     {
-        return $this->redirect(['action' => 'orders']);
+        try {
+            $identity = $this->request->getAttribute('identity');
+            $this->set('user', $identity);
+            
+            // Debug log
+            error_log("Customer Dashboard accessed successfully");
+        } catch (\Exception $e) {
+            error_log("Customer Dashboard error: " . $e->getMessage());
+            throw $e;
+        }
     }
 
     /**

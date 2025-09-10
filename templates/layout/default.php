@@ -102,13 +102,29 @@ if ($identity && $role === 'customer') {
                         ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
                         ['class' => 'btn', 'aria-label' => 'Open admin dashboard']
                     );
+                elseif ($identity && $role === 'customer'):
+                    // Add Dashboard link for customers
+                    echo $this->Html->link(
+                        'My Account',
+                        ['prefix' => false, 'controller' => 'Customer', 'action' => 'index'],
+                        ['class' => 'btn', 'aria-label' => 'Go to customer dashboard']
+                    );
                 endif;
 
-                echo $this->Html->link(
-                    'Logout',
-                    ['prefix' => false, 'controller' => 'Users', 'action' => 'logout'],
-                    ['class' => 'btn', 'aria-label' => 'Logout']
-                );
+                // Use appropriate logout route based on user role
+                if ($identity && $role === 'customer') {
+                    echo $this->Html->link(
+                        'Logout',
+                        ['prefix' => false, 'controller' => 'Customer', 'action' => 'logout'],
+                        ['class' => 'btn', 'aria-label' => 'Logout']
+                    );
+                } else {
+                    echo $this->Html->link(
+                        'Logout',
+                        ['prefix' => false, 'controller' => 'Users', 'action' => 'logout'],
+                        ['class' => 'btn', 'aria-label' => 'Logout']
+                    );
+                }
             else:
                 echo $this->Html->link(
                     'Sign in',

@@ -15,6 +15,11 @@ class OrdersTable extends Table
         $this->setPrimaryKey('id');
         $this->addBehavior('Timestamp');
 
+        $this->belongsTo('Users', [
+            'foreignKey' => 'user_id',
+            'joinType' => 'LEFT',
+        ]);
+        
         $this->hasMany('OrderItems', [
             'foreignKey'   => 'order_id',
             'dependent'    => true,
