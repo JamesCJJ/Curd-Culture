@@ -125,7 +125,13 @@ class CustomerController extends AppController
         $userId = $identity->get('id');
         
         $Users = $this->fetchTable('Users');
+        $Addresses = $this->fetchTable('Addresses');
+        
         $user = $Users->get($userId);
+        $addresses = $Addresses->find()
+            ->where(['user_id' => $userId])
+            ->order(['is_default' => 'DESC', 'created' => 'ASC'])
+            ->all();
         
         if ($this->request->is(['patch', 'post', 'put'])) {
             $data = $this->request->getData();
@@ -145,7 +151,7 @@ class CustomerController extends AppController
             }
         }
         
-        $this->set(compact('user'));
+        $this->set(compact('user', 'addresses'));
     }
 
     /**
@@ -229,6 +235,130 @@ class CustomerController extends AppController
             $this->Flash->error('No items could be added to cart.');
             return $this->redirect(['action' => 'orders']);
         }
+    }
+
+    /**
+     * Add new address
+     */
+    public function addAddress()
+    {
+        $this->request->allowMethod(['post']);
+        
+        $identity = $this->request->getAttribute('identity');
+        $userId = $identity->get('id');
+        
+        $Addresses = $this->fetchTable('Addresses');
+        $address = $Addresses->newEmptyEntity();
+        
+        $data = $this->request->getData();
+        $data['user_id'] = $userId;
+        $data['type'] = 'billing'; // Default type
+        
+        $address = $Addresses->patchEntity($address, $data);
+        
+        if ($Addresses->save($address)) {
+            $this->Flash->success('Address added successfully.');
+        } else {
+            $this->Flash->error('Unable to add address. Please check the form.');
+        }
+        
+        return $this->redirect(['action' => 'profile']);
+    }
+
+    /**
+     * Edit address
+     */
+    public function editAddress($id = null)
+    {
+        $identity = $this->request->getAttribute('identity');
+        $userId = $identity->get('id');
+        
+        $Addresses = $this->fetchTable('Addresses');
+        $address = $Addresses->find()
+            ->where(['id' => $id, 'user_id' => $userId])
+            ->first();
+            
+        if (!$address) {
+            $this->Flash->error('Address not found.');
+            return $this->redirect(['action' => 'profile']);
+        }
+        
+        if ($this->request->is(['patch', 'post', 'put'])) {
+            $data = $this->request->getData();
+            $address = $Addresses->patchEntity($address, $data);
+            
+            if ($Addresses->save($address)) {
+                $this->Flash->success('Address updated successfully.');
+                return $this->redirect(['action' => 'profile']);
+            } else {
+                $this->Flash->error('Unable to update address.');
+            }
+        }
+        
+        $this->set(compact('address'));
+    }
+
+    /**
+     * Delete address
+     */
+    public function deleteAddress($id = null)
+    {
+        $this->request->allowMethod(['post', 'delete']);
+        
+        $identity = $this->request->getAttribute('identity');
+        $userId = $identity->get('id');
+        
+        $Addresses = $this->fetchTable('Addresses');
+        $address = $Addresses->find()
+            ->where(['id' => $id, 'user_id' => $userId])
+            ->first();
+            
+        if (!$address) {
+            $this->Flash->error('Address not found.');
+        } elseif ($Addresses->delete($address)) {
+            $this->Flash->success('Address deleted successfully.');
+        } else {
+            $this->Flash->error('Unable to delete address.');
+        }
+        
+        return $this->redirect(['action' => 'profile']);
+    }
+
+    /**
+     * Set default address
+     */
+    public function setDefaultAddress($id = null)
+    {
+        $this->request->allowMethod(['post']);
+        
+        $identity = $this->request->getAttribute('identity');
+        $userId = $identity->get('id');
+        
+        $Addresses = $this->fetchTable('Addresses');
+        
+        // First, unset all default addresses for this user
+        $Addresses->updateAll(
+            ['is_default' => false],
+            ['user_id' => $userId]
+        );
+        
+        // Then set the selected address as default
+        $address = $Addresses->find()
+            ->where(['id' => $id, 'user_id' => $userId])
+            ->first();
+            
+        if (!$address) {
+            $this->Flash->error('Address not found.');
+        } else {
+            $address->is_default = true;
+            if ($Addresses->save($address)) {
+                $this->Flash->success('Default address updated.');
+            } else {
+                $this->Flash->error('Unable to update default address.');
+            }
+        }
+        
+        return $this->redirect(['action' => 'profile']);
     }
 
     /**
