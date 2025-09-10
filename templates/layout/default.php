@@ -95,41 +95,30 @@ if ($identity && $role === 'customer') {
             <?php
             $adminSess = $this->getRequest()->getSession()->read('Auth.AdminUser');
             $adminRole = strtolower((string)($adminSess['role'] ?? ''));
-            if ($identity || $adminSess):
-                if ($adminSess && $adminRole === 'admin'):
-                    echo $this->Html->link(
-                        'Admin',
-                        ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
-                        ['class' => 'btn', 'aria-label' => 'Open admin dashboard']
-                    );
-                elseif ($identity && $role === 'customer'):
-                    // Add Dashboard link for customers
-                    echo $this->Html->link(
-                        'My Account',
-                        ['prefix' => false, 'controller' => 'Customer', 'action' => 'index'],
-                        ['class' => 'btn', 'aria-label' => 'Go to customer dashboard']
-                    );
-                endif;
-
-                // Use appropriate logout route based on user role
-                if ($identity && $role === 'customer') {
-                    echo $this->Html->link(
-                        'Logout',
-                        ['prefix' => false, 'controller' => 'Customer', 'action' => 'logout'],
-                        ['class' => 'btn', 'aria-label' => 'Logout']
-                    );
-                } else {
-                    echo $this->Html->link(
-                        'Logout',
-                        ['prefix' => false, 'controller' => 'Users', 'action' => 'logout'],
-                        ['class' => 'btn', 'aria-label' => 'Logout']
-                    );
-                }
-            else:
+            
+            // Admin Dashboard link (only for admins)
+            if ($adminSess && $adminRole === 'admin'):
                 echo $this->Html->link(
-                    'Sign in',
+                    'Admin',
+                    ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
+                    ['class' => 'btn', 'aria-label' => 'Open admin dashboard']
+                );
+            endif;
+
+            // My Account button - handles both login and dashboard access
+            if ($identity && $role === 'customer'):
+                // User is logged in as customer - go to dashboard
+                echo $this->Html->link(
+                    'My Account',
+                    ['prefix' => false, 'controller' => 'Customer', 'action' => 'index'],
+                    ['class' => 'btn', 'aria-label' => 'Go to customer dashboard']
+                );
+            else:
+                // User is not logged in - go to login page
+                echo $this->Html->link(
+                    'My Account',
                     ['prefix' => false, 'controller' => 'Users', 'action' => 'login'],
-                    ['class' => 'btn', 'aria-label' => 'Sign in']
+                    ['class' => 'btn', 'aria-label' => 'Sign in to your account']
                 );
             endif;
             ?>

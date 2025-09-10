@@ -51,42 +51,80 @@ $this->assign('title', 'Products');
     </div>
 
     <?php if (!empty($paging) && ($paging['pages'] ?? 1) > 1): ?>
-        <nav class="pager" aria-label="Pagination">
-            <?php
-            $cur     = (int)($paging['page']  ?? 1);
-            $pages   = (int)($paging['pages'] ?? 1);
-            $hasPrev = !empty($paging['hasPrev']);
-            $hasNext = !empty($paging['hasNext']);
-            $prevUrl = $this->Url->build(['controller' => 'Products','action' => 'index','?' => ['page' => max(1, $cur - 1)]]);
-            $nextUrl = $this->Url->build(['controller' => 'Products','action' => 'index','?' => ['page' => min($pages, $cur + 1)]]);
-            $start = max(1, $cur - 2);
-            $end   = min($pages, $cur + 2);
-            ?>
-            <a class="pg btn small <?= $hasPrev ? '' : 'disabled' ?>" <?= $hasPrev ? 'href="' . h($prevUrl) . '"' : 'aria-disabled="true"' ?>>« Prev</a>
+        <nav aria-label="Products pagination" class="mt-4">
+            <ul class="pagination justify-content-center">
+                <?php
+                $cur = (int)($paging['page'] ?? 1);
+                $pages = (int)($paging['pages'] ?? 1);
+                $hasPrev = !empty($paging['hasPrev']);
+                $hasNext = !empty($paging['hasNext']);
+                $start = max(1, $cur - 2);
+                $end = min($pages, $cur + 2);
+                ?>
+                
+                <!-- Previous Button -->
+                <li class="page-item <?= !$hasPrev ? 'disabled' : '' ?>">
+                    <?php if ($hasPrev): ?>
+                        <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products', 'action' => 'index', '?' => ['page' => max(1, $cur - 1)]]) ?>">
+                            <span aria-hidden="true">&laquo;</span> Previous
+                        </a>
+                    <?php else: ?>
+                        <span class="page-link"><span aria-hidden="true">&laquo;</span> Previous</span>
+                    <?php endif; ?>
+                </li>
 
-            <ul class="nums">
-                <?php if ($start > 1): ?>
-                    <li><a href="<?= $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page'=>1]]) ?>">1</a></li>
-                    <?php if ($start > 2): ?><li class="ellipsis">…</li><?php endif; ?>
+                <?php
+                // Show first page if not in range
+                if ($start > 1): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products', 'action' => 'index', '?' => ['page' => 1]]) ?>">1</a>
+                    </li>
+                    <?php if ($start > 2): ?>
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <?php endif; ?>
                 <?php endif; ?>
 
+                <!-- Page Numbers -->
                 <?php for ($i = $start; $i <= $end; $i++): ?>
-                    <li>
-                        <?php if ($i === $cur): ?>
-                            <span class="on"><?= $i ?></span>
+                    <li class="page-item <?= $i == $cur ? 'active' : '' ?>">
+                        <?php if ($i == $cur): ?>
+                            <span class="page-link"><?= $i ?></span>
                         <?php else: ?>
-                            <a href="<?= $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page'=>$i]]) ?>"><?= $i ?></a>
+                            <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products', 'action' => 'index', '?' => ['page' => $i]]) ?>"><?= $i ?></a>
                         <?php endif; ?>
                     </li>
                 <?php endfor; ?>
 
-                <?php if ($end < $pages): ?>
-                    <?php if ($end < $pages - 1): ?><li class="ellipsis">…</li><?php endif; ?>
-                    <li><a href="<?= $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page'=>$pages]]) ?>"><?= $pages ?></a></li>
+                <?php
+                // Show last page if not in range
+                if ($end < $pages): ?>
+                    <?php if ($end < $pages - 1): ?>
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <?php endif; ?>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products', 'action' => 'index', '?' => ['page' => $pages]]) ?>"><?= $pages ?></a>
+                    </li>
                 <?php endif; ?>
-            </ul>
 
-            <a class="pg btn small <?= $hasNext ? '' : 'disabled' ?>" <?= $hasNext ? 'href="' . h($nextUrl) . '"' : 'aria-disabled="true"' ?>>Next »</a>
+                <!-- Next Button -->
+                <li class="page-item <?= !$hasNext ? 'disabled' : '' ?>">
+                    <?php if ($hasNext): ?>
+                        <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products', 'action' => 'index', '?' => ['page' => min($pages, $cur + 1)]]) ?>">
+                            Next <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    <?php else: ?>
+                        <span class="page-link">Next <span aria-hidden="true">&raquo;</span></span>
+                    <?php endif; ?>
+                </li>
+            </ul>
+            
+            <!-- Page Info -->
+            <div class="text-center mt-2">
+                <small class="text-muted">
+                    Page <?= $cur ?> of <?= $pages ?> 
+                    (<?= $paging['count'] ?? 0 ?> total products)
+                </small>
+            </div>
         </nav>
     <?php endif; ?>
 </div>

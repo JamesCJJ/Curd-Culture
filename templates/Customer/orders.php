@@ -96,14 +96,77 @@ $this->assign('title', 'Orders');
         </div>
     <?php endforeach; ?>
 
-    <!-- Pagination temporarily disabled -->
-    <?php if (false): // Pagination disabled for now ?>
+    <!-- Bootstrap Pagination -->
+    <?php if ($pagination['pages'] > 1): ?>
         <nav aria-label="Orders pagination" class="mt-4">
             <ul class="pagination justify-content-center">
-                <?= $this->Paginator->prev('« Previous', ['class' => 'page-link']) ?>
-                <?= $this->Paginator->numbers(['class' => 'page-link']) ?>
-                <?= $this->Paginator->next('Next »', ['class' => 'page-link']) ?>
+                <!-- Previous Button -->
+                <li class="page-item <?= !$pagination['hasPrev'] ? 'disabled' : '' ?>">
+                    <?php if ($pagination['hasPrev']): ?>
+                        <a class="page-link" href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $pagination['page'] - 1])]) ?>">
+                            <span aria-hidden="true">&laquo;</span> Previous
+                        </a>
+                    <?php else: ?>
+                        <span class="page-link"><span aria-hidden="true">&laquo;</span> Previous</span>
+                    <?php endif; ?>
+                </li>
+
+                <?php
+                // Calculate page range
+                $start = max(1, $pagination['page'] - 2);
+                $end = min($pagination['pages'], $pagination['page'] + 2);
+                
+                // Show first page if not in range
+                if ($start > 1): ?>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => 1])]) ?>">1</a>
+                    </li>
+                    <?php if ($start > 2): ?>
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <?php endif; ?>
+                <?php endif; ?>
+
+                <!-- Page Numbers -->
+                <?php for ($i = $start; $i <= $end; $i++): ?>
+                    <li class="page-item <?= $i == $pagination['page'] ? 'active' : '' ?>">
+                        <?php if ($i == $pagination['page']): ?>
+                            <span class="page-link"><?= $i ?></span>
+                        <?php else: ?>
+                            <a class="page-link" href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $i])]) ?>"><?= $i ?></a>
+                        <?php endif; ?>
+                    </li>
+                <?php endfor; ?>
+
+                <?php
+                // Show last page if not in range
+                if ($end < $pagination['pages']): ?>
+                    <?php if ($end < $pagination['pages'] - 1): ?>
+                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                    <?php endif; ?>
+                    <li class="page-item">
+                        <a class="page-link" href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $pagination['pages']])]) ?>"><?= $pagination['pages'] ?></a>
+                    </li>
+                <?php endif; ?>
+
+                <!-- Next Button -->
+                <li class="page-item <?= !$pagination['hasNext'] ? 'disabled' : '' ?>">
+                    <?php if ($pagination['hasNext']): ?>
+                        <a class="page-link" href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $pagination['page'] + 1])]) ?>">
+                            Next <span aria-hidden="true">&raquo;</span>
+                        </a>
+                    <?php else: ?>
+                        <span class="page-link">Next <span aria-hidden="true">&raquo;</span></span>
+                    <?php endif; ?>
+                </li>
             </ul>
+            
+            <!-- Page Info -->
+            <div class="text-center mt-2">
+                <small class="text-muted">
+                    Page <?= $pagination['page'] ?> of <?= $pagination['pages'] ?> 
+                    (<?= $pagination['count'] ?> total orders)
+                </small>
+            </div>
         </nav>
     <?php endif; ?>
 <?php endif; ?>

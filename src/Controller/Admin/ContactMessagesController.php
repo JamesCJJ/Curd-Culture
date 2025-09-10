@@ -47,7 +47,23 @@ class ContactMessagesController extends AppController
             $query->where(['ContactMessages.created <=' => new DateTime($to . ' 23:59:59')]);
         }
 
-        $messages = $this->paginate($query, ['limit' => 12]);
+        // Custom pagination instead of CakePHP Paginator
+        $limit = 12;
+        $page = max(1, (int)$this->request->getQuery('page', 1));
+        $offset = ($page - 1) * $limit;
+        
+        $messages = $query->limit($limit)->offset($offset)->all();
+        $totalCount = $query->count();
+        $totalPages = (int)ceil($totalCount / $limit);
+        
+        $pagination = [
+            'page' => $page,
+            'pages' => $totalPages,
+            'limit' => $limit,
+            'count' => $totalCount,
+            'hasPrev' => $page > 1,
+            'hasNext' => $page < $totalPages,
+        ];
 
         $statuses = [
             ''            => 'All',
@@ -57,7 +73,7 @@ class ContactMessagesController extends AppController
             'closed'      => 'Closed',
         ];
 
-        $this->set(compact('messages', 'q', 'status', 'from', 'to', 'statuses'));
+        $this->set(compact('messages', 'q', 'status', 'from', 'to', 'statuses', 'pagination'));
     }
 
     /**

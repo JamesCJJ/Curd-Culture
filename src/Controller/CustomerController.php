@@ -95,8 +95,23 @@ class CustomerController extends AppController
             $query->where(['Orders.created <=' => $dateTo . ' 23:59:59']);
         }
         
-        // Simple limit instead of pagination for now
-        $orders = $query->limit(50)->all();
+        // Bootstrap pagination implementation
+        $limit = 10; // Show 10 orders per page
+        $page = max(1, (int)$this->request->getQuery('page', 1));
+        $offset = ($page - 1) * $limit;
+        
+        $orders = $query->limit($limit)->offset($offset)->all();
+        $totalCount = $query->count();
+        $totalPages = (int)ceil($totalCount / $limit);
+        
+        $pagination = [
+            'page' => $page,
+            'pages' => $totalPages,
+            'limit' => $limit,
+            'count' => $totalCount,
+            'hasPrev' => $page > 1,
+            'hasNext' => $page < $totalPages,
+        ];
         
         // Get status options for filter
         $statusOptions = [
@@ -108,7 +123,7 @@ class CustomerController extends AppController
             'cancelled' => 'Cancelled'
         ];
         
-        $this->set(compact('orders', 'statusOptions', 'status', 'dateFrom', 'dateTo'));
+        $this->set(compact('orders', 'statusOptions', 'status', 'dateFrom', 'dateTo', 'pagination'));
     }
 
     /**
