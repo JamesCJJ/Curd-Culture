@@ -77,9 +77,15 @@ $this->assign('title', 'Orders');
                         <td><?= h(ucfirst((string)$o->payment_status)) ?></td>
                         <td><?= $o->created?->format('Y-m-d H:i') ?></td>
                         <td class="actions">
-                            <?= $this->Html->link('View', ['action' => 'view', $o->id], ['class' => 'btn tiny']) ?>
-                            <?= $this->Html->link('Edit', ['action' => 'edit', $o->id], ['class' => 'btn tiny']) ?>
+                            <!-- View / Edit disabled placeholders -->
+                            <button type="button" class="btn tiny text-muted" disabled title="Coming soon">
+                                View (Coming soon)
+                            </button>
+                            <button type="button" class="btn tiny text-muted" disabled title="Coming soon">
+                                Edit (Coming soon)
+                            </button>
                         </td>
+
                     </tr>
                     <?php endforeach; ?>
                 <?php endif; ?>
