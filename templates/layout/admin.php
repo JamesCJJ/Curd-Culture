@@ -10,13 +10,13 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= $this->fetch('title') ? $this->fetch('title') . ' - ' : '' ?>Admin - Curd & Culture</title>
-    
+
     <!-- Favicon -->
     <link rel="icon" type="image/png" href="<?= $this->Url->webroot('favicon.ico') ?>">
-    
+
     <!-- CSS -->
     <?= $this->Html->css(['normalize.min', 'milligram.min', 'fonts', 'app', 'home']) ?>
-    
+
     <!-- Custom Admin Styles -->
     <style>
         body {
@@ -24,12 +24,12 @@
             background: #f8fafc;
             margin: 0;
         }
-        
+
         .admin-layout {
             display: flex;
             min-height: 100vh;
         }
-        
+
         .admin-sidebar {
             width: 280px;
             background: #1f2937;
@@ -38,14 +38,14 @@
             display: flex;
             flex-direction: column;
         }
-        
+
         .admin-main {
             flex: 1;
             display: flex;
             flex-direction: column;
             overflow: hidden;
         }
-        
+
         .admin-header {
             background: white;
             border-bottom: 1px solid #e5e7eb;
@@ -54,35 +54,35 @@
             align-items: center;
             justify-content: space-between;
         }
-        
+
         .admin-content {
             flex: 1;
             overflow-y: auto;
             background: #f8fafc;
         }
-        
+
         /* Sidebar Styles */
         .sidebar-brand {
             padding: 2rem 1.5rem;
             border-bottom: 1px solid #374151;
         }
-        
+
         .brand-text {
             font-size: 1.25rem;
             font-weight: 700;
             color: white;
             text-decoration: none;
         }
-        
+
         .sidebar-nav {
             flex: 1;
             padding: 1rem 0;
         }
-        
+
         .nav-section {
             margin-bottom: 2rem;
         }
-        
+
         .nav-title {
             padding: 0 1.5rem;
             font-size: 0.75rem;
@@ -92,7 +92,7 @@
             letter-spacing: 0.05em;
             margin-bottom: 0.5rem;
         }
-        
+
         .nav-link {
             display: flex;
             align-items: center;
@@ -102,25 +102,25 @@
             transition: all 0.2s;
             border-left: 3px solid transparent;
         }
-        
+
         .nav-link:hover {
             background: #374151;
             color: white;
             border-left-color: #6b7280;
         }
-        
+
         .nav-link.active {
             background: #374151;
             color: white;
             border-left-color: #3b82f6;
         }
-        
+
         .nav-link i {
             margin-right: 0.75rem;
             width: 1.25rem;
             text-align: center;
         }
-        
+
         /* Header Styles */
         .header-title {
             font-size: 1.5rem;
@@ -128,20 +128,20 @@
             color: #111827;
             margin: 0;
         }
-        
+
         .header-actions {
             display: flex;
             align-items: center;
             gap: 1rem;
         }
-        
+
         .header-user {
             display: flex;
             align-items: center;
             gap: 0.5rem;
             color: #6b7280;
         }
-        
+
         .btn {
             display: inline-flex;
             align-items: center;
@@ -155,26 +155,26 @@
             cursor: pointer;
             transition: all 0.2s;
         }
-        
+
         .btn-primary {
             background: #3b82f6;
             color: white;
         }
-        
+
         .btn-primary:hover {
             background: #2563eb;
         }
-        
+
         .btn-outline {
             background: white;
             color: #374151;
             border-color: #d1d5db;
         }
-        
+
         .btn-outline:hover {
             background: #f9fafb;
         }
-        
+
         /* Icons */
         .icon-home::before { content: '🏠'; }
         .icon-message::before { content: '💬'; }
@@ -184,47 +184,47 @@
         .icon-bar-chart::before { content: '📊'; }
         .icon-settings::before { content: '⚙️'; }
         .icon-log-out::before { content: '🚪'; }
-        
+
         /* Responsive */
         @media (max-width: 1024px) {
             .admin-sidebar {
                 width: 250px;
             }
         }
-        
+
         @media (max-width: 768px) {
             .admin-layout {
                 flex-direction: column;
             }
-            
+
             .admin-sidebar {
                 width: 100%;
                 height: auto;
                 order: 2;
             }
-            
+
             .sidebar-nav {
                 display: flex;
                 overflow-x: auto;
                 padding: 0.5rem;
             }
-            
+
             .nav-section {
                 display: flex;
                 margin: 0;
                 gap: 0.5rem;
             }
-            
+
             .nav-title {
                 display: none;
             }
-            
+
             .nav-link {
                 white-space: nowrap;
                 border-left: none;
                 border-bottom: 3px solid transparent;
             }
-            
+
             .nav-link:hover,
             .nav-link.active {
                 border-left: none;
@@ -232,10 +232,11 @@
             }
         }
     </style>
-    
+
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>
     <?= $this->fetch('script') ?>
+
 </head>
 <body>
     <div class="admin-layout">
@@ -248,7 +249,10 @@
                     ['class' => 'brand-text']
                 ) ?>
             </div>
-            
+            <?php
+            $currentController = $this->request->getParam('controller');
+            $currentAction     = $this->request->getParam('action');
+            ?>
             <nav class="sidebar-nav">
                 <div class="nav-section">
                     <div class="nav-title">Main</div>
@@ -261,7 +265,7 @@
                         ]
                     ) ?>
                 </div>
-                
+
                 <div class="nav-section">
                     <div class="nav-title">Management</div>
                     <?= $this->Html->link(
@@ -284,10 +288,15 @@
                         '<i class="icon-shopping-cart"></i>Orders',
                         ['prefix' => 'Admin', 'controller' => 'Orders', 'action' => 'index'],
                         [
-                            'class' => 'nav-link' . ($this->request->getParam('controller') === 'Orders' ? ' active' : ''),
+                            'class' => 'nav-link' . (
+                                $currentController === 'Orders'
+                                && $currentAction !== 'analytics'   // 🚨 避免 analytics 时高亮
+                                    ? ' active' : ''
+                                ),
                             'escape' => false
                         ]
                     ) ?>
+
                     <?= $this->Html->link(
                         '<i class="icon-users"></i>Users',
                         ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'index'],
@@ -297,19 +306,23 @@
                         ]
                     ) ?>
                 </div>
-                
+
                 <div class="nav-section">
                     <div class="nav-title">Analytics</div>
                     <?= $this->Html->link(
                         '<i class="icon-bar-chart"></i>Reports',
                         ['prefix' => 'Admin', 'controller' => 'Orders', 'action' => 'analytics'],
                         [
-                            'class' => 'nav-link',
+                            'class'  => 'nav-link' . (
+                                ($currentController === 'Orders' && $currentAction === 'analytics')
+                                    ? ' active' : ''
+                                ),
                             'escape' => false
                         ]
                     ) ?>
+
                 </div>
-                
+
                 <div class="nav-section">
                     <div class="nav-title">System</div>
                     <?= $this->Html->link(
@@ -331,7 +344,7 @@
                 </div>
             </nav>
         </aside>
-        
+
         <!-- Main Content -->
         <main class="admin-main">
             <header class="admin-header">
@@ -347,7 +360,7 @@
                     ) ?>
                 </div>
             </header>
-            
+
             <div class="admin-content">
                 <?= $this->Flash->render() ?>
                 <?= $this->fetch('content') ?>
