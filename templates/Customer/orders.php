@@ -29,14 +29,14 @@ $this->assign('title', 'Orders');
     </div>
 <?php else: ?>
     <?php foreach ($orders as $order): ?>
-        <div class="order-card" onclick="window.location.href='<?= $this->Url->build(['action' => 'orderDetails', $order->id]) ?>'">
+        <div class="order-card"
+             onclick="window.location.href='<?= $this->Url->build(['action' => 'orderDetails', (int)$order->id]) ?>'">
             <div class="row align-items-center">
                 <div class="col-md-2">
                     <div class="d-flex">
                         <?php
                         $itemCount = count($order->order_items);
-                        for ($i = 0; $i < min(3, $itemCount); $i++):
-                        ?>
+                        for ($i = 0; $i < min(3, $itemCount); $i++): ?>
                             <div class="me-1 mb-1">
                                 <i class="bi bi-box text-muted" style="font-size: 2rem;"></i>
                             </div>
@@ -44,7 +44,7 @@ $this->assign('title', 'Orders');
                     </div>
                     <small class="text-muted"><?= $itemCount ?> item<?= $itemCount !== 1 ? 's' : '' ?></small>
                 </div>
-                
+
                 <div class="col-md-2">
                     <div class="order-status status-<?= h($order->status) ?>">
                         <?= ucfirst(h($order->status)) ?>
@@ -53,39 +53,52 @@ $this->assign('title', 'Orders');
                         <?= $order->created->format('M j') ?>
                     </small>
                 </div>
-                
+
                 <div class="col-md-4">
                     <strong><?= h($order->full_name) ?></strong>
                     <div class="text-muted small">
                         <?= h($order->email) ?>
                     </div>
                 </div>
-                
+
                 <div class="col-md-2 text-end">
-                    <strong>$<?= number_format($order->total, 2) ?> AUD</strong>
+                    <strong>$<?= number_format((float)$order->total, 2) ?> AUD</strong>
                 </div>
-                
+
                 <div class="col-md-2 text-end">
                     <div class="dropdown">
-                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle" type="button" data-bs-toggle="dropdown" onclick="event.stopPropagation();">
+                        <button class="btn btn-outline-secondary btn-sm dropdown-toggle"
+                                type="button"
+                                data-bs-toggle="dropdown"
+                                onclick="event.stopPropagation();">
                             <i class="bi bi-three-dots"></i>
                         </button>
-                        <ul class="dropdown-menu">
+                        <ul class="dropdown-menu" onclick="event.stopPropagation();">
                             <li>
-                                <?= $this->Html->link(
+                                <?= $this->Form->postLink(
                                     '<i class="bi bi-eye me-2"></i>View Details',
-                                    ['action' => 'orderDetails', $order->id],
-                                    ['class' => 'dropdown-item', 'escape' => false]
+                                    // URL path 带 id
+                                    ['action' => 'orderDetails', (int)$order->id],
+                                    [
+                                        'class'   => 'dropdown-item',
+                                        'escape'  => false,
+                                        // POST data 再带一份 id
+                                        'data'    => ['id' => (int)$order->id],
+                                        // 避免触发整卡跳转
+                                        'onclick' => 'event.stopPropagation();'
+                                    ]
                                 ) ?>
                             </li>
                             <li>
-                                <?= $this->Html->link(
+                                <?= $this->Form->postLink(
                                     '<i class="bi bi-arrow-repeat me-2"></i>Buy Again',
-                                    ['action' => 'buyAgain', $order->id],
+                                    ['action' => 'buyAgain', (int)$order->id],
                                     [
-                                        'class' => 'dropdown-item',
-                                        'escape' => false,
-                                        'confirm' => 'Add all items from this order to your cart?'
+                                        'class'   => 'dropdown-item',
+                                        'escape'  => false,
+                                        'confirm' => 'Add all items from this order to your cart?',
+                                        'data'    => ['id' => (int)$order->id],
+                                        'onclick' => 'event.stopPropagation();'
                                     ]
                                 ) ?>
                             </li>
@@ -96,14 +109,13 @@ $this->assign('title', 'Orders');
         </div>
     <?php endforeach; ?>
 
-    <!-- Bootstrap Pagination -->
     <?php if ($pagination['pages'] > 1): ?>
         <nav aria-label="Orders pagination" class="mt-4">
             <ul class="pagination justify-content-center">
-                <!-- Previous Button -->
                 <li class="page-item <?= !$pagination['hasPrev'] ? 'disabled' : '' ?>">
                     <?php if ($pagination['hasPrev']): ?>
-                        <a class="page-link" href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $pagination['page'] - 1])]) ?>">
+                        <a class="page-link"
+                           href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $pagination['page'] - 1])]) ?>">
                             <span aria-hidden="true">&laquo;</span> Previous
                         </a>
                     <?php else: ?>
@@ -112,46 +124,45 @@ $this->assign('title', 'Orders');
                 </li>
 
                 <?php
-                // Calculate page range
                 $start = max(1, $pagination['page'] - 2);
-                $end = min($pagination['pages'], $pagination['page'] + 2);
-                
-                // Show first page if not in range
+                $end   = min($pagination['pages'], $pagination['page'] + 2);
+
                 if ($start > 1): ?>
                     <li class="page-item">
-                        <a class="page-link" href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => 1])]) ?>">1</a>
+                        <a class="page-link"
+                           href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => 1])]) ?>">1</a>
                     </li>
                     <?php if ($start > 2): ?>
                         <li class="page-item disabled"><span class="page-link">...</span></li>
                     <?php endif; ?>
                 <?php endif; ?>
 
-                <!-- Page Numbers -->
                 <?php for ($i = $start; $i <= $end; $i++): ?>
                     <li class="page-item <?= $i == $pagination['page'] ? 'active' : '' ?>">
                         <?php if ($i == $pagination['page']): ?>
                             <span class="page-link"><?= $i ?></span>
                         <?php else: ?>
-                            <a class="page-link" href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $i])]) ?>"><?= $i ?></a>
+                            <a class="page-link"
+                               href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $i])]) ?>"><?= $i ?></a>
                         <?php endif; ?>
                     </li>
                 <?php endfor; ?>
 
-                <?php
-                // Show last page if not in range
-                if ($end < $pagination['pages']): ?>
+                <?php if ($end < $pagination['pages']): ?>
                     <?php if ($end < $pagination['pages'] - 1): ?>
                         <li class="page-item disabled"><span class="page-link">...</span></li>
                     <?php endif; ?>
                     <li class="page-item">
-                        <a class="page-link" href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $pagination['pages']])]) ?>"><?= $pagination['pages'] ?></a>
+                        <a class="page-link"
+                           href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $pagination['pages']])]) ?>">
+                            <?= $pagination['pages'] ?></a>
                     </li>
                 <?php endif; ?>
 
-                <!-- Next Button -->
                 <li class="page-item <?= !$pagination['hasNext'] ? 'disabled' : '' ?>">
                     <?php if ($pagination['hasNext']): ?>
-                        <a class="page-link" href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $pagination['page'] + 1])]) ?>">
+                        <a class="page-link"
+                           href="<?= $this->Url->build(['?' => array_merge($this->request->getQueryParams(), ['page' => $pagination['page'] + 1])]) ?>">
                             Next <span aria-hidden="true">&raquo;</span>
                         </a>
                     <?php else: ?>
@@ -159,12 +170,11 @@ $this->assign('title', 'Orders');
                     <?php endif; ?>
                 </li>
             </ul>
-            
-            <!-- Page Info -->
+
             <div class="text-center mt-2">
                 <small class="text-muted">
-                    Page <?= $pagination['page'] ?> of <?= $pagination['pages'] ?> 
-                    (<?= $pagination['count'] ?> total orders)
+                    Page <?= (int)$pagination['page'] ?> of <?= (int)$pagination['pages'] ?>
+                    (<?= (int)$pagination['count'] ?> total orders)
                 </small>
             </div>
         </nav>
@@ -180,50 +190,51 @@ $this->assign('title', 'Orders');
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
             <?= $this->Form->create(null, ['type' => 'get', 'class' => 'modal-body']) ?>
-                <div class="mb-3">
-                    <label for="status" class="form-label">Status</label>
-                    <?= $this->Form->select('status', [''] + $statusOptions, [
-                        'value' => $status,
-                        'class' => 'form-select',
-                        'empty' => 'All Statuses'
-                    ]) ?>
-                </div>
-                
-                <div class="row">
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="date_from" class="form-label">From Date</label>
-                            <?= $this->Form->date('date_from', [
-                                'value' => $dateFrom,
-                                'class' => 'form-control'
-                            ]) ?>
-                        </div>
-                    </div>
-                    <div class="col-md-6">
-                        <div class="mb-3">
-                            <label for="date_to" class="form-label">To Date</label>
-                            <?= $this->Form->date('date_to', [
-                                'value' => $dateTo,
-                                'class' => 'form-control'
-                            ]) ?>
-                        </div>
+            <div class="mb-3">
+                <label for="status" class="form-label">Status</label>
+                <?= $this->Form->select('status', [''] + $statusOptions, [
+                    'value' => $status,
+                    'class' => 'form-select',
+                    'empty' => 'All Statuses'
+                ]) ?>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="date_from" class="form-label">From Date</label>
+                        <?= $this->Form->date('date_from', [
+                            'value' => $dateFrom,
+                            'class' => 'form-control'
+                        ]) ?>
                     </div>
                 </div>
-                
-                <div class="modal-footer">
-                    <?= $this->Html->link('Clear Filters', ['action' => 'orders'], ['class' => 'btn btn-outline-secondary']) ?>
-                    <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <div class="col-md-6">
+                    <div class="mb-3">
+                        <label for="date_to" class="form-label">To Date</label>
+                        <?= $this->Form->date('date_to', [
+                            'value' => $dateTo,
+                            'class' => 'form-control'
+                        ]) ?>
+                    </div>
                 </div>
+            </div>
+
+            <div class="modal-footer">
+                <?= $this->Html->link('Clear Filters', ['action' => 'orders'], ['class' => 'btn btn-outline-secondary']) ?>
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+            </div>
             <?= $this->Form->end() ?>
         </div>
     </div>
 </div>
 
 <script>
-// Make order cards clickable but prevent dropdown from triggering navigation
-document.querySelectorAll('.dropdown-toggle').forEach(function(element) {
-    element.addEventListener('click', function(e) {
-        e.stopPropagation();
+    // 防止下拉按钮/菜单触发整卡跳转
+    document.querySelectorAll('.dropdown-toggle').forEach(function (el) {
+        el.addEventListener('click', function (e) { e.stopPropagation(); });
     });
-});
+    document.querySelectorAll('.dropdown-menu').forEach(function (el) {
+        el.addEventListener('click', function (e) { e.stopPropagation(); });
+    });
 </script>

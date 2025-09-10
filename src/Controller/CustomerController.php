@@ -210,15 +210,36 @@ class CustomerController extends AppController
     /** Buy again -> cart */
     public function buyAgain($orderId = null)
     {
-        $identity = $this->request->getAttribute('identity');
-        $userId   = $identity->get('id');
 
-        $Orders    = $this->fetchTable('Orders');
-        $Carts     = $this->fetchTable('Carts');
+        $orderId = $orderId
+            ?? (int)($this->request->getParam('pass.0') ?? 0)
+            ?? 0;
+
+        if (!$orderId) {
+            $orderId = (int)($this->request->getQuery('id') ?? 0);
+        }
+        if (!$orderId) {
+            $orderId = (int)($this->request->getData('id') ?? 0);
+        }
+
+        if ($orderId <= 0) {
+            $this->Flash->error('Invalid order ID.');
+            return $this->redirect(['action' => 'orders']);
+        }
+
+        $identity = $this->request->getAttribute('identity');
+        $userId   = (int)$identity->get('id');
+
+        $Orders = $this->fetchTable('Orders');
+        $Carts = $this->fetchTable('Carts');
         $CartItems = $this->fetchTable('CartItems');
 
+
         $order = $Orders->find()
-            ->where(['Orders.id' => $orderId, 'Orders.user_id' => $userId])
+            ->where([
+                'Orders.id'      => $orderId,
+                'Orders.user_id' => $userId,
+            ])
             ->contain(['OrderItems'])
             ->first();
 
