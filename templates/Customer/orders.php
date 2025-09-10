@@ -29,8 +29,8 @@ $this->assign('title', 'Orders');
     </div>
 <?php else: ?>
     <?php foreach ($orders as $order): ?>
-        <div class="order-card"
-             onclick="window.location.href='<?= $this->Url->build(['action' => 'orderDetails', (int)$order->id]) ?>'">
+        <!-- Removed onclick so the whole card does not redirect anymore -->
+        <div class="order-card">
             <div class="row align-items-center">
                 <div class="col-md-2">
                     <div class="d-flex">
@@ -75,19 +75,10 @@ $this->assign('title', 'Orders');
                         </button>
                         <ul class="dropdown-menu" onclick="event.stopPropagation();">
                             <li>
-                                <?= $this->Form->postLink(
-                                    '<i class="bi bi-eye me-2"></i>View Details',
-                                    // URL path 带 id
-                                    ['action' => 'orderDetails', (int)$order->id],
-                                    [
-                                        'class'   => 'dropdown-item',
-                                        'escape'  => false,
-                                        // POST data 再带一份 id
-                                        'data'    => ['id' => (int)$order->id],
-                                        // 避免触发整卡跳转
-                                        'onclick' => 'event.stopPropagation();'
-                                    ]
-                                ) ?>
+                                <!-- Placeholder: View Details disabled -->
+                                <button class="dropdown-item text-muted" disabled>
+                                    <i class="bi bi-eye me-2"></i>View Details (Coming soon)
+                                </button>
                             </li>
                             <li>
                                 <?= $this->Form->postLink(
@@ -230,7 +221,7 @@ $this->assign('title', 'Orders');
 </div>
 
 <script>
-    // 防止下拉按钮/菜单触发整卡跳转
+    // Prevent dropdown buttons/menus from triggering card navigation
     document.querySelectorAll('.dropdown-toggle').forEach(function (el) {
         el.addEventListener('click', function (e) { e.stopPropagation(); });
     });
