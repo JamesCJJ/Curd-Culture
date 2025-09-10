@@ -274,6 +274,7 @@ class CartController extends AppController
             $Orders->saveOrFail($order);
 
             foreach ($items as $it) {
+                $lineTotal = (float)round(((float)$it['price']) * ((int)$it['qty']), 2);
                 $OrderItems->saveOrFail($OrderItems->newEntity([
                     'order_id'   => $order->id,
                     'product_id' => $it['product_id'],
@@ -282,6 +283,7 @@ class CartController extends AppController
                     'qty'        => $it['qty'],
                     'price'      => $it['price'],
                     'currency'   => $it['currency'],
+                    'line_total' => $lineTotal,
                 ]));
             }
 
