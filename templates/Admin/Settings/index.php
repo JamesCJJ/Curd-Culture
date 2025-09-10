@@ -145,10 +145,9 @@ $val = fn($k,$d='') => $prefs[$k] ?? $d;
     const label = document.getElementById('font-val');
     if(!slider || !label) return;
 
-    const base = 16;
     const apply = v => {
         const s = parseFloat(v || 1);
-        document.documentElement.style.fontSize = (base * s) + 'px';
+        // Only update the label, don't change the actual font size until form is submitted
         label.textContent = '(' + s.toFixed(2) + '×)';
     };
 
