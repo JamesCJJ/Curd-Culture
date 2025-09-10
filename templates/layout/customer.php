@@ -95,7 +95,7 @@ $cakeDescription = 'Curd & Culture - Customer Dashboard';
                     <div class="p-3 border-bottom">
                         <h5 class="mb-0">Customer Dashboard</h5>
                         <small class="text-muted">
-                            Welcome, <?= h($this->request->getAttribute('identity')->get('email')) ?>
+                            Welcome, <?= h($this->request->getAttribute('identity')->get('name') ?: $this->request->getAttribute('identity')->get('email')) ?>
                         </small>
                     </div>
                     

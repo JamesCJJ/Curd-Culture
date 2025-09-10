@@ -19,8 +19,9 @@ $this->assign('title', 'Create account');
                 <?= $this->Form->control('name', [
                     'label' => false,
                     'autocomplete' => 'name',
-                    'placeholder' => 'Your name',
-                    'class' => 'auth-input'
+                    'placeholder' => 'Your full name',
+                    'class' => 'auth-input',
+                    'required' => true
                 ]) ?>
             </div>
         </div>

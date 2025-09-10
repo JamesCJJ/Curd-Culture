@@ -46,20 +46,9 @@ class UsersController extends AppController
             return $this->redirect(['controller' => 'Customer', 'action' => 'index']);
         }
 
-        if ($this->request->is('post')) {
-            $email = trim((string)$this->request->getData('email'));
-            $pwd   = (string)$this->request->getData('password');
-
-            $Users = $this->fetchTable('Users');
-            $u = $Users->find()->select(['id','email','password','role'])->where(['email' => $email])->first();
-
-            if (!$u) {
-                $this->Flash->error('Invalid email or password, please try again. (No such email)');
-            } elseif (!password_verify($pwd, (string)$u->password)) {
-                $this->Flash->error('Invalid email or password, please try again. (Password mismatch)');
-            } else {
-                $this->Flash->error('Invalid email or password, please try again. (Auth chain not matching)');
-            }
+        // If authentication failed and this was a POST request, show error
+        if ($this->request->is('post') && !$result->isValid()) {
+            $this->Flash->error('Invalid email or password, please try again.');
         }
     }
 
