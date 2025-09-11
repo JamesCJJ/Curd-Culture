@@ -203,6 +203,26 @@ if ($identity && $role === 'customer') {
 
 <script>
     (function(){
+        // Apply font scale from cookie on page load
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=');
+            acc[key] = value;
+            return acc;
+        }, {});
+        
+        const savedFontScale = parseFloat(cookies.pref_font_scale) || 1.0;
+        if (savedFontScale !== 1.0) {
+            document.documentElement.style.fontSize = (16 * savedFontScale) + 'px';
+        }
+        
+        // Apply contrast from cookie
+        const savedContrast = cookies.pref_contrast;
+        if (savedContrast === 'high') {
+            document.body.classList.add('hc');
+        }
+    })();
+
+    (function(){
         const root = document.querySelector('.page') || document.body;
         const plus = document.getElementById('font-plus');
         const minus = document.getElementById('font-minus');

@@ -185,6 +185,46 @@
         .icon-settings::before { content: '⚙️'; }
         .icon-log-out::before { content: '🚪'; }
 
+        /* High Contrast Support */
+        .hc {
+            filter: contrast(1.2) brightness(1.1);
+        }
+        
+        .hc .admin-sidebar {
+            background: #000;
+            color: #fff;
+        }
+        
+        .hc .admin-header {
+            background: #fff;
+            border-bottom: 2px solid #000;
+        }
+        
+        .hc .nav-link {
+            border-left: 3px solid transparent;
+        }
+        
+        .hc .nav-link:hover,
+        .hc .nav-link.active {
+            background: #333;
+            border-left-color: #fff;
+        }
+
+        /* Theme Support */
+        .theme-dark {
+            background: #1a1a1a;
+            color: #e5e5e5;
+        }
+        
+        .theme-dark .admin-header {
+            background: #2d2d2d;
+            border-bottom-color: #404040;
+        }
+        
+        .theme-dark .admin-content {
+            background: #1a1a1a;
+        }
+
         /* Responsive */
         @media (max-width: 1024px) {
             .admin-sidebar {
@@ -232,6 +272,37 @@
             }
         }
     </style>
+
+    <!-- Font Scale and Accessibility Script -->
+    <script>
+    (function(){
+        // Apply font scale from cookie
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+            const [key, value] = cookie.trim().split('=');
+            acc[key] = value;
+            return acc;
+        }, {});
+        
+        const fontScale = parseFloat(cookies.pref_font_scale) || 1.0;
+        if (fontScale !== 1.0) {
+            document.documentElement.style.fontSize = (16 * fontScale) + 'px';
+        }
+        
+        // Apply contrast from cookie
+        const contrast = cookies.pref_contrast;
+        if (contrast === 'high') {
+            document.body.classList.add('hc');
+        }
+        
+        // Apply theme from cookie
+        const theme = cookies.pref_theme;
+        if (theme === 'dark') {
+            document.body.classList.add('theme-dark');
+        } else if (theme === 'light') {
+            document.body.classList.add('theme-light');
+        }
+    })();
+    </script>
 
     <?= $this->fetch('meta') ?>
     <?= $this->fetch('css') ?>
