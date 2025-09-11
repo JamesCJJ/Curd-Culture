@@ -18,7 +18,6 @@ class ProductsController extends AppController
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
-        // Public pages
         $this->Authentication->addUnauthenticatedActions(['index', 'view']);
     }
 
@@ -55,16 +54,12 @@ class ProductsController extends AppController
         $this->set(compact('products', 'paging'));
     }
 
-    /**
-     * /products/view/{slug-or-id}?modal=1
-     */
     public function view(string $key = null)
     {
         if ($key === null || $key === '') {
             throw new NotFoundException('Product not found.');
         }
 
-        // Find by slug or numeric id
         $Products = $this->fetchTable('Products');
         $product = $Products->find()
             ->where([
@@ -79,7 +74,6 @@ class ProductsController extends AppController
             throw new NotFoundException('Product not found.');
         }
 
-        // Purchase permission for view/view_modal
         $canPurchase = true;
         $identity    = $this->request->getAttribute('identity');
         if ($identity && strtolower((string)$identity->get('role')) === 'admin') {
@@ -88,29 +82,43 @@ class ProductsController extends AppController
 
         $this->set(compact('product', 'canPurchase'));
 
-        // Modal rendering (AJAX or ?modal=1)
         if ($this->request->is('ajax') || $this->request->getQuery('modal') === '1') {
             $this->viewBuilder()->disableAutoLayout();
             return $this->render('view_modal');
         }
 
-        // Full page render
         return $this->render('view');
     }
 
+    /**
+     * Support both POST and GET so login redirect can safely replay the request.
+     * GET: /products/add-to-cart/:id?qty=2
+     * POST: form with qty field
+     */
     public function addToCart(int $id)
     {
-        $this->request->allowMethod(['post']);
+        $this->request->allowMethod(['post', 'get']);
+
+        // Pick qty from POST first, then from query string; default 1
+        $qty = (int)($this->request->getData('qty') ?: $this->request->getQuery('qty') ?: 1);
+        $qty = max(1, $qty);
 
         $identity = $this->request->getAttribute('identity');
         $role     = strtolower((string)($identity?->get('role') ?? ''));
 
+        // If not logged in as customer, send them to login with a GET-safe redirect
         if (!$identity || $role !== 'customer') {
-            $this->Flash->error('Please sign in as a customer to add items to your cart.');
+            $redirectUrl = $this->Url->build([
+                'controller' => 'Products',
+                'action'     => 'addToCart',
+                $id,
+                '?'          => ['qty' => $qty],
+            ], ['fullBase' => false]);
+
             return $this->redirect([
                 'controller' => 'Users',
                 'action'     => 'login',
-                '?'          => ['redirect' => $this->request->getRequestTarget()],
+                '?'          => ['redirect' => $redirectUrl],
             ]);
         }
 
@@ -123,8 +131,6 @@ class ProductsController extends AppController
             $this->Flash->error('Product not found.');
             return $this->redirect(['action' => 'index']);
         }
-
-        $qty = max(1, (int)$this->request->getData('qty'));
 
         $locator   = TableRegistry::getTableLocator();
         $Carts     = $locator->get('Carts');
