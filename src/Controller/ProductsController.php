@@ -99,15 +99,13 @@ class ProductsController extends AppController
     {
         $this->request->allowMethod(['post', 'get']);
 
-        // Pick qty from POST first, then from query string; default 1
         $qty = (int)($this->request->getData('qty') ?: $this->request->getQuery('qty') ?: 1);
         $qty = max(1, $qty);
 
         $identity = $this->request->getAttribute('identity');
         $role     = strtolower((string)($identity?->get('role') ?? ''));
 
-        // If not logged in as customer, send them to login with a GET-safe redirect
-        if (!$identity || $role !== 'customer') {
+        if (!$identity) {
             $redirectUrl = $this->Url->build([
                 'controller' => 'Products',
                 'action'     => 'addToCart',
@@ -122,6 +120,16 @@ class ProductsController extends AppController
             ]);
         }
 
+        if ($role === 'admin') {
+            $this->Flash->error('Admin user cannot add item to shopping cart.');
+            return $this->redirect(['action' => 'index']);
+        }
+
+        if ($role !== 'customer') {
+            $this->Flash->error('This account type cannot add items to the shopping cart.');
+            return $this->redirect(['action' => 'index']);
+        }
+
         $product = $this->Products->find()
             ->select(['id','name','slug','price','currency'])
             ->where(['id' => $id])
@@ -132,7 +140,7 @@ class ProductsController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
-        $locator   = TableRegistry::getTableLocator();
+        $locator   = \Cake\ORM\TableRegistry::getTableLocator();
         $Carts     = $locator->get('Carts');
         $CartItems = $locator->get('CartItems');
 
