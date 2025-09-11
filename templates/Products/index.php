@@ -51,79 +51,80 @@ $this->assign('title', 'Products');
     </div>
 
     <?php if (!empty($paging) && ($paging['pages'] ?? 1) > 1): ?>
-        <nav aria-label="Products pagination" class="mt-4">
-            <ul class="pagination justify-content-center">
-                <?php
-                $cur = (int)($paging['page'] ?? 1);
-                $pages = (int)($paging['pages'] ?? 1);
-                $hasPrev = !empty($paging['hasPrev']);
-                $hasNext = !empty($paging['hasNext']);
-                $start = max(1, $cur - 2);
-                $end = min($pages, $cur + 2);
-                ?>
-                
-                <!-- Previous Button -->
-                <li class="page-item <?= !$hasPrev ? 'disabled' : '' ?>">
+        <?php
+        $cur     = (int)($paging['page'] ?? 1);
+        $pages   = (int)($paging['pages'] ?? 1);
+        $count   = (int)($paging['count'] ?? 0);
+        $hasPrev = !empty($paging['hasPrev']);
+        $hasNext = !empty($paging['hasNext']);
+        $start   = max(1, $cur - 2);
+        $end     = min($pages, $cur + 2);
+        ?>
+        <nav class="cc-paginate" aria-label="Products pagination">
+            <ul class="pagination">
+                <?php if ($pages > 2): ?>
+                    <li class="page-item <?= $cur > 1 ? '' : 'disabled' ?>">
+                        <?php if ($cur > 1): ?>
+                            <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products','action' => 'index','?' => ['page' => 1]]) ?>" aria-label="First">«</a>
+                        <?php else: ?>
+                            <span class="page-link" aria-hidden="true">«</span>
+                        <?php endif; ?>
+                    </li>
+                <?php endif; ?>
+
+                <li class="page-item <?= $hasPrev ? '' : 'disabled' ?>">
                     <?php if ($hasPrev): ?>
-                        <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products', 'action' => 'index', '?' => ['page' => max(1, $cur - 1)]]) ?>">
-                            <span aria-hidden="true">&laquo;</span> Previous
-                        </a>
+                        <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products','action' => 'index','?' => ['page' => max(1, $cur - 1)]]) ?>" rel="prev" aria-label="Previous">‹</a>
                     <?php else: ?>
-                        <span class="page-link"><span aria-hidden="true">&laquo;</span> Previous</span>
+                        <span class="page-link" aria-hidden="true">‹</span>
                     <?php endif; ?>
                 </li>
 
-                <?php
-                // Show first page if not in range
-                if ($start > 1): ?>
-                    <li class="page-item">
-                        <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products', 'action' => 'index', '?' => ['page' => 1]]) ?>">1</a>
-                    </li>
+                <?php if ($start > 1): ?>
+                    <li class="page-item"><a class="page-link" href="<?= $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page' => 1]]) ?>">1</a></li>
                     <?php if ($start > 2): ?>
-                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        <li class="page-item dots"><span class="page-link">…</span></li>
                     <?php endif; ?>
                 <?php endif; ?>
 
-                <!-- Page Numbers -->
                 <?php for ($i = $start; $i <= $end; $i++): ?>
-                    <li class="page-item <?= $i == $cur ? 'active' : '' ?>">
-                        <?php if ($i == $cur): ?>
+                    <li class="page-item <?= $i === $cur ? 'active' : '' ?>">
+                        <?php if ($i === $cur): ?>
                             <span class="page-link"><?= $i ?></span>
                         <?php else: ?>
-                            <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products', 'action' => 'index', '?' => ['page' => $i]]) ?>"><?= $i ?></a>
+                            <a class="page-link" href="<?= $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page' => $i]]) ?>"><?= $i ?></a>
                         <?php endif; ?>
                     </li>
                 <?php endfor; ?>
 
-                <?php
-                // Show last page if not in range
-                if ($end < $pages): ?>
+                <?php if ($end < $pages): ?>
                     <?php if ($end < $pages - 1): ?>
-                        <li class="page-item disabled"><span class="page-link">...</span></li>
+                        <li class="page-item dots"><span class="page-link">…</span></li>
                     <?php endif; ?>
-                    <li class="page-item">
-                        <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products', 'action' => 'index', '?' => ['page' => $pages]]) ?>"><?= $pages ?></a>
-                    </li>
+                    <li class="page-item"><a class="page-link" href="<?= $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page' => $pages]]) ?>"><?= $pages ?></a></li>
                 <?php endif; ?>
 
-                <!-- Next Button -->
-                <li class="page-item <?= !$hasNext ? 'disabled' : '' ?>">
+                <li class="page-item <?= $hasNext ? '' : 'disabled' ?>">
                     <?php if ($hasNext): ?>
-                        <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products', 'action' => 'index', '?' => ['page' => min($pages, $cur + 1)]]) ?>">
-                            Next <span aria-hidden="true">&raquo;</span>
-                        </a>
+                        <a class="page-link" href="<?= $this->Url->build(['controller'=>'Products','action'=>'index','?' => ['page' => min($pages, $cur + 1)]]) ?>" rel="next" aria-label="Next">›</a>
                     <?php else: ?>
-                        <span class="page-link">Next <span aria-hidden="true">&raquo;</span></span>
+                        <span class="page-link" aria-hidden="true">›</span>
                     <?php endif; ?>
                 </li>
+
+                <?php if ($pages > 2): ?>
+                    <li class="page-item <?= $cur < $pages ? '' : 'disabled' ?>">
+                        <?php if ($cur < $pages): ?>
+                            <a class="page-link" href="<?= $this->Url->build(['controller' => 'Products','action' => 'index','?' => ['page' => $pages]]) ?>" aria-label="Last">»</a>
+                        <?php else: ?>
+                            <span class="page-link" aria-hidden="true">»</span>
+                        <?php endif; ?>
+                    </li>
+                <?php endif; ?>
             </ul>
-            
-            <!-- Page Info -->
-            <div class="text-center mt-2">
-                <small class="text-muted">
-                    Page <?= $cur ?> of <?= $pages ?> 
-                    (<?= $paging['count'] ?? 0 ?> total products)
-                </small>
+
+            <div class="pagination-meta">
+                Page <?= $cur ?> of <?= $pages ?> (<?= $count ?> total products)
             </div>
         </nav>
     <?php endif; ?>
@@ -162,13 +163,22 @@ $this->assign('title', 'Products');
     .theme-dark .btn{background:#1f2937;color:#fff;border-color:#475569}
     .theme-dark .btn-primary{background:#60a5fa;color:#111}
 
-    .pager{display:flex;align-items:center;justify-content:center;gap:.6rem;margin:1.1rem 0 0}
-    .pager .nums{list-style:none;display:flex;gap:.25rem;margin:0;padding:0}
-    .pager .nums a,.pager .nums span{display:block;min-width:34px;text-align:center;border-radius:.55rem;padding:.35rem .55rem;border:1px solid #e4e7ec;background:#f9fafb;color:#111;text-decoration:none}
-    .pager .nums .on{background:#2563eb;border-color:#2563eb;color:#fff;font-weight:700}
-    .pager .ellipsis{display:flex;align-items:center;padding:0 .25rem;color:#9aa3af}
-    .theme-dark .pager .nums a,.theme-dark .pager .nums span{background:#0f172a;border-color:#334155;color:#e5e7eb}
-    .theme-dark .pager .nums .on{background:#60a5fa;border-color:#60a5fa;color:#111}
+    /* New pagination */
+    .cc-paginate{display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-top:1.25rem;flex-wrap:wrap}
+    .pagination{list-style:none;display:flex;gap:.35rem;padding:0;margin:0}
+    .page-item .page-link{
+        display:inline-block;min-width:2.25rem;text-align:center;
+        padding:.45rem .7rem;border:1px solid #d1d5db;border-radius:.55rem;
+        background:#fff;color:#111;text-decoration:none;line-height:1;transition:all .15s ease;
+    }
+    .page-item .page-link:hover{filter:brightness(.98)}
+    .page-item.active .page-link{background:#2563eb;color:#fff;border-color:#2563eb}
+    .page-item.disabled .page-link{opacity:.45;pointer-events:none}
+    .page-item.dots .page-link{cursor:default}
+    .pagination-meta{color:#6b7280;font-size:.9rem}
+    .theme-dark .page-item .page-link{background:#0f172a;color:#e5e7eb;border-color:#334155}
+    .theme-dark .page-item.active .page-link{background:#60a5fa;color:#111;border-color:#60a5fa}
+    .theme-dark .pagination-meta{color:#94a3b8}
 
     .modal-dialog{background:#fff;border:1px solid #eef0f3}
     .theme-dark .modal-dialog{background:#111827;border-color:#1f2937}
