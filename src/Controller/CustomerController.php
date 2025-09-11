@@ -115,7 +115,7 @@ class CustomerController extends AppController
         if ($id === null) {
             $id = $this->request->getQuery('id');
         }
-        
+
         if ($id === null || $id === '') {
             $this->Flash->error('Invalid order ID.');
             return $this->redirect(['action' => 'orders']);
@@ -176,10 +176,10 @@ class CustomerController extends AppController
         $this->set(compact('user', 'addresses'));
     }
 
-    /** Settings — 读取/保存到 Cookie（本设备） */
+
     public function settings()
     {
-        // 读取现有偏好（默认值与布局一致）
+
         $cookies = $this->request->getCookieParams();
         $prefs = [
             'theme'          => $cookies['pref_theme']      ?? 'auto',

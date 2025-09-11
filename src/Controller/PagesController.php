@@ -20,7 +20,7 @@ class PagesController extends AppController
 
     }
 
-    // 仅渲染 /templates/Pages/home.php
+
     public function display(string ...$path)
     {
         $page = $path[0] ?? 'home';

@@ -65,7 +65,7 @@ class UsersController extends AppController
         if ($this->request->is('post')) {
             $data = (array)$this->request->getData();
 
-            // 默认角色 / 状态（按你的库实际情况）
+
             $data['role']   = 'customer';
             $data['status'] = $data['status'] ?? 'active';
 
@@ -77,7 +77,7 @@ class UsersController extends AppController
                 return $this->redirect(['controller' => 'Customer', 'action' => 'index']);
             }
 
-            // —— 关键：把具体验证/规则错误打出来 —— //
+
             $errors = $user->getErrors(); // array
             $flat   = [];
             foreach ($errors as $field => $msgs) {

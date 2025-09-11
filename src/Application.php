@@ -49,10 +49,10 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             ],
         ]);
 
-        // 先读 Session，再走 Form
+
         $service->loadAuthenticator('Authentication.Session');
 
-        // FormAuthenticator 也使用刚刚生成的 loginUrl
+
         $service->loadAuthenticator('Authentication.Form', [
             'fields'   => $fields,
             'loginUrl' => $loginUrl,
