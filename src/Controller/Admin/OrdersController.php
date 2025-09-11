@@ -142,12 +142,20 @@ class OrdersController extends AppController
         
         if (!empty($data['status'])) {
             $order->status = $data['status'];
+        }
+        
+        if (!empty($data['payment_status'])) {
+            $order->payment_status = $data['payment_status'];
             
-            if ($table->save($order)) {
-                $this->Flash->success(__('Order status updated successfully.'));
-            } else {
-                $this->Flash->error(__('Unable to update order status.'));
+            if ($data['payment_status'] === 'paid' && !$order->paid_at) {
+                $order->paid_at = DateTime::now();
             }
+        }
+        
+        if ($table->save($order)) {
+            $this->Flash->success(__('Order status updated successfully.'));
+        } else {
+            $this->Flash->error(__('Unable to update order status.'));
         }
         
         return $this->redirect(['action' => 'view', $order->id]);

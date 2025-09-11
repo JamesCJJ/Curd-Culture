@@ -74,16 +74,23 @@ $this->assign('title', 'Orders');
                         </td>
                         <td><?= h($o->currency) ?> <?= number_format((float)$o->total, 2) ?></td>
                         <td><?= h(ucfirst((string)$o->status)) ?></td>
-                        <td><?= h(ucfirst((string)$o->payment_status)) ?></td>
+                        <td>
+                            <span class="payment-badge payment-<?= h($o->payment_status) ?>">
+                                <?= h(ucfirst((string)$o->payment_status)) ?>
+                            </span>
+                        </td>
                         <td><?= $o->created?->format('Y-m-d H:i') ?></td>
                         <td class="actions">
-                            <!-- View / Edit disabled placeholders -->
-                            <button type="button" class="btn tiny text-muted" disabled title="Coming soon">
-                                View (Coming soon)
-                            </button>
-                            <button type="button" class="btn tiny text-muted" disabled title="Coming soon">
-                                Edit (Coming soon)
-                            </button>
+                            <?= $this->Html->link(
+                                'View',
+                                ['action' => 'view', $o->id],
+                                ['class' => 'btn tiny btn-outline']
+                            ) ?>
+                            <?= $this->Html->link(
+                                'Edit',
+                                ['action' => 'edit', $o->id],
+                                ['class' => 'btn tiny btn-outline']
+                            ) ?>
                         </td>
 
                     </tr>
@@ -130,6 +137,10 @@ $this->assign('title', 'Orders');
 .btn-subtle{background:transparent;color:#6b7280}
 .btn-sm{padding:.3rem .5rem;font-size:.8rem}
 .pagination{display:flex;gap:.75rem;justify-content:center;align-items:center;padding:.8rem}
+.payment-badge{padding:.25rem .5rem;border-radius:.375rem;font-size:.8rem;font-weight:500;text-transform:uppercase}
+.payment-paid{background:#d1fae5;color:#065f46;border:1px solid #a7f3d0}
+.payment-unpaid{background:#fee2e2;color:#991b1b;border:1px solid #fecaca}
+.payment-refunded{background:#f3f4f6;color:#374151;border:1px solid #d1d5db}
 @media (max-width: 1000px){.stats-grid{grid-template-columns:repeat(3,1fr)}.filters-row{grid-template-columns:1fr 1fr 1fr 1fr}}
 @media (max-width: 720px){.stats-grid{grid-template-columns:repeat(2,1fr)}.filters-row{grid-template-columns:1fr 1fr}}
 </style>
