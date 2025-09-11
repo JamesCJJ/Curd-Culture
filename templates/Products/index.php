@@ -9,7 +9,11 @@ $this->assign('title', 'Products');
 
     <div class="grid">
         <?php foreach ($products as $p): ?>
-            <?php $viewUrl = $this->Url->build(['controller' => 'Products', 'action' => 'view', (string)$p->slug]); ?>
+            <?php
+
+            $key = $p->slug ?: (string)$p->id;
+            $viewUrl = $this->Url->build(['controller' => 'Products', 'action' => 'view', $key]);
+            ?>
             <div class="card product-card">
 
                 <a class="product-media js-product-view" href="<?= h($viewUrl) ?>">
@@ -21,7 +25,6 @@ $this->assign('title', 'Products');
                 </a>
 
                 <div class="product-body">
-
                     <h3 class="product-title">
                         <a href="<?= h($viewUrl) ?>"><?= h($p->name) ?></a>
                     </h3>
@@ -42,7 +45,6 @@ $this->assign('title', 'Products');
                         <div class="price">
                             <?= $this->Number->currency((float)($p->price ?? 0), $p->currency ?: 'AUD') ?>
                         </div>
-
                         <a class="btn small btn-primary" href="<?= h($viewUrl) ?>">View</a>
                     </div>
                 </div>
@@ -163,7 +165,6 @@ $this->assign('title', 'Products');
     .theme-dark .btn{background:#1f2937;color:#fff;border-color:#475569}
     .theme-dark .btn-primary{background:#60a5fa;color:#111}
 
-    /* New pagination */
     .cc-paginate{display:flex;align-items:center;justify-content:space-between;gap:.75rem;margin-top:1.25rem;flex-wrap:wrap}
     .pagination{list-style:none;display:flex;gap:.35rem;padding:0;margin:0}
     .page-item .page-link{

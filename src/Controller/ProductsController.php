@@ -18,6 +18,7 @@ class ProductsController extends AppController
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
+        // Public pages
         $this->Authentication->addUnauthenticatedActions(['index', 'view']);
     }
 
@@ -32,15 +33,15 @@ class ProductsController extends AppController
         $query = $this->Products->find()
             ->select([
                 'id','name','slug','price','currency','summary','image_url',
-                'rating','origin_country','milk_type','age'
+                'rating','origin_country','milk_type','age','created'
             ])
             ->orderByDesc('created')
             ->limit($limit)
             ->offset($offset);
 
         $products = $query->all();
-        $count = $this->Products->find()->count();
-        $pages = (int)ceil($count / $limit);
+        $count    = $this->Products->find()->count();
+        $pages    = (int)ceil($count / $limit);
 
         $paging = [
             'count'   => $count,
@@ -54,24 +55,47 @@ class ProductsController extends AppController
         $this->set(compact('products', 'paging'));
     }
 
-    public function view(string $key)
+    /**
+     * /products/view/{slug-or-id}?modal=1
+     */
+    public function view(string $key = null)
     {
-        $query = ctype_digit($key)
-            ? $this->Products->find()->where(['id' => (int)$key])
-            : $this->Products->find()->where(['slug' => $key]);
+        if ($key === null || $key === '') {
+            throw new NotFoundException('Product not found.');
+        }
 
-        $product = $query->first();
+        // Find by slug or numeric id
+        $Products = $this->fetchTable('Products');
+        $product = $Products->find()
+            ->where([
+                'OR' => array_filter([
+                    ['Products.slug' => $key],
+                    ctype_digit($key) ? ['Products.id' => (int)$key] : null,
+                ]),
+            ])
+            ->first();
+
         if (!$product) {
             throw new NotFoundException('Product not found.');
         }
 
-        if ($this->request->is('ajax') || $this->request->getQuery('modal')) {
-            $this->viewBuilder()->setLayout('ajax');
-            $this->set(compact('product'));
+        // Purchase permission for view/view_modal
+        $canPurchase = true;
+        $identity    = $this->request->getAttribute('identity');
+        if ($identity && strtolower((string)$identity->get('role')) === 'admin') {
+            $canPurchase = false;
+        }
+
+        $this->set(compact('product', 'canPurchase'));
+
+        // Modal rendering (AJAX or ?modal=1)
+        if ($this->request->is('ajax') || $this->request->getQuery('modal') === '1') {
+            $this->viewBuilder()->disableAutoLayout();
             return $this->render('view_modal');
         }
 
-        $this->set(compact('product'));
+        // Full page render
+        return $this->render('view');
     }
 
     public function addToCart(int $id)
@@ -85,8 +109,8 @@ class ProductsController extends AppController
             $this->Flash->error('Please sign in as a customer to add items to your cart.');
             return $this->redirect([
                 'controller' => 'Users',
-                'action' => 'login',
-                '?' => ['redirect' => $this->request->getRequestTarget()],
+                'action'     => 'login',
+                '?'          => ['redirect' => $this->request->getRequestTarget()],
             ]);
         }
 
