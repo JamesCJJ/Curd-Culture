@@ -111,6 +111,22 @@ class CustomerController extends AppController
     /** Order details */
     public function orderDetails($id = null)
     {
+        // Try to get ID from route parameter first, then query parameter
+        if ($id === null) {
+            $id = $this->request->getQuery('id');
+        }
+        
+        if ($id === null || $id === '') {
+            $this->Flash->error('Invalid order ID.');
+            return $this->redirect(['action' => 'orders']);
+        }
+
+        $id = (int)$id;
+        if ($id <= 0) {
+            $this->Flash->error('Invalid order ID.');
+            return $this->redirect(['action' => 'orders']);
+        }
+
         $identity = $this->request->getAttribute('identity');
         $userId   = $identity->get('id');
 

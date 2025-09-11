@@ -42,20 +42,7 @@ return static function (RouteBuilder $routes): void {
     $routes->connect('/checkout',          ['controller' => 'Cart', 'action' => 'checkout']);
     $routes->connect('/checkout/complete', ['controller' => 'Cart', 'action' => 'complete']);
 
-    // Fallbacks
-    $routes->scope('/', function (RouteBuilder $builder) {
-        $builder->fallbacks(DashedRoute::class);
-    });
-
-    // Admin
-    $routes->prefix('Admin', function (RouteBuilder $builder) {
-        $builder->connect('/login',  ['controller' => 'Users', 'action' => 'login']);
-        $builder->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
-        $builder->connect('/',       ['controller' => 'ContactMessages', 'action' => 'index']);
-        $builder->fallbacks(DashedRoute::class);
-    });
-
-    // Customer Dashboard - After fallbacks to take precedence  
+    // Customer Dashboard - Before fallbacks to ensure proper routing
     $routes->connect('/dashboard', ['controller' => 'Customer', 'action' => 'index']);
     $routes->connect('/dashboard/orders/:id', ['controller' => 'Customer', 'action' => 'orderDetails'], ['pass' => ['id'], 'id' => '[0-9]+']);
     $routes->connect('/dashboard/orders', ['controller' => 'Customer', 'action' => 'orders']);
@@ -67,4 +54,17 @@ return static function (RouteBuilder $routes): void {
     $routes->connect('/dashboard/address/delete/:id', ['controller' => 'Customer', 'action' => 'deleteAddress'], ['pass' => ['id'], 'id' => '[0-9]+']);
     $routes->connect('/dashboard/address/default/:id', ['controller' => 'Customer', 'action' => 'setDefaultAddress'], ['pass' => ['id'], 'id' => '[0-9]+']);
     $routes->connect('/logout', ['controller' => 'Customer', 'action' => 'logout']);
+
+    // Admin
+    $routes->prefix('Admin', function (RouteBuilder $builder) {
+        $builder->connect('/login',  ['controller' => 'Users', 'action' => 'login']);
+        $builder->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
+        $builder->connect('/',       ['controller' => 'ContactMessages', 'action' => 'index']);
+        $builder->fallbacks(DashedRoute::class);
+    });
+
+    // Fallbacks - Last to avoid conflicts
+    $routes->scope('/', function (RouteBuilder $builder) {
+        $builder->fallbacks(DashedRoute::class);
+    });
 };

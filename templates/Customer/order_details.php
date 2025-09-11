@@ -22,7 +22,7 @@ $this->assign('title', 'Order #' . $order->id);
     <div>
         <?= $this->Html->link(
             'Buy again',
-            ['action' => 'buyAgain', $order->id],
+            ['action' => 'buyAgain', '?' => ['id' => $order->id]],
             [
                 'class' => 'btn btn-primary',
                 'confirm' => 'Add all items from this order to your cart?'
@@ -136,18 +136,18 @@ $this->assign('title', 'Order #' . $order->id);
             <div class="card-body">
                 <div class="d-flex justify-content-between mb-2">
                     <span>Subtotal</span>
-                    <span>$<?= number_format($order->subtotal, 2) ?></span>
+                    <span>$<?= number_format((float)($order->subtotal ?? 0), 2) ?></span>
                 </div>
                 
                 <div class="d-flex justify-content-between mb-2">
                     <span>Shipping</span>
-                    <span><?= $order->shipping_fee > 0 ? '$' . number_format($order->shipping_fee, 2) : 'Free' ?></span>
+                    <span><?= ($order->shipping_fee ?? 0) > 0 ? '$' . number_format((float)$order->shipping_fee, 2) : 'Free' ?></span>
                 </div>
                 
-                <?php if ($order->discount > 0): ?>
+                <?php if (($order->discount ?? 0) > 0): ?>
                     <div class="d-flex justify-content-between mb-2 text-success">
                         <span>Discount</span>
-                        <span>-$<?= number_format($order->discount, 2) ?></span>
+                        <span>-$<?= number_format((float)$order->discount, 2) ?></span>
                     </div>
                 <?php endif; ?>
                 
@@ -155,12 +155,12 @@ $this->assign('title', 'Order #' . $order->id);
                 
                 <div class="d-flex justify-content-between fw-bold">
                     <span>Total</span>
-                    <span>AUD $<?= number_format($order->total, 2) ?></span>
+                    <span>AUD $<?= number_format((float)($order->total ?? 0), 2) ?></span>
                 </div>
                 
-                <?php if ($order->total > 50): ?>
+                <?php if (($order->total ?? 0) > 50): ?>
                     <small class="text-muted d-block mt-2">
-                        Including $<?= number_format($order->total * 0.1, 2) ?> in taxes
+                        Including $<?= number_format((float)$order->total * 0.1, 2) ?> in taxes
                     </small>
                 <?php endif; ?>
                 
@@ -177,8 +177,8 @@ $this->assign('title', 'Order #' . $order->id);
                 <h6 class="mb-0">Contact Information</h6>
             </div>
             <div class="card-body">
-                <p class="mb-1"><strong><?= h($order->full_name) ?></strong></p>
-                <p class="text-muted mb-0"><?= h($order->email) ?></p>
+                <p class="mb-1"><strong><?= h($order->full_name ?? 'N/A') ?></strong></p>
+                <p class="text-muted mb-0"><?= h($order->email ?? 'N/A') ?></p>
             </div>
         </div>
         
@@ -189,9 +189,9 @@ $this->assign('title', 'Order #' . $order->id);
             </div>
             <div class="card-body">
                 <address class="mb-0">
-                    <?= h($order->address) ?><br>
-                    <?= h($order->city) ?>, <?= h($order->postcode) ?><br>
-                    <?= h($order->country) ?>
+                    <?= h($order->address ?? 'N/A') ?><br>
+                    <?= h($order->city ?? 'N/A') ?>, <?= h($order->postcode ?? 'N/A') ?><br>
+                    <?= h($order->country ?? 'N/A') ?>
                 </address>
             </div>
         </div>
@@ -202,7 +202,7 @@ $this->assign('title', 'Order #' . $order->id);
                 <h6 class="mb-0">Shipping Method</h6>
             </div>
             <div class="card-body">
-                <p class="mb-0"><?= $order->shipping_fee > 0 ? 'Standard Shipping' : 'Free Shipping' ?></p>
+                <p class="mb-0"><?= ($order->shipping_fee ?? 0) > 0 ? 'Standard Shipping' : 'Free Shipping' ?></p>
             </div>
         </div>
     </div>

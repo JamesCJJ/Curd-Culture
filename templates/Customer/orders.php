@@ -75,10 +75,15 @@ $this->assign('title', 'Orders');
                         </button>
                         <ul class="dropdown-menu" onclick="event.stopPropagation();">
                             <li>
-                                <!-- Placeholder: View Details disabled -->
-                                <button class="dropdown-item text-muted" disabled>
-                                    <i class="bi bi-eye me-2"></i>View Details (Coming soon)
-                                </button>
+                                <?= $this->Html->link(
+                                    '<i class="bi bi-eye me-2"></i>View Details',
+                                    ['action' => 'orderDetails', '?' => ['id' => $order->id]],
+                                    [
+                                        'class'   => 'dropdown-item',
+                                        'escape'  => false,
+                                        'onclick' => 'event.stopPropagation();'
+                                    ]
+                                ) ?>
                             </li>
                             <li>
                                 <?= $this->Form->postLink(
