@@ -229,7 +229,7 @@ $this->assign('title', 'Products');
             if (url.origin !== location.origin) return;
             e.preventDefault();
             lastFocused = a;
-
+//test
             url.searchParams.set('modal', '1');
             const res = await fetch(url.toString(), {headers:{'X-Requested-With':'XMLHttpRequest'}});
             if (!res.ok) { location.href = a.href; return; }
