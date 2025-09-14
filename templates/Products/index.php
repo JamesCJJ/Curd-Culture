@@ -18,7 +18,7 @@ $this->assign('title', 'Products');
 
                 <a class="product-media js-product-view" href="<?= h($viewUrl) ?>">
                     <?php if (!empty($p->image_url)): ?>
-                        <img src="<?= h($p->image_url) ?>" alt="<?= h($p->name) ?>">
+                        <img src="<?= h($this->Url->webroot($p->image_url)) ?>" alt="<?= h($p->name) ?>">
                     <?php else: ?>
                         <div class="ph">No Image</div>
                     <?php endif; ?>

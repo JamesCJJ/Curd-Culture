@@ -298,11 +298,12 @@ $this->assign('title', 'Edit Product');
                     'type' => 'file',
                     'label' => $product->image_url ? 'Replace Image' : 'Upload Image',
                     'class' => 'form-file',
-                    'accept' => 'image/*'
+                    'accept' => 'image/jpeg,image/jpg,image/png,image/gif,image/webp'
                 ]) ?>
                 <div class="form-help">
-                    Upload a high-quality product image (JPG, PNG). Recommended size: 800x600px or larger.
+                    Upload a high-quality product image. <strong>Supported formats:</strong> JPG, PNG, GIF, WebP. <strong>Maximum size:</strong> 2MB. <strong>Recommended dimensions:</strong> 800x600px or larger.
                 </div>
+                <div id="file-validation-message" class="validation-message" style="display: none; color: #dc3545; margin-top: 5px; font-size: 0.875rem;"></div>
             </div>
         </div>
     </div>
@@ -333,6 +334,48 @@ $this->assign('title', 'Edit Product');
 
     <?= $this->Form->end() ?>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const fileInput = document.querySelector('input[type="file"][name="image_file"]');
+    const validationMessage = document.getElementById('file-validation-message');
+    
+    if (fileInput && validationMessage) {
+        fileInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            validationMessage.style.display = 'none';
+            
+            if (file) {
+                // Check file type
+                const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+                const fileType = file.type.toLowerCase();
+                
+                if (!allowedTypes.includes(fileType)) {
+                    const supportedTypes = 'JPG, PNG, GIF, WebP';
+                    validationMessage.textContent = `Unsupported file type "${file.name.split('.').pop().toUpperCase()}". Please upload an image file in one of these formats: ${supportedTypes}`;
+                    validationMessage.style.display = 'block';
+                    fileInput.value = ''; // Clear the input
+                    return;
+                }
+                
+                // Check file size (2MB = 2 * 1024 * 1024 bytes)
+                const maxSize = 2 * 1024 * 1024;
+                if (file.size > maxSize) {
+                    validationMessage.textContent = 'Image file is too large. Maximum size is 2MB.';
+                    validationMessage.style.display = 'block';
+                    fileInput.value = ''; // Clear the input
+                    return;
+                }
+                
+                // If validation passes, show success message
+                validationMessage.textContent = 'File selected successfully!';
+                validationMessage.style.color = '#28a745';
+                validationMessage.style.display = 'block';
+            }
+        });
+    }
+});
+</script>
 
 <style>
 /* Additional styles for edit form */

@@ -107,7 +107,13 @@ class ProductsController extends AppController
                 $imageUrl = $this->handleImageUpload($data['image_file']);
                 if ($imageUrl) {
                     $data['image_url'] = $imageUrl;
+                } else {
+                    // Image upload failed, but don't prevent product creation
+                    // Error message already set in handleImageUpload
                 }
+            } elseif (!empty($data['image_file']) && $data['image_file']->getError() !== UPLOAD_ERR_NO_FILE) {
+                // Handle other upload errors
+                $this->Flash->error(__('Image upload failed. Please try again.'));
             }
             
             $product = $table->patchEntity($product, $data);
@@ -149,7 +155,13 @@ class ProductsController extends AppController
                         $this->deleteImage($product->image_url);
                     }
                     $data['image_url'] = $imageUrl;
+                } else {
+                    // Image upload failed, but don't prevent product update
+                    // Error message already set in handleImageUpload
                 }
+            } elseif (!empty($data['image_file']) && $data['image_file']->getError() !== UPLOAD_ERR_NO_FILE) {
+                // Handle other upload errors
+                $this->Flash->error(__('Image upload failed. Please try again.'));
             }
             
             $product = $table->patchEntity($product, $data);
@@ -289,7 +301,23 @@ class ProductsController extends AppController
             mkdir($uploadPath, 0755, true);
         }
         
-        $extension = pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION);
+        // Validate file type
+        $allowedTypes = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+        $extension = strtolower(pathinfo($uploadedFile->getClientFilename(), PATHINFO_EXTENSION));
+        
+        if (!in_array($extension, $allowedTypes)) {
+            $supportedTypes = implode(', ', array_map('strtoupper', $allowedTypes));
+            $attemptedType = strtoupper($extension ?: 'unknown');
+            $this->Flash->error(__('Unsupported file type "{0}". Please upload an image file in one of these formats: {1}', [$attemptedType, $supportedTypes]));
+            return false;
+        }
+        
+        // Check file size (max 2MB to match PHP upload_max_filesize)
+        if ($uploadedFile->getSize() > 2 * 1024 * 1024) {
+            $this->Flash->error(__('Image file is too large. Maximum size is 2MB.'));
+            return false;
+        }
+        
         $filename = uniqid('product_') . '.' . $extension;
         $destination = $uploadPath . $filename;
         
@@ -297,6 +325,7 @@ class ProductsController extends AppController
             $uploadedFile->moveTo($destination);
             return 'img/products/' . $filename;
         } catch (\Exception $e) {
+            $this->Flash->error(__('Failed to upload image. Please try again.'));
             return false;
         }
     }
