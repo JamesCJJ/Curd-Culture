@@ -61,7 +61,14 @@ class ProductsController extends AppController
         }
 
         $Products = $this->fetchTable('Products');
+        // ✅ 显式选择所有需要用到的字段，确保 modal 有 image_url
         $product = $Products->find()
+            ->select([
+                'id','name','slug','price','currency','summary','image_url',
+                'rating','origin_country','milk_type','age','style','rennet',
+                'pasteurised','fat_content','vegetarian','gluten_free',
+                'lactose_free','allergens','pairing_notes','awards','description','stock'
+            ])
             ->where([
                 'OR' => array_filter([
                     ['Products.slug' => $key],
@@ -140,7 +147,7 @@ class ProductsController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
-        $locator   = \Cake\ORM\TableRegistry::getTableLocator();
+        $locator   = TableRegistry::getTableLocator();
         $Carts     = $locator->get('Carts');
         $CartItems = $locator->get('CartItems');
 
