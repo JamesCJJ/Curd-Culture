@@ -2,12 +2,13 @@
 $this->assign('title', $product->name);
 $currency = $product->currency ?: 'AUD';
 $yn10 = function($v) {
-    if ($v === null || $v === '') return null;     // 留空就不显示
-    if ((string)$v === '1') return 'Yes';          // 严格 1 -> Yes
-    if ((string)$v === '0') return 'No';           // 严格 0 -> No
-    return (string)$v;                             // 其它值原样返回
+    if ($v === null || $v === '') return null;
+    if ((string)$v === '1') return 'Yes';
+    if ((string)$v === '0') return 'No';
+    return (string)$v;
 };
-
+$stock = is_null($product->stock) ? null : (int)$product->stock;
+$outOfStock = ($stock !== null && $stock <= 0);
 ?>
 <section class="p-modal">
     <header class="p-modal__head">
@@ -19,7 +20,7 @@ $yn10 = function($v) {
         <div class="p-modal__grid">
             <div class="p-modal__media">
                 <?php if (!empty($product->image_url)): ?>
-                    <img src="<?= h($this->Url->webroot($product->image_url)) ?>" alt="<?= h($product->name) ?>">
+                    < img src="<?= h($this->Url->webroot($product->image_url)) ?>" alt="<?= h($product->name) ?>">
                 <?php else: ?>
                     <div class="ph">No Image</div>
                 <?php endif; ?>
@@ -27,26 +28,28 @@ $yn10 = function($v) {
 
             <div class="p-modal__info">
                 <?php if (!empty($product->summary)): ?>
-                    <p class="lead"><?= h($product->summary) ?></p>
+                    <p class="lead"><?= h($product->summary) ?></p >
                 <?php endif; ?>
 
                 <div class="p-price">
                     <div class="amount"><?= $this->Number->currency((float)($product->price ?? 0), $currency) ?></div>
-                    <?php if ($product->stock !== null && $product->stock !== ''): ?>
-                        <div class="stock">Stock: <?= (int)$product->stock ?></div>
+                    <?php if ($stock !== null): ?>
+                        <div class="stock"><?= $outOfStock ? 'Out of stock' : 'Stock: ' . $stock ?></div>
                     <?php endif; ?>
                 </div>
 
                 <form class="buy" method="post" action="<?= $this->Url->build(['controller' => 'Products', 'action' => 'addToCart', $product->id]) ?>">
                     <label for="qty" class="qty-label">Qty</label>
-                    <input class="qty" type="number" min="1" name="qty" id="qty" value="1">
-                    <button class="btn btn-primary">Add to cart</button>
+                    <input class="qty" type="number" min="1"
+                        <?= $stock !== null ? 'max="'.(int)$stock.'"' : '' ?>
+                           name="qty" id="qty" value="1" <?= $outOfStock ? 'disabled' : '' ?>>
+                    <button class="btn btn-primary" <?= $outOfStock ? 'disabled' : '' ?>>Add to cart</button>
                 </form>
 
                 <?php if (!empty($product->description)): ?>
                     <div class="desc">
                         <h3>About this cheese</h3>
-                        <p><?= nl2br(h($product->description)) ?></p>
+                        <p><?= nl2br(h($product->description)) ?></p >
                     </div>
                 <?php endif; ?>
 
