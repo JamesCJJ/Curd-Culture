@@ -38,11 +38,9 @@ if ($identity && $role === 'customer') {
             ->first();
 
         if ($cart) {
-            $row = $CartItems->find()
-                ->select(['sum_qty' => $CartItems->find()->func()->sum('qty')])
+            $cartQty = $CartItems->find()
                 ->where(['cart_id' => $cart->id])
-                ->first();
-            $cartQty = (int)($row->sum_qty ?? 0);
+                ->count(); // 行数
         }
     } catch (\Throwable $e) {
         $cartQty = 0;
