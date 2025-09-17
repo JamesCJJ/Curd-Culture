@@ -7,13 +7,14 @@ $yn10 = function($v) {
     if ((string)$v === '0') return 'No';
     return (string)$v;
 };
-
+$stock = is_null($product->stock) ? null : (int)$product->stock;
+$outOfStock = ($stock !== null && $stock <= 0);
 ?>
 <div class="product-page">
     <div class="product-wrap">
         <div class="media">
             <?php if (!empty($product->image_url)): ?>
-                <img src="<?= h($this->Url->webroot($product->image_url)) ?>" alt="<?= h($product->name) ?>">
+                < img src="<?= h($this->Url->webroot($product->image_url)) ?>" alt="<?= h($product->name) ?>">
             <?php else: ?>
                 <div class="ph">No Image</div>
             <?php endif; ?>
@@ -23,28 +24,30 @@ $yn10 = function($v) {
             <h1 class="title"><?= h($product->name) ?></h1>
 
             <?php if (!empty($product->summary)): ?>
-                <p class="summary"><?= h($product->summary) ?></p>
+                <p class="summary"><?= h($product->summary) ?></p >
             <?php endif; ?>
 
             <div class="price-line">
                 <div class="price"><?= $this->Number->currency((float)($product->price ?? 0), $currency) ?></div>
-                <?php if ($product->stock !== null && $product->stock !== ''): ?>
-                    <div class="stock">Stock: <?= (int)$product->stock ?></div>
+                <?php if ($stock !== null): ?>
+                    <div class="stock"><?= $outOfStock ? 'Out of stock' : 'Stock: ' . $stock ?></div>
                 <?php endif; ?>
             </div>
 
             <form method="post" action="<?= $this->Url->build(['controller'=>'Products','action'=>'addToCart', $product->id]) ?>">
                 <div class="qty-row">
                     <label for="qty">Qty</label>
-                    <input class="qty" type="number" min="1" name="qty" id="qty" value="1">
+                    <input class="qty" type="number" min="1"
+                        <?= $stock !== null ? 'max="'.(int)$stock.'"' : '' ?>
+                           name="qty" id="qty" value="1" <?= $outOfStock ? 'disabled' : '' ?>>
                 </div>
-                <button class="btn btn-primary">Add to cart</button>
+                <button class="btn btn-primary" <?= $outOfStock ? 'disabled' : '' ?>>Add to cart</button>
             </form>
 
             <?php if (!empty($product->description)): ?>
                 <div class="desc">
                     <h3>About this cheese</h3>
-                    <p><?= nl2br(h($product->description)) ?></p>
+                    <p><?= nl2br(h($product->description)) ?></p >
                 </div>
             <?php endif; ?>
         </div>
