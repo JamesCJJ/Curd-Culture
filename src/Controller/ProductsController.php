@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use Cake\Event\EventInterface;
-use Cake\Http\Exception\NotFoundException;
 use Cake\ORM\TableRegistry;
 
 class ProductsController extends AppController
@@ -57,11 +56,11 @@ class ProductsController extends AppController
     public function view(string $key = null)
     {
         if ($key === null || $key === '') {
-            throw new NotFoundException('Product not found.');
+            return $this->renderProduct404();
         }
 
         $Products = $this->fetchTable('Products');
-        // ✅ 显式选择所有需要用到的字段，确保 modal 有 image_url
+
         $product = $Products->find()
             ->select([
                 'id','name','slug','price','currency','summary','image_url',
@@ -78,7 +77,7 @@ class ProductsController extends AppController
             ->first();
 
         if (!$product) {
-            throw new NotFoundException('Product not found.');
+            return $this->renderProduct404();
         }
 
         $canPurchase = true;
@@ -183,5 +182,14 @@ class ProductsController extends AppController
 
         $this->Flash->success('Added to your cart.');
         return $this->redirect(['controller' => 'Cart', 'action' => 'index']);
+    }
+
+    /**
+     * Render a friendly 404 page for missing products.
+     */
+    private function renderProduct404()
+    {
+        $this->response = $this->response->withStatus(404);
+        return $this->render('/Error/error400_product');
     }
 }
