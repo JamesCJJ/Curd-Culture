@@ -112,22 +112,81 @@ class CartController extends AppController
 
         $qtys = (array)$this->request->getData('qty');
         $CartItems = $this->getTableLocator()->get('CartItems');
+        $Products  = $this->getTableLocator()->get('Products');
+
+        // Load current items to get product ids
+        $currentItems = $CartItems->find()
+            ->select(['id','product_id','qty'])
+            ->where(['cart_id' => $cart->id, 'id IN' => array_keys($qtys)])
+            ->enableHydration(false)
+            ->all()
+            ->toArray();
+
+        $pidMap = [];
+        foreach ($currentItems as $ci) {
+            $pidMap[(int)$ci['id']] = (int)$ci['product_id'];
+        }
+
+        // Fetch stock for those products
+        $stocks = [];
+        if ($pidMap) {
+            $pids = array_values(array_unique(array_values($pidMap)));
+            $stocksRows = $Products->find()
+                ->select(['id','stock'])
+                ->where(['id IN' => $pids])
+                ->enableHydration(false)
+                ->all()
+                ->toArray();
+            foreach ($stocksRows as $sr) {
+                $stocks[(int)$sr['id']] = is_null($sr['stock']) ? null : (int)$sr['stock'];
+            }
+        }
+
+        $lowered = 0;
+        $removed = 0;
 
         foreach ($qtys as $itemId => $qty) {
             $itemId = (int)$itemId;
             $qty    = max(0, (int)$qty);
 
+            $productId = $pidMap[$itemId] ?? null;
+            $stock     = is_null($productId) ? null : ($stocks[$productId] ?? null);
+
             if ($qty === 0) {
                 $CartItems->deleteAll(['id' => $itemId, 'cart_id' => $cart->id]);
-            } else {
-                $CartItems->updateAll(
-                    ['qty' => $qty],
-                    ['id' => $itemId, 'cart_id' => $cart->id]
-                );
+                $removed++;
+                continue;
             }
+
+            // If stock is defined, enforce it
+            if ($stock !== null) {
+                if ($stock <= 0) {
+                    $CartItems->deleteAll(['id' => $itemId, 'cart_id' => $cart->id]);
+                    $removed++;
+                    continue;
+                }
+                if ($qty > $stock) {
+                    $qty = $stock;
+                    $lowered++;
+                }
+            }
+
+            $CartItems->updateAll(
+                ['qty' => $qty],
+                ['id' => $itemId, 'cart_id' => $cart->id]
+            );
         }
 
-        $this->Flash->success('Cart updated.');
+        if ($removed > 0) {
+            $this->Flash->warning(($removed === 1 ? 'One item' : $removed . ' items') . ' were removed due to zero stock.');
+        }
+        if ($lowered > 0) {
+            $this->Flash->warning(($lowered === 1 ? 'One item' : $lowered . ' items') . ' were adjusted to available stock.');
+        }
+        if ($removed === 0 && $lowered === 0) {
+            $this->Flash->success('Cart updated.');
+        }
+
         return $this->redirect(['action' => 'index']);
     }
 
@@ -229,18 +288,16 @@ class CartController extends AppController
         $shipping = $subtotal > 0 ? 12.90 : 0.0;
         $total    = $subtotal + $shipping;
 
-        // ---------- Bank transfer details (persist in session during checkout) ----------
         $session = $this->request->getSession();
         $bank = (array)$session->read('Checkout.bank');
         if (empty($bank)) {
             $bank = [
                 'account_name' => 'Curd & Culture Pty Ltd',
                 'bsb'          => sprintf('%03d-%03d', random_int(100, 999), random_int(100, 999)),
-                'account_no'   => (string)random_int(100000000, 999999999), // 9 digits
+                'account_no'   => (string)random_int(100000000, 999999999),
             ];
             $session->write('Checkout.bank', $bank);
         }
-        // -------------------------------------------------------------------------------
 
         if ($this->request->is('post')) {
             $data = (array)$this->request->getData();
@@ -254,7 +311,6 @@ class CartController extends AppController
                         'full_name' => (string)($identity->get('name')  ?? ''),
                         'email'     => (string)($identity->get('email') ?? ''),
                     ];
-                    // re-render with bank info
                     $bankAccountName = $bank['account_name'];
                     $bankBsb         = $bank['bsb'];
                     $bankAccountNo   = $bank['account_no'];
@@ -314,9 +370,7 @@ class CartController extends AppController
                     'email'   => (string)$data['email'],
                     'message' => 'New order #' . $order->id . ' placed. Total: ' . $currency . ' ' . number_format($total, 2),
                 ]));
-            } catch (\Throwable $e) {
-                // ignore
-            }
+            } catch (\Throwable $e) {}
 
             $this->Flash->success('Order placed! Thank you for your purchase.');
             return $this->redirect(['action' => 'complete']);
@@ -327,7 +381,6 @@ class CartController extends AppController
             'email'     => (string)($identity->get('email') ?? ''),
         ];
 
-        // pass bank info to view
         $bankAccountName = $bank['account_name'];
         $bankBsb         = $bank['bsb'];
         $bankAccountNo   = $bank['account_no'];
