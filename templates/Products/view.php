@@ -14,10 +14,12 @@ $outOfStock = ($stock !== null && $stock <= 0);
     <div class="product-wrap">
         <div class="media">
             <?php if (!empty($product->image_url)): ?>
-                < img src="<?= h($this->Url->webroot($product->image_url)) ?>" alt="<?= h($product->name) ?>">
+                <img src="<?= h($product->image_url) ?>" alt="<?= h($product->name) ?>">
+                <img src="<?= h($this->Url->webroot($product->image_url)) ?>" alt="<?= h($product->name) ?>">
             <?php else: ?>
                 <div class="ph">No Image</div>
             <?php endif; ?>
+
         </div>
 
         <div class="info card">
