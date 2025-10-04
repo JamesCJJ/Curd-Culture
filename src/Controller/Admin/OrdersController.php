@@ -16,81 +16,83 @@ class OrdersController extends AppController
      */
     public function index()
     {
-        $query = trim((string)$this->request->getQuery('q'));
-        $status = (string)$this->request->getQuery('status');
+        $query         = trim((string)$this->request->getQuery('q'));
+        $status        = (string)$this->request->getQuery('status');
         $paymentStatus = (string)$this->request->getQuery('payment_status');
-        $from = $this->request->getQuery('from');
-        $to = $this->request->getQuery('to');
-        
+        $from          = $this->request->getQuery('from');
+        $to            = $this->request->getQuery('to');
+
         $table = $this->fetchTable('Orders');
-        
+
         $ordersQuery = $table->find()
             ->contain(['Users'])
             ->orderByDesc('Orders.created');
-            
-        // Search functionality
+
+        // Search
         if ($query !== '') {
             $ordersQuery->where([
                 'OR' => [
-                    'Orders.email LIKE' => '%' . $query . '%',
+                    'Orders.email LIKE'     => '%' . $query . '%',
                     'Orders.full_name LIKE' => '%' . $query . '%',
-                    'Orders.id' => is_numeric($query) ? (int)$query : 0,
+                    'Orders.id'             => is_numeric($query) ? (int)$query : 0,
                 ]
             ]);
         }
-        
-        // Filter by status
+
+        // Filters
         if ($status !== '') {
             $ordersQuery->where(['Orders.status' => $status]);
         }
-        
-        // Filter by payment status
+
         if ($paymentStatus !== '') {
             $ordersQuery->where(['Orders.payment_status' => $paymentStatus]);
         }
-        
-        // Date range filter
+
+        // Date range
         if (!empty($from)) {
             $ordersQuery->where(['Orders.created >=' => new DateTime($from . ' 00:00:00')]);
         }
         if (!empty($to)) {
             $ordersQuery->where(['Orders.created <=' => new DateTime($to . ' 23:59:59')]);
         }
-        
-        // Pagination
-        $limit = 20;
-        $page = max(1, (int)$this->request->getQuery('page', 1));
+
+        // Pagination (manual)
+        $limit  = 20;
+        $page   = max(1, (int)$this->request->getQuery('page', 1));
         $offset = ($page - 1) * $limit;
-        
-        $orders = $ordersQuery->limit($limit)->offset($offset)->all();
-        $totalCount = $ordersQuery->count();
-        $totalPages = (int)ceil($totalCount / $limit);
-        
+
+        $orders      = $ordersQuery->limit($limit)->offset($offset)->all();
+        $totalCount  = $ordersQuery->count();
+        $totalPages  = (int)ceil($totalCount / $limit);
+
         // Statistics
         $stats = [
-            'total' => $table->find()->count(),
-            'pending' => $table->find()->where(['status' => 'pending'])->count(),
+            'total'      => $table->find()->count(),
+            'pending'    => $table->find()->where(['status' => 'pending'])->count(),
             'processing' => $table->find()->where(['status' => 'processing'])->count(),
-            'completed' => $table->find()->where(['status' => 'completed'])->count(),
-            'cancelled' => $table->find()->where(['status' => 'cancelled'])->count(),
-            'total_revenue' => (float)$table->find()
-                ->where(['status' => 'completed'])
+            'completed'  => $table->find()->where(['status' => 'completed'])->count(),
+            'delivered'  => $table->find()->where(['status' => 'delivered'])->count(),
+            'cancelled'  => $table->find()->where(['status' => 'cancelled'])->count(),
+
+            // REVENUE: recognize only for delivered + paid
+            'total_revenue' => (float)($table->find()
+                ->where(['status' => 'delivered', 'payment_status' => 'paid'])
                 ->select(function ($q) { return ['sum' => $q->func()->sum('total')]; })
                 ->enableHydration(false)
-                ->first()['sum'] ?? 0,
+                ->first()['sum'] ?? 0),
         ];
-        
+
         $pagination = [
-            'page' => $page,
+            'page'       => $page,
             'totalPages' => $totalPages,
             'totalCount' => $totalCount,
-            'hasNext' => $page < $totalPages,
-            'hasPrev' => $page > 1,
+            'hasNext'    => $page < $totalPages,
+            'hasPrev'    => $page > 1,
         ];
-        
+
         $this->set(compact('orders', 'pagination', 'stats', 'query', 'status', 'paymentStatus', 'from', 'to'));
     }
-    
+
     /**
      * View method - Display order details
      */
@@ -99,10 +101,10 @@ class OrdersController extends AppController
         $order = $this->fetchTable('Orders')->get($id, [
             'contain' => ['Users', 'OrderItems.Products']
         ]);
-        
+
         $this->set(compact('order'));
     }
-    
+
     /**
      * Edit method - Update order
      */
@@ -112,23 +114,22 @@ class OrdersController extends AppController
         $order = $table->get($id, [
             'contain' => ['OrderItems.Products']
         ]);
-        
+
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $data = $this->request->getData();
-            
+            $data  = $this->request->getData();
             $order = $table->patchEntity($order, $data);
-            
+
             if ($table->save($order)) {
                 $this->Flash->success(__('Order has been updated successfully.'));
                 return $this->redirect(['action' => 'view', $order->id]);
             }
-            
+
             $this->Flash->error(__('Unable to update order. Please check the form and try again.'));
         }
-        
+
         $this->set(compact('order'));
     }
-    
+
     /**
      * Update order status
      */
@@ -137,30 +138,30 @@ class OrdersController extends AppController
         $this->request->allowMethod(['post', 'patch']);
         $table = $this->fetchTable('Orders');
         $order = $table->get($id);
-        
+
         $data = $this->request->getData();
-        
+
         if (!empty($data['status'])) {
             $order->status = $data['status'];
         }
-        
+
         if (!empty($data['payment_status'])) {
             $order->payment_status = $data['payment_status'];
-            
+
             if ($data['payment_status'] === 'paid' && !$order->paid_at) {
                 $order->paid_at = DateTime::now();
             }
         }
-        
+
         if ($table->save($order)) {
             $this->Flash->success(__('Order status updated successfully.'));
         } else {
             $this->Flash->error(__('Unable to update order status.'));
         }
-        
+
         return $this->redirect(['action' => 'view', $order->id]);
     }
-    
+
     /**
      * Update payment status
      */
@@ -169,26 +170,26 @@ class OrdersController extends AppController
         $this->request->allowMethod(['post', 'patch']);
         $table = $this->fetchTable('Orders');
         $order = $table->get($id);
-        
+
         $data = $this->request->getData();
-        
+
         if (!empty($data['payment_status'])) {
             $order->payment_status = $data['payment_status'];
-            
+
             if ($data['payment_status'] === 'paid' && !$order->paid_at) {
                 $order->paid_at = DateTime::now();
             }
-            
+
             if ($table->save($order)) {
                 $this->Flash->success(__('Payment status updated successfully.'));
             } else {
                 $this->Flash->error(__('Unable to update payment status.'));
             }
         }
-        
+
         return $this->redirect(['action' => 'view', $order->id]);
     }
-    
+
     /**
      * Delete method - Remove order
      */
@@ -197,23 +198,23 @@ class OrdersController extends AppController
         $this->request->allowMethod(['post', 'delete']);
         $table = $this->fetchTable('Orders');
         $order = $table->get($id);
-        
+
         if ($table->delete($order)) {
             $this->Flash->success(__('Order has been deleted successfully.'));
         } else {
             $this->Flash->error(__('Unable to delete order.'));
         }
-        
+
         return $this->redirect(['action' => 'index']);
     }
-    
+
     /**
      * Export orders to CSV
      */
     public function export()
     {
         $this->disableAutoRender();
-        
+
         $orders = $this->fetchTable('Orders')->find()
             ->contain(['Users'])
             ->select([
@@ -223,19 +224,19 @@ class OrdersController extends AppController
             ])
             ->orderByDesc('Orders.created')
             ->all();
-        
+
         $filename = 'orders_' . DateTime::now()->format('Ymd_His') . '.csv';
-        
+
         $this->response = $this->response
             ->withType('csv')
             ->withDownload($filename);
-        
+
         $out = fopen('php://temp', 'r+');
         fputcsv($out, [
             'Order ID', 'Customer Name', 'Email', 'Total', 'Currency',
             'Status', 'Payment Status', 'Order Date', 'Modified'
         ]);
-        
+
         foreach ($orders as $order) {
             fputcsv($out, [
                 $order->id,
@@ -249,64 +250,83 @@ class OrdersController extends AppController
                 $order->modified?->format('Y-m-d H:i:s') ?? '',
             ]);
         }
-        
+
         rewind($out);
         $csv = stream_get_contents($out);
         fclose($out);
-        
+
         return $this->response->withStringBody($csv);
     }
-    
+
     /**
      * Dashboard analytics
+     * Revenue recognized only when status=delivered AND payment_status=paid
      */
     public function analytics()
     {
         $ordersTable = $this->fetchTable('Orders');
-        
-        // Recent orders (last 30 days)
+
+        // Delivered (and paid) in the last 30 days
         $recentOrders = $ordersTable->find()
-            ->where(['created >=' => (new DateTime())->modify('-30 days')])
+            ->where([
+                'status'          => 'delivered',
+                'payment_status'  => 'paid',
+                // Using `modified` as a proxy for "delivered at"
+                'modified >='     => (new DateTime())->modify('-30 days')
+            ])
             ->count();
-            
-        // Revenue by month (last 12 months)
+
+        // Revenue by month (last 12 months), recognized on delivery (delivered+paid)
         $monthlyRevenue = [];
         for ($i = 11; $i >= 0; $i--) {
-            $date = (new DateTime())->modify("-{$i} months");
-            $startOfMonth = $date->modify('first day of this month')->format('Y-m-d 00:00:00');
-            $endOfMonth = $date->modify('last day of this month')->format('Y-m-d 23:59:59');
-            
-            $revenue = (float)$ordersTable->find()
+            $monthObj     = (new DateTime('now'))->modify("-{$i} months");
+            $startOfMonth = (new DateTime($monthObj->format('Y-m-01 00:00:00')))->format('Y-m-d H:i:s');
+            $endOfMonth   = (new DateTime($monthObj->format('Y-m-t 23:59:59')))->format('Y-m-d H:i:s');
+
+            $row = $ordersTable->find()
                 ->where([
-                    'status' => 'completed',
-                    'created >=' => $startOfMonth,
-                    'created <=' => $endOfMonth
+                    'status'         => 'delivered',
+                    'payment_status' => 'paid',
+                    'modified >='    => $startOfMonth,
+                    'modified <='    => $endOfMonth,
                 ])
-                ->select(function ($q) { return ['sum' => $q->func()->sum('total')]; })
+                ->select(function ($q) {
+                    return ['sum' => $q->func()->sum('total')];
+                })
                 ->enableHydration(false)
-                ->first()['sum'] ?? 0;
-                
+                ->first();
+
             $monthlyRevenue[] = [
-                'month' => $date->format('M Y'),
-                'revenue' => $revenue ?: 0
+                'month'   => $monthObj->format('M Y'),
+                'revenue' => (float)($row['sum'] ?? 0),
             ];
         }
-        
-        // Top selling products
-        $topProducts = $this->fetchTable('OrderItems')
-            ->find()
+
+        // Top selling products: only lines from delivered+paid orders
+        $orderItems  = $this->fetchTable('OrderItems');
+        $topProducts = $orderItems->find()
             ->contain(['Products'])
-            ->select([
-                'product_id',
-                'Products.name',
-                'total_qty' => $this->fetchTable('OrderItems')->find()->func()->sum('qty'),
-                'total_revenue' => $this->fetchTable('OrderItems')->find()->func()->sum('line_total')
-            ])
-            ->group(['product_id'])
+            ->matching('Orders', function ($q) {
+                return $q->where([
+                    'Orders.status'         => 'delivered',
+                    'Orders.payment_status' => 'paid',
+                ]);
+            })
+            ->select(function ($q) {
+                $sumQty = $q->func()->sum('OrderItems.qty');
+                $sumRev = $q->func()->sum($q->newExpr('OrderItems.price * OrderItems.qty'));
+                return [
+                    'product_id'     => 'OrderItems.product_id',
+                    'Products__name' => 'Products.name',
+                    'total_qty'      => $sumQty,
+                    'total_revenue'  => $sumRev,
+                ];
+            })
+            ->group(['OrderItems.product_id', 'Products.name'])
             ->orderByDesc('total_qty')
             ->limit(10)
             ->all();
-        
+
         $this->set(compact('recentOrders', 'monthlyRevenue', 'topProducts'));
     }
 }
