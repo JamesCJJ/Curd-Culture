@@ -606,7 +606,7 @@ class CartController extends AppController
                 'shipping_fee'   => $shipping,
                 'discount'       => 0.0,
                 'total'          => $total,
-                'status'         => 'new',
+                'status'         => 'pending',
                 'payment_status' => 'paid',
                 'payment_method' => 'card',
                 'payment_ref'    => (string)$session->id,
