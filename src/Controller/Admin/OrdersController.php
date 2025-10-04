@@ -12,12 +12,26 @@ use Cake\I18n\DateTime;
 class OrdersController extends AppController
 {
     /**
+     * Build the "completed" condition:
+     * Completed := (delivered + paid) OR (refunded)
+     */
+    private function completedWhere(): array
+    {
+        return [
+            'OR' => [
+                ['status' => 'delivered', 'payment_status' => 'paid'],
+                ['payment_status' => 'refunded'],
+            ]
+        ];
+    }
+
+    /**
      * Index method - List all orders
      */
     public function index()
     {
         $query         = trim((string)$this->request->getQuery('q'));
-        $status        = (string)$this->request->getQuery('status');
+        $status        = (string)$this->request->getQuery('status');          // may be 'completed' (derived)
         $paymentStatus = (string)$this->request->getQuery('payment_status');
         $from          = $this->request->getQuery('from');
         $to            = $this->request->getQuery('to');
@@ -41,7 +55,12 @@ class OrdersController extends AppController
 
         // Filters
         if ($status !== '') {
-            $ordersQuery->where(['Orders.status' => $status]);
+            if ($status === 'completed') {
+                // Derived status: (delivered + paid) OR (refunded)
+                $ordersQuery->where($this->completedWhere());
+            } else {
+                $ordersQuery->where(['Orders.status' => $status]);
+            }
         }
 
         if ($paymentStatus !== '') {
@@ -70,11 +89,14 @@ class OrdersController extends AppController
             'total'      => $table->find()->count(),
             'pending'    => $table->find()->where(['status' => 'pending'])->count(),
             'processing' => $table->find()->where(['status' => 'processing'])->count(),
-            'completed'  => $table->find()->where(['status' => 'completed'])->count(),
+            'shipped'    => $table->find()->where(['status' => 'shipped'])->count(),
             'delivered'  => $table->find()->where(['status' => 'delivered'])->count(),
             'cancelled'  => $table->find()->where(['status' => 'cancelled'])->count(),
 
-            // REVENUE: recognize only for delivered + paid
+            // Completed (derived): (delivered+paid) OR refunded
+            'completed'  => $table->find()->where($this->completedWhere())->count(),
+
+            // REVENUE: recognize only for delivered + paid (refunds excluded)
             'total_revenue' => (float)($table->find()
                 ->where(['status' => 'delivered', 'payment_status' => 'paid'])
                 ->select(function ($q) { return ['sum' => $q->func()->sum('total')]; })
@@ -260,20 +282,17 @@ class OrdersController extends AppController
 
     /**
      * Dashboard analytics
-     * Revenue recognized only when status=delivered AND payment_status=paid
+     * - "recentOrders": count of COMPLETED (delivered+paid OR refunded) in last 30 days
+     * - Monthly revenue: only delivered+paid in each month (refunds excluded)
      */
     public function analytics()
     {
         $ordersTable = $this->fetchTable('Orders');
 
-        // Delivered (and paid) in the last 30 days
+        // Completed in last 30 days (using modified as "state-change" proxy)
         $recentOrders = $ordersTable->find()
-            ->where([
-                'status'          => 'delivered',
-                'payment_status'  => 'paid',
-                // Using `modified` as a proxy for "delivered at"
-                'modified >='     => (new DateTime())->modify('-30 days')
-            ])
+            ->where($this->completedWhere())
+            ->where(['modified >=' => (new DateTime())->modify('-30 days')])
             ->count();
 
         // Revenue by month (last 12 months), recognized on delivery (delivered+paid)
