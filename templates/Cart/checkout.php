@@ -1,106 +1,288 @@
 <?php
 $this->assign('title', 'Checkout');
-$items    = $items ?? [];
+
+/** --- Inputs from controller / defaults --- */
+$items    = $items    ?? [];
 $currency = $currency ?? 'AUD';
 $subtotal = $subtotal ?? 0;
 $shipping = $shipping ?? 0;
-$total    = $total ?? ($subtotal + $shipping);
+$total    = $total    ?? ($subtotal + $shipping);
 
-// bank transfer variables coming from controller
 $bankAccountName = $bankAccountName ?? 'Curd & Culture Pty Ltd';
-$bankBsb         = $bankBsb ?? '000-000';
-$bankAccountNo   = $bankAccountNo ?? '000000000';
+$bankBsb         = $bankBsb         ?? '000-000';
+$bankAccountNo   = $bankAccountNo   ?? '000000000';
 ?>
 <div class="checkout-page">
-    <div class="grid">
-        <div class="card">
-            <h2>Shipping details</h2>
-            <?= $this->Form->create(null) ?>
 
-            <div class="fg">
-                <label>Full name</label>
-                <input name="full_name" required value="<?= h($prefill['full_name'] ?? '') ?>">
-            </div>
-            <div class="fg">
-                <label>Email</label>
-                <input type="email" name="email" required value="<?= h($prefill['email'] ?? '') ?>">
-            </div>
-            <div class="fg">
-                <label>Address</label>
-                <input name="address" required>
-            </div>
-            <div class="row2">
-                <div class="fg"><label>City</label><input name="city" required></div>
-                <div class="fg"><label>Postcode</label><input name="postcode" required></div>
-            </div>
-            <div class="fg">
-                <label>Country</label>
-                <input name="country" required value="Australia">
-            </div>
+    <!-- Step progress -->
+    <div class="progress">
+        <div class="progress-steps" aria-label="Checkout progress">
+            <span class="step done">Cart</span>
+            <span class="divider" aria-hidden="true">—</span>
+            <span class="step current">Checkout</span>
+            <span class="divider" aria-hidden="true">—</span>
+            <span class="step">Complete</span>
+        </div>
+        <div class="progress-bar" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="66">
+            <span style="width:66%"></span>
+        </div>
+    </div>
+
+    <div class="grid">
+        <!-- MAIN: shipping form -->
+        <section class="card">
+            <header class="card-hd">
+                <h2 class="title">Shipping details</h2>
+                <p class="sub">We’ll only use this information to deliver your order.</p>
+            </header>
+
+            <?= $this->Form->create(null, ['id' => 'checkout-form', 'aria-describedby' => 'form-help']) ?>
+
+            <fieldset class="fs">
+                <div class="fg">
+                    <label for="full_name">Full name</label>
+                    <input id="full_name"
+                           name="full_name"
+                           required
+                           autocomplete="name"
+                           placeholder="e.g. Alex Johnson"
+                           value="<?= h($prefill['full_name'] ?? '') ?>">
+                </div>
+
+                <div class="fg">
+                    <label for="email">Email</label>
+                    <input id="email"
+                           type="email"
+                           name="email"
+                           required
+                           autocomplete="email"
+                           placeholder="you@example.com"
+                           value="<?= h($prefill['email'] ?? '') ?>">
+                </div>
+
+                <div class="fg">
+                    <label for="address">Address</label>
+                    <input id="address"
+                           name="address"
+                           required
+                           autocomplete="address-line1"
+                           placeholder="Street, number and unit">
+                </div>
+
+                <div class="row2">
+                    <div class="fg">
+                        <label for="city">City</label>
+                        <input id="city"
+                               name="city"
+                               required
+                               autocomplete="address-level2"
+                               placeholder="Suburb / City">
+                    </div>
+                    <div class="fg">
+                        <label for="postcode">Postcode</label>
+                        <input id="postcode"
+                               name="postcode"
+                               required
+                               inputmode="numeric"
+                               autocomplete="postal-code"
+                               placeholder="Postcode">
+                    </div>
+                </div>
+
+                <div class="fg">
+                    <label for="country">Country</label>
+                    <input id="country"
+                           name="country"
+                           required
+                           autocomplete="country-name"
+                           value="Australia">
+                </div>
+            </fieldset>
+
+            <p id="form-help" class="muted small">
+                All payments are encrypted. Your data is protected and used only to fulfil your order.
+            </p>
 
             <div class="actions">
                 <a class="btn btn-subtle" href="<?= $this->Url->build(['controller'=>'Cart','action'=>'index']) ?>">Back to cart</a>
-                <button class="btn btn-primary">Place order</button>
+
+
+                <button class="btn" title="Place order and pay via bank transfer">
+                    Place order (Bank transfer)
+                </button>
+
+
+                <button type="button" id="btn-stripe" class="btn btn-primary">
+                    <span class="lock" aria-hidden="true"><?= /* lock icon */ '' ?></span>
+                    Pay with card
+                    <span class="brands" aria-hidden="true">
+                        <svg viewBox="0 0 36 12" class="brand"><rect x="0" y="0" width="36" height="12" rx="2"/></svg>
+                        <svg viewBox="0 0 36 12" class="brand"><rect x="0" y="0" width="36" height="12" rx="2"/></svg>
+                        <svg viewBox="0 0 36 12" class="brand"><rect x="0" y="0" width="36" height="12" rx="2"/></svg>
+                    </span>
+                </button>
             </div>
 
             <?= $this->Form->end() ?>
-        </div>
+        </section>
 
-        <aside class="card">
-            <h3>Your items</h3>
-            <ul class="mini">
-                <?php foreach ((array)$items as $it): ?>
-                    <li>
-                        <div class="n"><?= h($it['name']) ?></div>
-                        <div class="r"><?= (int)$it['qty'] ?> × <?= $this->Number->currency((float)$it['price'], $it['currency']) ?></div>
-                    </li>
-                <?php endforeach; ?>
-            </ul>
-            <p class="muted">No payment gateway is connected in this demo.</p>
+        <!-- SIDEBAR: order summary -->
+        <aside class="card aside-sticky" aria-label="Order summary">
+            <h3 class="title sm">Your order</h3>
+
+            <?php if (!empty($items)): ?>
+                <ul class="mini">
+                    <?php foreach ((array)$items as $it): ?>
+                        <li>
+                            <div class="avatar" aria-hidden="true"><?= mb_strtoupper(mb_substr((string)$it['name'], 0, 1)) ?></div>
+                            <div class="line">
+                                <div class="n"><?= h($it['name']) ?></div>
+                                <div class="meta">
+                                    <span class="qty"><?= (int)$it['qty'] ?> ×</span>
+                                    <span class="price"><?= $this->Number->currency((float)$it['price'], $it['currency']) ?></span>
+                                </div>
+                            </div>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php else: ?>
+                <p class="muted">Your cart is empty.</p>
+            <?php endif; ?>
 
             <hr class="sep">
 
-            <div class="bank-block">
-                <h4 style="margin:0 0 .4rem">Pay by bank transfer</h4>
-                <div class="kv"><span>Account name</span><strong><?= h($bankAccountName) ?></strong></div>
-                <div class="kv"><span>BSB</span><strong><?= h($bankBsb) ?></strong></div>
-                <div class="kv"><span>Account number</span><strong><?= h($bankAccountNo) ?></strong></div>
-                <p class="muted" style="margin-top:.5rem">
-                    Please include your email as the payment reference so we can match your order.
-                    <br>
-                    Once we receive your payment we will update the order status as soon as possible.
-                </p>
+            <div class="totals" role="table" aria-label="Price breakdown">
+                <div class="row" role="row">
+                    <div class="k" role="cell">Subtotal</div>
+                    <div class="v" role="cell"><?= $this->Number->currency((float)$subtotal, $currency) ?></div>
+                </div>
+                <div class="row" role="row">
+                    <div class="k" role="cell">Shipping</div>
+                    <div class="v" role="cell"><?= $this->Number->currency((float)$shipping, $currency) ?></div>
+                </div>
+                <div class="row total" role="row">
+                    <div class="k" role="cell">Total</div>
+                    <div class="v" role="cell"><?= $this->Number->currency((float)$total, $currency) ?></div>
+                </div>
+                <p class="muted tiny">Prices include GST where applicable.</p>
             </div>
+
+            <details class="bank">
+                <summary>Pay by bank transfer</summary>
+                <div class="bank-block">
+                    <div class="kv"><span>Account name</span><strong><?= h($bankAccountName) ?></strong></div>
+                    <div class="kv"><span>BSB</span><strong><?= h($bankBsb) ?></strong></div>
+                    <div class="kv"><span>Account number</span><strong><?= h($bankAccountNo) ?></strong></div>
+                    <p class="muted" style="margin-top:.5rem">
+                        Please include your <strong>email</strong> as the payment reference so we can match your order.
+                        We will update your order status as soon as we receive your payment.
+                    </p>
+                </div>
+            </details>
         </aside>
     </div>
 </div>
 
+<script>
+    document.getElementById('btn-stripe')?.addEventListener('click', function () {
+        const form = document.getElementById('checkout-form');
+        if (!form) return;
+
+        const req = ['full_name','email','address','city','postcode','country'];
+        for (const id of req) {
+            const el = document.getElementById(id);
+            if (el && !el.value.trim()) { el.focus(); return; }
+        }
+        form.action = "<?= $this->Url->build(['controller'=>'Payments','action'=>'checkout']) ?>";
+        form.method = "post";
+        form.submit();
+    });
+</script>
+
 <style>
+    /* --- Layout --- */
     .checkout-page{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
     .grid{display:grid;grid-template-columns:2fr 1fr;gap:1rem}
-    @media (max-width:900px){.grid{grid-template-columns:1fr}}
+    @media (max-width:960px){.grid{grid-template-columns:1fr}}
+    .aside-sticky{position:sticky;top:1rem}
 
+    /* --- Progress --- */
+    .progress{margin:0 0 1rem}
+    .progress-steps{font-size:.9rem;color:#6b7280;display:flex;align-items:center;gap:.4rem}
+    .progress-steps .step.done{color:#10b981}
+    .progress-steps .step.current{color:#111827}
+    .progress-bar{height:6px;background:#eef0f3;border-radius:999px;margin-top:.4rem;overflow:hidden}
+    .progress-bar>span{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#2c7be5)}
+
+    /* --- Card --- */
     .card{background:#fff;border:1px solid #eef0f3;border-radius:1rem;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:1rem}
-    .theme-dark .card{background:#111827;border-color:#1f2937;box-shadow:0 16px 48px rgba(0,0,0,.35)}
-    h2{margin:.1rem 0 .8rem}
-    .fg{margin-bottom:.8rem}
+    .card-hd{margin-bottom:.5rem}
+    .title{margin:.1rem 0 .2rem}
+    .title.sm{font-size:1.1rem;margin-bottom:.35rem}
+    .sub{color:#6b7280;margin:0}
+
+    /* --- Form --- */
+    .fs{margin-top:.6rem}
+    .fg{margin-bottom:.85rem}
     label{display:block;margin-bottom:.25rem;color:#6b7280}
-    input{width:100%;border-radius:.6rem;border:1px solid #e5e7eb;padding:.55rem .7rem;background:#f9fafb}
-    .theme-dark input{background:#0f172a;border-color:#334155;color:#e5e7eb}
+    input{
+        width:100%;border-radius:.65rem;border:1px solid #e5e7eb;
+        padding:.62rem .8rem;background:#f9fafb;transition:box-shadow .15s,border-color .15s,background .15s
+    }
+    input:focus{outline:none;border-color:#93c5fd;box-shadow:0 0 0 3px rgba(147,197,253,.45);background:#fff}
     .row2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
 
-    .mini{list-style:none;margin:0;padding:0;display:grid;gap:.45rem}
-    .mini li{display:flex;align-items:center;justify-content:space-between}
-    .muted{color:#6b7280;margin-top:.6rem}
+    .muted{color:#6b7280}
+    .small{font-size:.9rem}
+    .tiny{font-size:.8rem}
 
-    .btn{display:inline-block;padding:.45rem .75rem;border-radius:.55rem;border:1px solid #e4e7ec;background:#f3f5f7;color:#111;text-decoration:none;cursor:pointer}
+    /* --- Buttons --- */
+    .actions{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:flex-end;margin-top:.8rem}
+    .btn{
+        display:inline-flex;align-items:center;gap:.45rem;
+        padding:.54rem .9rem;border-radius:.65rem;border:1px solid #e4e7ec;
+        background:#f3f5f7;color:#111;text-decoration:none;cursor:pointer;transition:transform .05s ease,box-shadow .15s
+    }
+    .btn:active{transform:translateY(1px)}
     .btn-subtle{background:transparent;border-color:#d1d5db;color:#374151}
-    .btn-primary{background:#2c7be5;color:#fff;border-color:transparent}
-    .theme-dark .btn{background:#1f2937;color:#fff;border-color:#475569}
-    .theme-dark .btn-primary{background:#60a5fa;color:#111}
-    .actions{display:flex;justify-content:space-between;margin-top:.6rem}
+    .btn-primary{
+        background:linear-gradient(180deg,#2c7be5,#1d63c6);color:#fff;border-color:transparent;
+        box-shadow:0 6px 18px rgba(37,99,235,.25)
+    }
+    .btn-primary:hover{filter:brightness(1.03)}
+    .btn .brands{display:inline-flex;gap:.25rem;margin-left:.2rem}
+    .btn .brand{width:24px;height:12px;opacity:.6}
+    .btn .brand rect{fill:#fff}
+
+    /* --- Items --- */
+    .mini{list-style:none;margin:.2rem 0 0;padding:0;display:grid;gap:.55rem}
+    .mini li{display:grid;grid-template-columns:32px 1fr;gap:.6rem;align-items:center}
+    .avatar{
+        width:32px;height:32px;border-radius:50%;background:#eef2ff;color:#3730a3;
+        display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.9rem
+    }
+    .line .n{font-weight:600}
+    .line .meta{color:#6b7280;font-size:.92rem}
+    .line .meta .qty{margin-right:.25rem}
 
     .sep{border:none;border-top:1px solid #eef0f3;margin:1rem 0}
+
+    /* --- Totals --- */
+    .totals{display:grid;gap:.35rem}
+    .totals .row{display:flex;justify-content:space-between;align-items:center}
+    .totals .total{font-weight:700}
+    .totals .total .v{font-size:1.15rem}
+
+    /* --- Bank block --- */
+    details.bank summary{cursor:pointer;font-weight:600;margin:.2rem 0 .4rem}
     .bank-block .kv{display:flex;justify-content:space-between;padding:.25rem 0}
     .bank-block .kv span{color:#6b7280}
+
+    /* --- Themes --- */
+    .theme-dark .card{background:#0b1020;border-color:#121a2d;box-shadow:0 16px 48px rgba(0,0,0,.45)}
+    .theme-dark input{background:#0f172a;border-color:#334155;color:#e5e7eb}
+    .theme-dark .btn{background:#18202f;color:#e5e7eb;border-color:#2b3546}
+    .theme-dark .btn-primary{background:linear-gradient(180deg,#60a5fa,#2563eb);color:#0b1020}
+    .theme-dark .avatar{background:#0a172e;color:#8ab4ff}
+    .contrast-high .btn-primary,.contrast-high .progress-bar>span{filter:none}
 </style>
