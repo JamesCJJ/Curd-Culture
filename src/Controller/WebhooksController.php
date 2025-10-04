@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use Cake\I18n\FrozenTime;
+use Cake\Core\Configure;
 use Stripe\Webhook;
 use Stripe\Exception\SignatureVerificationException;
 
@@ -22,7 +23,10 @@ class WebhooksController extends AppController
     {
         $payload   = (string)$this->request->getBody()->getContents();
         $sigHeader = $this->request->getHeaderLine('Stripe-Signature');
-        $secret    = (string) (config('Stripe.webhook_secret') ?? env('STRIPE_WEBHOOK_SECRET', ''));
+        $secret    = (string) (Configure::read('Stripe.webhook_secret') ?: env('STRIPE_WEBHOOK_SECRET', ''));
+
+
+
 
         if ($secret === '') {
             return $this->response->withStatus(400)->withStringBody('Missing webhook secret');

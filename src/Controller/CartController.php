@@ -1,10 +1,16 @@
 <?php
 declare(strict_types=1);
 
+
 namespace App\Controller;
+
 
 use Cake\Event\EventInterface;
 use Cake\Http\Exception\NotFoundException;
+use Cake\Core\Configure;
+use Cake\I18n\FrozenTime;
+use Stripe\StripeClient;
+
 
 class CartController extends AppController
 {
@@ -14,11 +20,13 @@ class CartController extends AppController
         $this->loadComponent('Authentication.Authentication');
     }
 
+
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
         $this->Authentication->addUnauthenticatedActions(['index']);
     }
+
 
     private function findOpenCart(int $userId)
     {
@@ -28,22 +36,27 @@ class CartController extends AppController
             ->first();
     }
 
+
     /** GET /cart */
     public function index()
     {
         $identity = $this->request->getAttribute('identity');
         $userId = $identity ? (int)$identity->get('id') : 0;
 
+
         $items = [];
         $currency = 'AUD';
         $subtotal = 0.0;
 
+
         if ($userId) {
             $cart = $this->findOpenCart($userId);
+
 
             if ($cart) {
                 $CartItems = $this->getTableLocator()->get('CartItems');
                 $Products  = $this->getTableLocator()->get('Products');
+
 
                 $rows = $CartItems->find()
                     ->select(['id', 'product_id', 'qty', 'price', 'currency'])
@@ -51,6 +64,7 @@ class CartController extends AppController
                     ->enableHydration(false)
                     ->all()
                     ->toArray();
+
 
                 if ($rows) {
                     $pids  = array_column($rows, 'product_id');
@@ -61,13 +75,16 @@ class CartController extends AppController
                         ->enableHydration(false)
                         ->all();
 
+
                     foreach ($pRows as $p) {
                         $map[(int)$p['id']] = $p;
                     }
 
+
                     foreach ($rows as $r) {
                         $pid  = (int)$r['product_id'];
                         $curr = $r['currency'] ?: 'AUD';
+
 
                         $item = [
                             'id'        => (int)$r['id'],
@@ -86,22 +103,27 @@ class CartController extends AppController
             }
         }
 
+
         $shipping = $subtotal > 0 ? 12.90 : 0.0;
         $total    = $subtotal + $shipping;
 
+
         $this->set(compact('items', 'currency', 'subtotal', 'shipping', 'total'));
     }
+
 
     /** POST /cart/update */
     public function update()
     {
         $this->request->allowMethod(['post']);
 
+
         $identity = $this->request->getAttribute('identity');
         if (!$identity) {
             $this->Flash->error('Please sign in to update your cart.');
             return $this->redirect(['action' => 'index']);
         }
+
 
         $userId = (int)$identity->get('id');
         $cart = $this->findOpenCart($userId);
@@ -110,9 +132,11 @@ class CartController extends AppController
             return $this->redirect(['action' => 'index']);
         }
 
+
         $qtys = (array)$this->request->getData('qty');
         $CartItems = $this->getTableLocator()->get('CartItems');
         $Products  = $this->getTableLocator()->get('Products');
+
 
         // Load current items to get product ids
         $currentItems = $CartItems->find()
@@ -122,10 +146,12 @@ class CartController extends AppController
             ->all()
             ->toArray();
 
+
         $pidMap = [];
         foreach ($currentItems as $ci) {
             $pidMap[(int)$ci['id']] = (int)$ci['product_id'];
         }
+
 
         // Fetch stock for those products
         $stocks = [];
@@ -142,21 +168,26 @@ class CartController extends AppController
             }
         }
 
+
         $lowered = 0;
         $removed = 0;
+
 
         foreach ($qtys as $itemId => $qty) {
             $itemId = (int)$itemId;
             $qty    = max(0, (int)$qty);
 
+
             $productId = $pidMap[$itemId] ?? null;
             $stock     = is_null($productId) ? null : ($stocks[$productId] ?? null);
+
 
             if ($qty === 0) {
                 $CartItems->deleteAll(['id' => $itemId, 'cart_id' => $cart->id]);
                 $removed++;
                 continue;
             }
+
 
             // If stock is defined, enforce it
             if ($stock !== null) {
@@ -171,11 +202,13 @@ class CartController extends AppController
                 }
             }
 
+
             $CartItems->updateAll(
                 ['qty' => $qty],
                 ['id' => $itemId, 'cart_id' => $cart->id]
             );
         }
+
 
         if ($removed > 0) {
             $this->Flash->warning(($removed === 1 ? 'One item' : $removed . ' items') . ' were removed due to zero stock.');
@@ -187,19 +220,23 @@ class CartController extends AppController
             $this->Flash->success('Cart updated.');
         }
 
+
         return $this->redirect(['action' => 'index']);
     }
+
 
     /** POST /cart/remove/:id */
     public function remove(int $id)
     {
         $this->request->allowMethod(['post']);
 
+
         $identity = $this->request->getAttribute('identity');
         if (!$identity) {
             $this->Flash->error('Please sign in to modify your cart.');
             return $this->redirect(['action' => 'index']);
         }
+
 
         $userId = (int)$identity->get('id');
         $cart = $this->findOpenCart($userId);
@@ -208,13 +245,16 @@ class CartController extends AppController
             $CartItems->deleteAll(['id' => (int)$id, 'cart_id' => $cart->id]);
         }
 
+
         if ($this->request->is('ajax')) {
             return $this->response->withStatus(204);
         }
 
+
         $this->Flash->success('Item removed.');
         return $this->redirect(['action' => 'index']);
     }
+
 
     public function checkout()
     {
@@ -228,6 +268,7 @@ class CartController extends AppController
             ]);
         }
 
+
         $userId = (int)$identity->get('id');
         $cart   = $this->findOpenCart($userId);
         if (!$cart) {
@@ -235,8 +276,10 @@ class CartController extends AppController
             return $this->redirect(['controller' => 'Products', 'action' => 'index']);
         }
 
+
         $CartItems = $this->getTableLocator()->get('CartItems');
         $Products  = $this->getTableLocator()->get('Products');
+
 
         $rows = $CartItems->find()
             ->select(['id', 'product_id', 'qty', 'price', 'currency'])
@@ -245,9 +288,11 @@ class CartController extends AppController
             ->all()
             ->toArray();
 
+
         $items = [];
         $currency = 'AUD';
         $subtotal = 0.0;
+
 
         if ($rows) {
             $pids  = array_column($rows, 'product_id');
@@ -258,9 +303,11 @@ class CartController extends AppController
                 ->enableHydration(false)
                 ->all();
 
+
             foreach ($pRows as $p) {
                 $map[(int)$p['id']] = $p;
             }
+
 
             foreach ($rows as $r) {
                 $pid  = (int)$r['product_id'];
@@ -280,13 +327,16 @@ class CartController extends AppController
             }
         }
 
+
         if (empty($items)) {
             $this->Flash->info('Your cart is empty.');
             return $this->redirect(['controller' => 'Products', 'action' => 'index']);
         }
 
+
         $shipping = $subtotal > 0 ? 12.90 : 0.0;
         $total    = $subtotal + $shipping;
+
 
         $session = $this->request->getSession();
         $bank = (array)$session->read('Checkout.bank');
@@ -299,13 +349,16 @@ class CartController extends AppController
             $session->write('Checkout.bank', $bank);
         }
 
+
         if ($this->request->is('post')) {
             $data = (array)$this->request->getData();
+
 
             $required = ['full_name','email','address','city','postcode','country'];
             foreach ($required as $f) {
                 if (empty(trim((string)($data[$f] ?? '')))) {
                     $this->Flash->error('Please fill all required fields.');
+
 
                     $prefill = [
                         'full_name' => (string)($identity->get('name')  ?? ''),
@@ -315,6 +368,7 @@ class CartController extends AppController
                     $bankBsb         = $bank['bsb'];
                     $bankAccountNo   = $bank['account_no'];
 
+
                     $this->set(compact(
                         'items','currency','subtotal','shipping','total','prefill',
                         'bankAccountName','bankBsb','bankAccountNo'
@@ -323,8 +377,10 @@ class CartController extends AppController
                 }
             }
 
+
             $Orders      = $this->getTableLocator()->get('Orders');
             $OrderItems  = $this->getTableLocator()->get('OrderItems');
+
 
             $order = $Orders->newEntity([
                 'user_id'        => $userId,
@@ -343,7 +399,9 @@ class CartController extends AppController
                 'payment_status' => 'unpaid',
             ]);
 
+
             $Orders->saveOrFail($order);
+
 
             foreach ($items as $it) {
                 $lineTotal = (float)round(((float)$it['price']) * ((int)$it['qty']), 2);
@@ -359,9 +417,11 @@ class CartController extends AppController
                 ]));
             }
 
+
             $Carts = $this->getTableLocator()->get('Carts');
             $Carts->updateAll(['status' => 'ordered'], ['id' => $cart->id]);
             $CartItems->deleteAll(['cart_id' => $cart->id]);
+
 
             try {
                 $ContactMsgs = $this->getTableLocator()->get('ContactMessages');
@@ -372,18 +432,22 @@ class CartController extends AppController
                 ]));
             } catch (\Throwable $e) {}
 
+
             $this->Flash->success('Order placed! Thank you for your purchase.');
             return $this->redirect(['action' => 'complete']);
         }
+
 
         $prefill = [
             'full_name' => (string)($identity->get('name')  ?? ''),
             'email'     => (string)($identity->get('email') ?? ''),
         ];
 
+
         $bankAccountName = $bank['account_name'];
         $bankBsb         = $bank['bsb'];
         $bankAccountNo   = $bank['account_no'];
+
 
         $this->set(compact(
             'items','currency','subtotal','shipping','total','prefill',
@@ -391,9 +455,194 @@ class CartController extends AppController
         ));
     }
 
-    /** GET /checkout/complete */
+
+    /**
+     * GET /checkout/complete
+     * Handles both:
+     *  - Bank Transfer "place order" (no session_id)
+     *  - Stripe return (with ?session_id={CHECKOUT_SESSION_ID})
+     *
+     * If Stripe webhook already created the order, this action is idempotent and simply renders the page.
+     */
     public function complete()
     {
         $this->request->allowMethod(['get']);
+
+
+        // For Bank Transfer flows there is no session_id; just render the "complete" view.
+        $sessionId = (string)($this->request->getQuery('session_id') ?? '');
+        if ($sessionId === '') {
+            return; // render templates/Cart/complete.php
+        }
+
+
+        // Idempotency: if an order with this Stripe session was already created (e.g., by webhook), just show the page.
+        $Orders = $this->getTableLocator()->get('Orders');
+        if ($Orders->exists(['payment_ref' => $sessionId])) {
+            return;
+        }
+
+
+        // Verify the Stripe session to ensure the payment actually succeeded.
+        $secret = (string)(Configure::read('Stripe.secret_key') ?: env('STRIPE_SECRET_KEY', ''));
+        if ($secret === '') {
+            $this->Flash->warning('Stripe secret key is not configured.');
+            return;
+        }
+
+
+        $stripe = new StripeClient($secret);
+
+
+        try {
+            /** @var \Stripe\Checkout\Session $session */
+            $session = $stripe->checkout->sessions->retrieve($sessionId, []);
+        } catch (\Throwable $e) {
+            $this->Flash->warning('Could not verify payment: ' . $e->getMessage());
+            return;
+        }
+
+
+        if (($session->payment_status ?? '') !== 'paid') {
+            // The charge may still be settling; show the page but inform the customer.
+            $this->Flash->warning('Payment is not completed yet. If you already paid, refresh this page in a moment.');
+            return;
+        }
+
+
+        // Pull metadata you attached when creating the Checkout Session (user_id, cart_id, etc.).
+        $meta   = $session->metadata ?? (object)[];
+        $userId = isset($meta->user_id) ? (int)$meta->user_id : null;
+        $cartId = isset($meta->cart_id) ? (int)$meta->cart_id : null;
+
+
+        if (!$cartId) {
+            $this->Flash->warning('Cart information is missing; order cannot be finalized.');
+            return;
+        }
+
+
+        $CartItems  = $this->getTableLocator()->get('CartItems');
+        $Products   = $this->getTableLocator()->get('Products');
+        $OrderItems = $this->getTableLocator()->get('OrderItems');
+        $Carts      = $this->getTableLocator()->get('Carts');
+
+        // Load cart lines
+        $rows = $CartItems->find()
+            ->select(['product_id','qty','price','currency'])
+            ->where(['cart_id' => $cartId])
+            ->enableHydration(false)
+            ->all()
+            ->toArray();
+
+
+        // If webhook already consumed the cart, just render the page
+        if (empty($rows)) {
+            return;
+        }
+
+
+        // Build a quick product map for names/slugs
+        $pids = array_column($rows, 'product_id');
+        $map  = [];
+        if (!empty($pids)) {
+            foreach ($Products->find()
+                         ->select(['id','name','slug'])
+                         ->where(['id IN' => $pids])
+                         ->enableHydration(false)
+                         ->all() as $p) {
+                $map[(int)$p['id']] = $p;
+            }
+        }
+
+
+        $currency = 'AUD';
+        $subtotal = 0.0;
+        $items    = [];
+
+
+        foreach ($rows as $r) {
+            $pid   = (int)$r['product_id'];
+            $qty   = (int)$r['qty'];
+            $price = (float)$r['price'];
+
+
+            $currency = $r['currency'] ?: $currency;
+            $name     = $map[$pid]['name'] ?? ('Product #' . $pid);
+            $slug     = $map[$pid]['slug'] ?? '';
+
+
+            $subtotal += $price * $qty;
+            $items[] = [
+                'pid'      => $pid,
+                'qty'      => $qty,
+                'price'    => $price,
+                'currency' => $currency,
+                'name'     => $name,
+                'slug'     => $slug,
+            ];
+        }
+
+
+
+        $shipping = isset($meta->shipping_fee) ? (float)$meta->shipping_fee : 12.90; // TODO: adjust if your logic differs
+        $total    = round($subtotal + $shipping, 2);
+
+
+        // Create order + items, then close & clear the cart (mirrors Bank Transfer "place order")
+        $conn = $Orders->getConnection();
+        $conn->begin();
+        try {
+            $order = $Orders->newEntity([
+                'user_id'        => $userId,
+                'email'          => (string)($session->customer_email ?? $meta->email ?? ''),
+                'full_name'      => (string)($meta->full_name ?? ''),
+                'address'        => (string)($meta->address ?? ''),
+                'city'           => (string)($meta->city ?? ''),
+                'postcode'       => (string)($meta->postcode ?? ''),
+                'country'        => (string)($meta->country ?? ''),
+                'currency'       => $currency,
+                'subtotal'       => $subtotal,
+                'shipping_fee'   => $shipping,
+                'discount'       => 0.0,
+                'total'          => $total,
+                'status'         => 'new',
+                'payment_status' => 'paid',
+                'payment_method' => 'card',
+                'payment_ref'    => (string)$session->id,
+                'paid_at'        => FrozenTime::now(),
+                'notes'          => null,
+            ]);
+            $Orders->saveOrFail($order);
+
+
+            foreach ($items as $it) {
+                $OrderItems->saveOrFail($OrderItems->newEntity([
+                    'order_id'   => $order->id,
+                    'product_id' => $it['pid'],
+                    'name'       => $it['name'],
+                    'slug'       => $it['slug'],
+                    'price'      => $it['price'],
+                    'qty'        => $it['qty'],
+                    'currency'   => $it['currency'],
+                ]));
+            }
+
+
+            // Mark cart as ordered and clear it (keep this aligned with your Bank Transfer handler)
+            $Carts->updateAll(['status' => 'ordered'], ['id' => $cartId]);
+            $CartItems->deleteAll(['cart_id' => $cartId]);
+
+
+            $conn->commit();
+        } catch (\Throwable $e) {
+            $conn->rollback();
+            $this->Flash->error('Failed to finalize your order: ' . $e->getMessage());
+            return;
+        }
+
+
+        $this->Flash->success('Order placed! Thank you for your purchase.');
     }
+
 }
