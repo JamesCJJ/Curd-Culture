@@ -10,6 +10,10 @@ use Cake\Utility\Text;
 use Cake\Validation\Validator;
 use ArrayObject;
 
+/**
+ * Products table
+ * - Adds decrementStockOrFail() with transaction + row-level lock
+ */
 class ProductsTable extends Table
 {
     public function initialize(array $config): void
@@ -52,32 +56,49 @@ class ProductsTable extends Table
         }
     }
 
-
+    /**
+     * Atomically decrement stock with SELECT ... FOR UPDATE and a single transaction.
+     * - If stock is NULL, treat as "unlimited" and do nothing.
+     * - Throws RuntimeException for missing product or insufficient stock.
+     */
     public function decrementStockOrFail(int $productId, int $qty): void
     {
-
-        $product = $this->find()
-            ->where(['id' => $productId])
-            ->epilog('FOR UPDATE')
-            ->first();
-
-        if (!$product) {
-            throw new \RuntimeException('Product not found: ' . $productId);
-        }
-
-
-        if ($product->stock === null) {
+        if ($qty <= 0) {
             return;
         }
 
-        $curr = (int)$product->stock;
-        if ($curr < $qty) {
-            $name = (string)($product->name ?? ('#'.$productId));
-            throw new \RuntimeException('Insufficient stock for: ' . $name);
+        $conn = $this->getConnection();
+        $conn->begin();
+
+        try {
+            // Row-level lock
+            $product = $this->find()
+                ->where(['id' => $productId])
+                ->applyOptions(['forUpdate' => true])
+                ->first();
+
+            if (!$product) {
+                throw new \RuntimeException('Product not found: ' . $productId);
+            }
+
+            if ($product->stock === null) {
+                $conn->commit();
+                return; // unlimited
+            }
+
+            $current = (int)$product->stock;
+            if ($current < $qty) {
+                $name = (string)($product->name ?? ('#' . $productId));
+                throw new \RuntimeException('Insufficient stock for: ' . $name);
+            }
+
+            $product->stock = $current - $qty;
+            $this->saveOrFail($product, ['atomic' => false]);
+
+            $conn->commit();
+        } catch (\Throwable $e) {
+            $conn->rollback();
+            throw $e;
         }
-
-        $product->stock = $curr - $qty;
-
-        $this->saveOrFail($product, ['atomic' => false]);
     }
 }
