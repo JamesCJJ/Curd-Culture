@@ -4,25 +4,22 @@ declare(strict_types=1);
 namespace App\Controller\Admin;
 
 use App\Controller\Admin\AppController;
+use Cake\Datasource\Exception\RecordNotFoundException;
 
-/**
- * Admin - Pickup Locations management
- *
- * Table: pickup_locations (id, name, address, city, postcode, country, notes, is_active, created, modified)
- */
 class PickupsController extends AppController
 {
     public function initialize(): void
     {
         parent::initialize();
-        $this->viewBuilder()->setLayout('admin');
+
+
+        $this->loadComponent('Flash'); // CakePHP 5 仍可用
     }
 
     /** GET /admin/pickups */
     public function index()
     {
         $this->request->allowMethod(['get']);
-        $Locations = $this->fetchTable('PickupLocations');
 
         $q      = trim((string)$this->request->getQuery('q', ''));
         $status = (string)$this->request->getQuery('status', '');
@@ -30,107 +27,108 @@ class PickupsController extends AppController
         $conditions = [];
         if ($q !== '') {
             $conditions['OR'] = [
-                'PickupLocations.name LIKE'    => '%' . $q . '%',
-                'PickupLocations.address LIKE' => '%' . $q . '%',
-                'PickupLocations.city LIKE'    => '%' . $q . '%',
-                'PickupLocations.postcode LIKE'=> '%' . $q . '%',
+                'PickupLocations.name LIKE'            => "%{$q}%",
+                'PickupLocations.address_line_1 LIKE'  => "%{$q}%",
+                'PickupLocations.address_line_2 LIKE'  => "%{$q}%",
+                'PickupLocations.suburb LIKE'          => "%{$q}%",
+                'PickupLocations.state LIKE'           => "%{$q}%",
+                'PickupLocations.postcode LIKE'        => "%{$q}%",
             ];
         }
-        if ($status === 'active')   { $conditions['is_active'] = 1; }
-        if ($status === 'inactive') { $conditions['is_active'] = 0; }
+        if ($status === 'active') {
+            $conditions['PickupLocations.is_active'] = 1;
+        } elseif ($status === 'inactive') {
+            $conditions['PickupLocations.is_active'] = 0;
+        }
+
+        $PickupLocations = $this->fetchTable('PickupLocations');
+
+
+        $pickups = $PickupLocations->find()
+            ->where($conditions)
+            ->orderBy(['PickupLocations.modified' => 'DESC', 'PickupLocations.id' => 'DESC'])
+            ->all();
+
 
         $stats = [
-            'total'    => $Locations->find()->count(),
-            'active'   => $Locations->find()->where(['is_active' => 1])->count(),
-            'inactive' => $Locations->find()->where(['is_active' => 0])->count(),
+            'total'    => (int)$PickupLocations->find()->count(),
+            'active'   => (int)$PickupLocations->find()->where(['is_active' => 1])->count(),
+            'inactive' => (int)$PickupLocations->find()->where(['is_active' => 0])->count(),
         ];
 
-        $limit  = 20;
-        $page   = max(1, (int)$this->request->getQuery('page', 1));
-        $offset = ($page - 1) * $limit;
-
-        $query = $Locations->find()->where($conditions)->order(['name' => 'ASC', 'id' => 'ASC']);
-
-        $totalCount = $query->count();
-        $locations = $query->limit($limit)->offset($offset)->all();
-
-        $pagination = [
-            'page'       => $page,
-            'totalPages' => (int)ceil($totalCount / $limit),
-            'totalCount' => $totalCount,
-            'hasPrev'    => $page > 1,
-            'hasNext'    => $page * $limit < $totalCount,
-        ];
-
-        $this->set(compact('locations', 'q', 'status', 'stats', 'pagination'));
+        $this->set(compact('pickups', 'q', 'status', 'stats'));
     }
 
     /** GET|POST /admin/pickups/add */
     public function add()
     {
-        $Locations = $this->fetchTable('PickupLocations');
-        $loc = $Locations->newEmptyEntity();
+        $this->request->allowMethod(['get', 'post']);
 
-        if ($this->request->is(['post'])) {
-            $data = (array)$this->request->getData();
-            $loc  = $Locations->patchEntity($loc, $data);
+        $PickupLocations = $this->fetchTable('PickupLocations');
+        $pickup = $PickupLocations->newEmptyEntity();
 
-            if ($Locations->save($loc)) {
-                $this->Flash->success('Pickup location created.');
+        if ($this->request->is('post')) {
+            $pickup = $PickupLocations->patchEntity($pickup, $this->request->getData());
+            if ($PickupLocations->save($pickup)) {
+                $this->Flash->success('Pickup location has been created.');
                 return $this->redirect(['action' => 'index']);
             }
-            $this->Flash->error('Could not create location.');
+            $this->Flash->error('Failed to create pickup location. Please check the form.');
         }
 
-        $this->set(compact('loc'));
+        $this->set(compact('pickup'));
+        $this->render('form');
     }
 
-    /** GET|POST /admin/pickups/edit/:id */
-    public function edit(int $id)
+    /** GET|POST|PUT|PATCH /admin/pickups/edit/{id} */
+    public function edit($id = null)
     {
-        $Locations = $this->fetchTable('PickupLocations');
-        $loc = $Locations->get($id);
+        $this->request->allowMethod(['get', 'post', 'put', 'patch']);
 
-        if ($this->request->is(['post','put','patch'])) {
-            $loc = $Locations->patchEntity($loc, (array)$this->request->getData());
-            if ($Locations->save($loc)) {
-                $this->Flash->success('Pickup location updated.');
-                return $this->redirect(['action'=>'index']);
-            }
-            $this->Flash->error('Could not update location.');
+        $PickupLocations = $this->fetchTable('PickupLocations');
+
+        try {
+            $pickup = $PickupLocations->get((int)$id);
+        } catch (RecordNotFoundException $e) {
+            $this->Flash->error('Pickup not found.');
+            return $this->redirect(['action' => 'index']);
         }
 
-        $this->set(compact('loc'));
+        if ($this->request->is(['post', 'put', 'patch'])) {
+            $pickup = $PickupLocations->patchEntity($pickup, $this->request->getData());
+            if ($PickupLocations->save($pickup)) {
+                $this->Flash->success('Pickup location has been updated.');
+                return $this->redirect(['action' => 'index']);
+            }
+            $this->Flash->error('Failed to update pickup location. Please fix the errors.');
+        }
+
+        $this->set(compact('pickup'));
+        $this->render('form');
     }
 
-    /** POST /admin/pickups/toggle/:id */
-    public function toggle(int $id)
+    /** POST /admin/pickups/toggle/{id}  -> enable/disable */
+    public function toggle($id = null)
     {
         $this->request->allowMethod(['post']);
-        $Locations = $this->fetchTable('PickupLocations');
-        $loc = $Locations->get($id);
-        $loc->is_active = (int)!$loc->is_active;
 
-        if ($Locations->save($loc)) {
-            $this->Flash->success('Status updated.');
-        } else {
-            $this->Flash->error('Could not update status.');
+        $PickupLocations = $this->fetchTable('PickupLocations');
+
+        try {
+            $pickup = $PickupLocations->get((int)$id);
+        } catch (RecordNotFoundException $e) {
+            $this->Flash->error('Pickup not found.');
+            return $this->redirect(['action' => 'index']);
         }
-        return $this->redirect($this->referer(['action'=>'index'], true));
-    }
 
-    /** POST /admin/pickups/delete/:id */
-    public function delete(int $id)
-    {
-        $this->request->allowMethod(['post','delete']);
-        $Locations = $this->fetchTable('PickupLocations');
-        $loc = $Locations->get($id);
+        $pickup->is_active = (int)!$pickup->is_active;
 
-        if ($Locations->delete($loc)) {
-            $this->Flash->success('Location deleted.');
+        if ($PickupLocations->save($pickup)) {
+            $this->Flash->success($pickup->is_active ? 'Enabled.' : 'Disabled.');
         } else {
-            $this->Flash->error('Could not delete location.');
+            $this->Flash->error('Failed to toggle status.');
         }
-        return $this->redirect(['action'=>'index']);
+
+        return $this->redirect(['action' => 'index']);
     }
 }
