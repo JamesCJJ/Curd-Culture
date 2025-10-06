@@ -48,7 +48,6 @@ $this->assign('title', 'Order #' . $order->id);
                     </div>
                 </div>
 
-                <!-- Simple progress visualization -->
                 <div class="progress mb-3" style="height: 8px;">
                     <?php
                     $statusProgress = [
@@ -90,6 +89,38 @@ $this->assign('title', 'Order #' . $order->id);
                         </div>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <!-- Fulfillment Info (Delivery / Pickup) -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="bi bi-calendar2-week me-2"></i>
+                    Fulfillment
+                </h5>
+            </div>
+            <div class="card-body">
+                <?php if (($order->fulfillment_method ?? 'delivery') === 'pickup'): ?>
+                    <p class="mb-1"><strong>Method:</strong> Click &amp; Collect</p>
+                    <?php if (!empty($order->pickup_location_id)): ?>
+                        <p class="mb-1"><strong>Pickup Location:</strong> #<?= (int)$order->pickup_location_id ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($order->delivery_instructions)): ?>
+                        <p class="mb-0"><strong>Notes:</strong> <?= h($order->delivery_instructions) ?></p>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <p class="mb-1"><strong>Method:</strong> Home Delivery</p>
+                    <?php if (!empty($order->delivery_date)): ?>
+                        <p class="mb-1"><strong>Date:</strong> <?= h($order->delivery_date->format('M j, Y')) ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($order->delivery_slot_id)): ?>
+                        <p class="mb-1"><strong>Time Slot:</strong> Slot #<?= (int)$order->delivery_slot_id ?></p>
+                    <?php endif; ?>
+                    <?php if (!empty($order->delivery_instructions)): ?>
+                        <p class="mb-0"><strong>Notes:</strong> <?= h($order->delivery_instructions) ?></p>
+                    <?php endif; ?>
+                <?php endif; ?>
             </div>
         </div>
 
@@ -165,7 +196,7 @@ $this->assign('title', 'Order #' . $order->id);
                     </small>
                 <?php endif; ?>
 
-                <!-- Status message is now conditional: show "fully paid" ONLY if payment_status === 'paid' -->
+                <!-- Show "fully paid" only if payment_status === 'paid' -->
                 <?php if (($order->payment_status ?? '') === 'paid'): ?>
                     <div class="mt-3 p-2 bg-success bg-opacity-10 rounded">
                         <i class="bi bi-check-circle text-success me-2"></i>
@@ -216,7 +247,11 @@ $this->assign('title', 'Order #' . $order->id);
                 <h6 class="mb-0">Shipping Method</h6>
             </div>
             <div class="card-body">
-                <p class="mb-0"><?= ($order->shipping_fee ?? 0) > 0 ? 'Standard Shipping' : 'Free Shipping' ?></p>
+                <p class="mb-0">
+                    <?= (($order->fulfillment_method ?? 'delivery') === 'pickup')
+                        ? 'Click & Collect'
+                        : (($order->shipping_fee ?? 0) > 0 ? 'Standard Shipping' : 'Free Shipping') ?>
+                </p>
             </div>
         </div>
     </div>
