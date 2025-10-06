@@ -374,12 +374,28 @@ class CustomerController extends AppController
      */
     public function editAddress($id = null)
     {
+        $this->request->allowMethod(['patch','post','put']);
+
         $identity = $this->request->getAttribute('identity');
-        $userId   = $identity->get('id');
+        $userId   = (int)$identity->get('id');
+
+        // ✅ 与 setDefaultAddress 相同的多来源取 id 逻辑
+        $pass  = (array)($this->request->getParam('pass') ?? []);
+        $rawId = $id
+            ?? ($pass[0] ?? null)
+            ?? $this->request->getData('id')
+            ?? $this->request->getQuery('id');
+
+        $addrId = is_numeric($rawId) ? (int)$rawId : 0;
+        if ($addrId <= 0) {
+            $this->Flash->error('Invalid address ID.');
+            return $this->redirect(['action' => 'profile']);
+        }
 
         $Addresses = $this->fetchTable('Addresses');
-        $address   = $Addresses->find()
-            ->where(['id' => $id, 'user_id' => $userId])
+
+        $address = $Addresses->find()
+            ->where(['id' => $addrId, 'user_id' => $userId])
             ->first();
 
         if (!$address) {
@@ -387,83 +403,39 @@ class CustomerController extends AppController
             return $this->redirect(['action' => 'profile']);
         }
 
-        if ($this->request->is(['patch', 'post', 'put'])) {
-            $data = (array)$this->request->getData();
+        // Patch & 保存
+        $data = (array)$this->request->getData();
 
-            $newType = (string)($data['type'] ?? $address->type ?? 'billing');
-            if (!in_array($newType, ['shipping','billing'], true)) {
-                $newType = 'billing';
-            }
-            $newDefault = !empty($data['is_default']) ? 1 : 0;
+        $newType = (string)($data['type'] ?? $address->type ?? 'billing');
+        if (!in_array($newType, ['shipping','billing'], true)) {
+            $newType = 'billing';
+        }
+        $newDefault = !empty($data['is_default']) ? 1 : 0;
 
-            if ($newDefault === 1) {
-                $Addresses->updateAll(
-                    ['is_default' => 0],
-                    ['user_id' => $userId, 'type' => $newType]
-                );
-            }
-
-            $data['user_id']    = $userId;
-            $data['type']       = $newType;
-            $data['is_default'] = $newDefault;
-
-            $address = $Addresses->patchEntity($address, $data);
-
-            if ($Addresses->save($address)) {
-                $this->Flash->success('Address updated successfully.');
-                return $this->redirect(['action' => 'profile']);
-            }
-            $this->Flash->error('Unable to update address.');
+        if ($newDefault === 1) {
+            // 清除此用户该类型的其它默认
+            $Addresses->updateAll(
+                ['is_default' => 0],
+                ['user_id' => $userId, 'type' => $newType]
+            );
         }
 
-        $this->set(compact('address'));
-    }
+        // 强制归属与类型
+        $data['user_id']    = $userId;
+        $data['type']       = $newType;
+        $data['is_default'] = $newDefault;
 
-    /** Delete an address */
-    public function deleteAddress($id = null)
-    {
-        $this->request->allowMethod(['post', 'delete']);
+        $address = $Addresses->patchEntity($address, $data);
 
-        if ($id === null) {
-            $pass = (array)$this->request->getParam('pass');
-            if (!empty($pass[0])) {
-                $id = $pass[0];
-            }
-        }
-
-        if ($id === null) {
-            $id = $this->request->getData('id')
-                ?? $this->request->getQuery('id')
-                ?? null;
-        }
-
-        if ($id === null || !is_numeric($id)) {
-            $this->Flash->error('Invalid address ID.');
-            return $this->redirect(['action' => 'profile']);
-        }
-
-        $identity = $this->request->getAttribute('identity');
-        $userId   = (int)$identity->get('id');
-
-        $Addresses = $this->fetchTable('Addresses');
-
-        $address = $Addresses->find()
-            ->where(['id' => (int)$id, 'user_id' => $userId])
-            ->first();
-
-        if (!$address) {
-            $this->Flash->error('Address not found or not owned by you.');
-            return $this->redirect(['action' => 'profile']);
-        }
-
-        if ($Addresses->delete($address)) {
-            $this->Flash->success('Address deleted successfully.');
+        if ($Addresses->save($address)) {
+            $this->Flash->success('Address updated successfully.');
         } else {
-            $this->Flash->error('Unable to delete address.');
+            $this->Flash->error('Unable to update address.');
         }
 
         return $this->redirect(['action' => 'profile']);
     }
+
 
     /**
      * Mark an address as default (scoped to its type).
