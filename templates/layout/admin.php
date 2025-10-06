@@ -189,21 +189,21 @@
         .hc {
             filter: contrast(1.2) brightness(1.1);
         }
-        
+
         .hc .admin-sidebar {
             background: #000;
             color: #fff;
         }
-        
+
         .hc .admin-header {
             background: #fff;
             border-bottom: 2px solid #000;
         }
-        
+
         .hc .nav-link {
             border-left: 3px solid transparent;
         }
-        
+
         .hc .nav-link:hover,
         .hc .nav-link.active {
             background: #333;
@@ -215,12 +215,12 @@
             background: #1a1a1a;
             color: #e5e5e5;
         }
-        
+
         .theme-dark .admin-header {
             background: #2d2d2d;
             border-bottom-color: #404040;
         }
-        
+
         .theme-dark .admin-content {
             background: #1a1a1a;
         }
@@ -275,33 +275,33 @@
 
     <!-- Font Scale and Accessibility Script -->
     <script>
-    (function(){
-        // Apply font scale from cookie
-        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
-            const [key, value] = cookie.trim().split('=');
-            acc[key] = value;
-            return acc;
-        }, {});
-        
-        const fontScale = parseFloat(cookies.pref_font_scale) || 1.0;
-        if (fontScale !== 1.0) {
-            document.documentElement.style.fontSize = (16 * fontScale) + 'px';
-        }
-        
-        // Apply contrast from cookie
-        const contrast = cookies.pref_contrast;
-        if (contrast === 'high') {
-            document.body.classList.add('hc');
-        }
-        
-        // Apply theme from cookie
-        const theme = cookies.pref_theme;
-        if (theme === 'dark') {
-            document.body.classList.add('theme-dark');
-        } else if (theme === 'light') {
-            document.body.classList.add('theme-light');
-        }
-    })();
+        (function(){
+            // Apply font scale from cookie
+            const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+                const [key, value] = cookie.trim().split('=');
+                acc[key] = value;
+                return acc;
+            }, {});
+
+            const fontScale = parseFloat(cookies.pref_font_scale) || 1.0;
+            if (fontScale !== 1.0) {
+                document.documentElement.style.fontSize = (16 * fontScale) + 'px';
+            }
+
+            // Apply contrast from cookie
+            const contrast = cookies.pref_contrast;
+            if (contrast === 'high') {
+                document.body.classList.add('hc');
+            }
+
+            // Apply theme from cookie
+            const theme = cookies.pref_theme;
+            if (theme === 'dark') {
+                document.body.classList.add('theme-dark');
+            } else if (theme === 'light') {
+                document.body.classList.add('theme-light');
+            }
+        })();
     </script>
 
     <?= $this->fetch('meta') ?>
@@ -310,133 +310,140 @@
 
 </head>
 <body>
-    <div class="admin-layout">
-        <!-- Sidebar -->
-        <aside class="admin-sidebar">
-            <div class="sidebar-brand">
+<div class="admin-layout">
+    <!-- Sidebar -->
+    <aside class="admin-sidebar">
+        <div class="sidebar-brand">
+            <?= $this->Html->link(
+                'Curd & Culture Admin',
+                ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
+                ['class' => 'brand-text']
+            ) ?>
+        </div>
+        <?php
+        $currentController = $this->request->getParam('controller');
+        $currentAction     = $this->request->getParam('action');
+        ?>
+        <nav class="sidebar-nav">
+            <div class="nav-section">
+                <div class="nav-title">Main</div>
                 <?= $this->Html->link(
-                    'Curd & Culture Admin',
+                    '<i class="icon-home"></i>Dashboard',
                     ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
-                    ['class' => 'brand-text']
+                    [
+                        'class' => 'nav-link' . ($this->request->getParam('controller') === 'Dashboard' ? ' active' : ''),
+                        'escape' => false
+                    ]
                 ) ?>
             </div>
-            <?php
-            $currentController = $this->request->getParam('controller');
-            $currentAction     = $this->request->getParam('action');
-            ?>
-            <nav class="sidebar-nav">
-                <div class="nav-section">
-                    <div class="nav-title">Main</div>
-                    <?= $this->Html->link(
-                        '<i class="icon-home"></i>Dashboard',
-                        ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
-                        [
-                            'class' => 'nav-link' . ($this->request->getParam('controller') === 'Dashboard' ? ' active' : ''),
-                            'escape' => false
-                        ]
-                    ) ?>
-                </div>
 
-                <div class="nav-section">
-                    <div class="nav-title">Management</div>
-                    <?= $this->Html->link(
-                        '<i class="icon-message"></i>Customer Inquiries',
-                        ['prefix' => 'Admin', 'controller' => 'ContactMessages', 'action' => 'index'],
-                        [
-                            'class' => 'nav-link' . ($this->request->getParam('controller') === 'ContactMessages' ? ' active' : ''),
-                            'escape' => false
-                        ]
-                    ) ?>
-                    <?= $this->Html->link(
-                        '<i class="icon-package"></i>Products',
-                        ['prefix' => 'Admin', 'controller' => 'Products', 'action' => 'index'],
-                        [
-                            'class' => 'nav-link' . ($this->request->getParam('controller') === 'Products' ? ' active' : ''),
-                            'escape' => false
-                        ]
-                    ) ?>
-                    <?= $this->Html->link(
-                        '<i class="icon-shopping-cart"></i>Orders',
-                        ['prefix' => 'Admin', 'controller' => 'Orders', 'action' => 'index'],
-                        [
-                            'class' => 'nav-link' . (
-                                $currentController === 'Orders'
-                                && $currentAction !== 'analytics'
-                                    ? ' active' : ''
-                                ),
-                            'escape' => false
-                        ]
-                    ) ?>
+            <div class="nav-section">
+                <div class="nav-title">Management</div>
+                <?= $this->Html->link(
+                    '<i class="icon-message"></i>Customer Inquiries',
+                    ['prefix' => 'Admin', 'controller' => 'ContactMessages', 'action' => 'index'],
+                    [
+                        'class' => 'nav-link' . ($this->request->getParam('controller') === 'ContactMessages' ? ' active' : ''),
+                        'escape' => false
+                    ]
+                ) ?>
+                <?= $this->Html->link(
+                    '<i class="icon-package"></i>Products',
+                    ['prefix' => 'Admin', 'controller' => 'Products', 'action' => 'index'],
+                    [
+                        'class' => 'nav-link' . ($this->request->getParam('controller') === 'Products' ? ' active' : ''),
+                        'escape' => false
+                    ]
+                ) ?>
+                <?= $this->Html->link(
+                    '<i class="icon-shopping-cart"></i>Orders',
+                    ['prefix' => 'Admin', 'controller' => 'Orders', 'action' => 'index'],
+                    [
+                        'class' => 'nav-link' . (
+                            $currentController === 'Orders'
+                            && $currentAction !== 'analytics'
+                                ? ' active' : ''
+                            ),
+                        'escape' => false
+                    ]
+                ) ?>
 
-                    <?= $this->Html->link(
-                        '<i class="icon-users"></i>Users',
-                        ['prefix' => 'Admin', 'controller' => 'Users', 'action' => 'index'],
-                        [
-                            'class' => 'nav-link' . ($this->request->getParam('controller') === 'Users' ? ' active' : ''),
-                            'escape' => false
-                        ]
-                    ) ?>
-                </div>
+                <?= $this->Html->link(
+                    '<i>🚚</i> Deliveries',
+                    ['prefix' => 'Admin', 'controller' => 'Deliveries', 'action' => 'index'],
+                    ['class' => 'nav-link' . ($currentController === 'Deliveries' ? ' active' : ''), 'escape' => false]
+                ) ?>
 
-                <div class="nav-section">
-                    <div class="nav-title">Analytics</div>
-                    <?= $this->Html->link(
-                        '<i class="icon-bar-chart"></i>Reports',
-                        ['prefix' => 'Admin', 'controller' => 'Orders', 'action' => 'analytics'],
-                        [
-                            'class'  => 'nav-link' . (
-                                ($currentController === 'Orders' && $currentAction === 'analytics')
-                                    ? ' active' : ''
-                                ),
-                            'escape' => false
-                        ]
-                    ) ?>
+                <?= $this->Html->link(
+                    '<i>📍</i> Pickups',
+                    ['prefix' => 'Admin', 'controller' => 'Pickups', 'action' => 'index'],
+                    ['class' => 'nav-link' . ($currentController === 'Pickups' ? ' active' : ''), 'escape' => false]
+                ) ?>
 
-                </div>
+                <?= $this->Html->link(
+                    '<i>📅</i> Delivery Slots',
+                    ['prefix' => 'Admin', 'controller' => 'DeliverySlots', 'action' => 'index'],
+                    ['class' => 'nav-link' . ($currentController === 'DeliverySlots' ? ' active' : ''), 'escape' => false]
+                ) ?>
+            <div class="nav-section">
+                <div class="nav-title">Analytics</div>
+                <?= $this->Html->link(
+                    '<i class="icon-bar-chart"></i>Reports',
+                    ['prefix' => 'Admin', 'controller' => 'Orders', 'action' => 'analytics'],
+                    [
+                        'class'  => 'nav-link' . (
+                            ($currentController === 'Orders' && $currentAction === 'analytics')
+                                ? ' active' : ''
+                            ),
+                        'escape' => false
+                    ]
+                ) ?>
 
-                <div class="nav-section">
-                    <div class="nav-title">System</div>
-                    <?= $this->Html->link(
-                        '<i class="icon-settings"></i>Settings',
-                        ['prefix' => 'Admin', 'controller' => 'Settings', 'action' => 'index'],
-                        [
-                            'class' => 'nav-link' . ($this->request->getParam('controller') === 'Settings' ? ' active' : ''),
-                            'escape' => false
-                        ]
-                    ) ?>
-                    <?= $this->Html->link(
-                        '<i class="icon-log-out"></i>Back to Site',
-                        ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home'],
-                        [
-                            'class' => 'nav-link',
-                            'escape' => false
-                        ]
-                    ) ?>
-                </div>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="admin-main">
-            <header class="admin-header">
-                <h1 class="header-title"><?= $this->fetch('title') ?: 'Admin Panel' ?></h1>
-                <div class="header-actions">
-                    <div class="header-user">
-                        Welcome, Admin
-                    </div>
-                    <?= $this->Html->link(
-                        'View Site',
-                        ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home'],
-                        ['class' => 'btn btn-outline', 'target' => '_blank']
-                    ) ?>
-                </div>
-            </header>
-
-            <div class="admin-content">
-                <?= $this->Flash->render() ?>
-                <?= $this->fetch('content') ?>
             </div>
-        </main>
-    </div>
+
+            <div class="nav-section">
+                <div class="nav-title">System</div>
+                <?= $this->Html->link(
+                    '<i class="icon-settings"></i>Settings',
+                    ['prefix' => 'Admin', 'controller' => 'Settings', 'action' => 'index'],
+                    [
+                        'class' => 'nav-link' . ($this->request->getParam('controller') === 'Settings' ? ' active' : ''),
+                        'escape' => false
+                    ]
+                ) ?>
+                <?= $this->Html->link(
+                    '<i class="icon-log-out"></i>Back to Site',
+                    ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home'],
+                    [
+                        'class' => 'nav-link',
+                        'escape' => false
+                    ]
+                ) ?>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- Main Content -->
+    <main class="admin-main">
+        <header class="admin-header">
+            <h1 class="header-title"><?= $this->fetch('title') ?: 'Admin Panel' ?></h1>
+            <div class="header-actions">
+                <div class="header-user">
+                    Welcome, Admin
+                </div>
+                <?= $this->Html->link(
+                    'View Site',
+                    ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home'],
+                    ['class' => 'btn btn-outline', 'target' => '_blank']
+                ) ?>
+            </div>
+        </header>
+
+        <div class="admin-content">
+            <?= $this->Flash->render() ?>
+            <?= $this->fetch('content') ?>
+        </div>
+    </main>
+</div>
 </body>
 </html>
