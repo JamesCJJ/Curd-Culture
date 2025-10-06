@@ -70,14 +70,21 @@ $this->assign('title', 'Profile');
                                                         <i class="bi bi-pencil me-2"></i>Edit
                                                     </button>
                                                 </li>
-                                                <?php if (!$address->is_default): ?>
-                                                    <li>
 
-                                                        <button class="dropdown-item" onclick="setDefaultAddressSoon(<?= (int)$address->id ?>)">
-                                                            <i class="bi bi-check me-2"></i>Set as Default
-                                                        </button>
+                                                <?php if (!(int)$address->is_default): ?>
+                                                    <li>
+                                                        <?= $this->Form->postLink(
+                                                            '<i class="bi bi-check me-2"></i>Set as Default',
+                                                            ['action' => 'setDefaultAddress', (int)$address->id],
+                                                            [
+                                                                'class'  => 'dropdown-item',
+                                                                'escape' => false,
+                                                                'data'   => ['id' => (int)$address->id],
+                                                            ]
+                                                        ) ?>
                                                     </li>
                                                 <?php endif; ?>
+
                                                 <li><hr class="dropdown-divider"></li>
                                                 <li>
                                                     <?= $this->Form->postLink(
@@ -96,10 +103,17 @@ $this->assign('title', 'Profile');
                                     </div>
 
                                     <address class="mb-0" style="margin-top: <?= $address->is_default ? '1.5rem' : '0' ?>;">
-                                        <strong><?= h($address->full_name) ?></strong><br>
+                                        <div class="d-flex justify-content-between align-items-center mb-1">
+                                            <strong><?= h(trim(($address->first_name ?? '') . ' ' . ($address->last_name ?? ''))) ?></strong>
+                                            <span class="badge bg-light text-dark">
+                                                <?= h(ucfirst($address->type ?? 'billing')) ?>
+                                            </span>
+                                        </div>
+
                                         <?php if (!empty($address->company)): ?>
                                             <?= h($address->company) ?><br>
                                         <?php endif; ?>
+
                                         <?= h($address->address_line_1) ?><br>
                                         <?php if (!empty($address->address_line_2)): ?>
                                             <?= h($address->address_line_2) ?><br>
@@ -178,6 +192,10 @@ $this->assign('title', 'Profile');
                     'url' => ['action' => 'addAddress'],
                     'id' => 'addAddressForm'
                 ]) ?>
+
+                <!-- 隐藏：与 UI 文案一致，默认添加 billing 地址 -->
+                <?= $this->Form->hidden('type', ['value' => 'billing']) ?>
+
                 <div class="mb-3">
                     <label for="country" class="form-label">Country/region</label>
                     <?= $this->Form->select('country', ['Australia' => 'Australia'], [
@@ -248,11 +266,11 @@ $this->assign('title', 'Profile');
                                 'NSW' => 'New South Wales',
                                 'VIC' => 'Victoria',
                                 'QLD' => 'Queensland',
-                                'WA' => 'Western Australia',
-                                'SA' => 'South Australia',
+                                'WA'  => 'Western Australia',
+                                'SA'  => 'South Australia',
                                 'TAS' => 'Tasmania',
                                 'ACT' => 'Australian Capital Territory',
-                                'NT' => 'Northern Territory'
+                                'NT'  => 'Northern Territory'
                             ], [
                                 'class' => 'form-select',
                                 'required' => true
@@ -281,6 +299,12 @@ $this->assign('title', 'Profile');
                         ]) ?>
                     </div>
                 </div>
+
+                <div class="form-check mb-2">
+                    <?= $this->Form->checkbox('is_default', ['value' => 1, 'class' => 'form-check-input', 'id' => 'addrDefault']) ?>
+                    <label class="form-check-label" for="addrDefault">Set as default billing address</label>
+                </div>
+
                 <?= $this->Form->end() ?>
             </div>
             <div class="modal-footer">
@@ -294,10 +318,6 @@ $this->assign('title', 'Profile');
 <script>
     function editAddress(id) {
         alert('Edit functionality coming soon!');
-    }
-
-    function setDefaultAddressSoon(id) {
-        alert('Set as default functionality coming soon!');
     }
 
     // Auto-reset the add-address form when the modal closes

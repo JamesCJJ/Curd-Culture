@@ -6,18 +6,13 @@ namespace App\Controller;
 use Cake\Event\EventInterface;
 use Cake\Http\Cookie\Cookie;
 
-/**
- * Customer-facing dashboard, orders, and address book.
- * Notes:
- * - All actions require an authenticated user with role "customer" (or "user").
- * - Address book supports "shipping"/"billing" types and per-type default.
- */
 class CustomerController extends AppController
 {
     public function initialize(): void
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
+        $this->loadComponent('Flash');
     }
 
     /**
@@ -62,10 +57,9 @@ class CustomerController extends AppController
     public function orders()
     {
         $identity = $this->request->getAttribute('identity');
-        $userId = $identity->get('id');
+        $userId   = $identity->get('id');
 
         $Orders = $this->fetchTable('Orders');
-
         $conditions = ['Orders.user_id' => $userId];
 
         $status = $this->request->getQuery('status');
@@ -117,15 +111,9 @@ class CustomerController extends AppController
         $this->set(compact('orders', 'statusOptions', 'status', 'dateFrom', 'dateTo', 'pagination'));
     }
 
-    /**
-     * Order details page.
-     * Tip: to show delivery slot name or pickup location name in the view,
-     * consider adding associations on OrdersTable to DeliverySlots and PickupLocations,
-     * then include them in ->contain([...]).
-     */
+    /** Order details */
     public function orderDetails($id = null)
     {
-        // Accept ID from positional route, query param, or argument
         if ($id === null) {
             $id = $this->request->getQuery('id');
         }
@@ -148,7 +136,7 @@ class CustomerController extends AppController
 
         $order = $Orders->find()
             ->where(['Orders.id' => $id, 'Orders.user_id' => $userId])
-            ->contain(['OrderItems' => ['Products']]) // add DeliverySlots/PickupLocations if you create associations
+            ->contain(['OrderItems' => ['Products']])
             ->first();
 
         if (!$order) {
@@ -159,11 +147,7 @@ class CustomerController extends AppController
         $this->set(compact('order'));
     }
 
-    /**
-     * Profile page + address book.
-     * - Lists all addresses for the user (default first).
-     * - Allows editing email from Users table.
-     */
+
     public function profile()
     {
         $identity = $this->request->getAttribute('identity');
@@ -174,26 +158,27 @@ class CustomerController extends AppController
 
         $user = $Users->get($userId);
 
+
         $addresses = $Addresses->find()
             ->where(['user_id' => $userId])
             ->order(['is_default' => 'DESC', 'created' => 'ASC'])
             ->all();
 
-        // Optional: compute quick defaults for the view
+
         $defaultShippingId = null;
         $defaultBillingId  = null;
         foreach ($addresses as $addr) {
-            if ($addr->is_default && $addr->type === 'shipping' && $defaultShippingId === null) {
-                $defaultShippingId = $addr->id;
+            if ($addr->is_default && ($addr->type ?? 'shipping') === 'shipping' && $defaultShippingId === null) {
+                $defaultShippingId = (int)$addr->id;
             }
-            if ($addr->is_default && $addr->type === 'billing' && $defaultBillingId === null) {
-                $defaultBillingId = $addr->id;
+            if ($addr->is_default && ($addr->type ?? 'billing') === 'billing' && $defaultBillingId === null) {
+                $defaultBillingId = (int)$addr->id;
             }
         }
 
         if ($this->request->is(['patch', 'post', 'put'])) {
             $data = $this->request->getData();
-            $allowedFields = ['email']; // whitelist only email for now
+            $allowedFields = ['email'];
 
             $user = $Users->patchEntity($user, $data, ['fields' => $allowedFields]);
 
@@ -223,7 +208,6 @@ class CustomerController extends AppController
         if ($this->request->is(['post', 'put', 'patch'])) {
             $d = (array)$this->request->getData();
 
-            // Normalize incoming values
             $theme      = in_array(($d['theme'] ?? 'auto'), ['auto','light','dark'], true) ? $d['theme'] : 'auto';
             $contrast   = in_array(($d['contrast'] ?? 'normal'), ['normal','high'], true) ? $d['contrast'] : 'normal';
             $fontScale  = (string)max(0.9, min(1.25, (float)($d['font_scale'] ?? 1.0)));
@@ -339,7 +323,7 @@ class CustomerController extends AppController
     /**
      * Add a new address for the current user.
      * Accepts:
-     *  - type: 'shipping' (default) or 'billing'
+     *  - type: 'shipping' or 'billing'（若未提供，默认 'billing' 与界面一致）
      *  - is_default: 1/0; if 1, clears other defaults within the same type for this user
      */
     public function addAddress()
@@ -353,16 +337,17 @@ class CustomerController extends AppController
         $address   = $Addresses->newEmptyEntity();
 
         $data = (array)$this->request->getData();
-        $type = (string)($data['type'] ?? 'shipping');
+
+        $type = (string)($data['type'] ?? 'billing');
         if (!in_array($type, ['shipping','billing'], true)) {
-            $type = 'shipping';
+            $type = 'billing';
         }
 
         $isDefault = !empty($data['is_default']) ? 1 : 0;
 
         // Enforce ownership and type
-        $data['user_id'] = $userId;
-        $data['type']    = $type;
+        $data['user_id']    = $userId;
+        $data['type']       = $type;
         $data['is_default'] = $isDefault;
 
         $address = $Addresses->patchEntity($address, $data);
@@ -385,9 +370,7 @@ class CustomerController extends AppController
     }
 
     /**
-     * Edit an existing address for the current user.
-     * - If user toggles it to default, we clear other defaults within the (possibly updated) type.
-     * - If user changes the type and keeps it as default, we clear defaults in the new type scope.
+     * Edit an existing address
      */
     public function editAddress($id = null)
     {
@@ -405,16 +388,14 @@ class CustomerController extends AppController
         }
 
         if ($this->request->is(['patch', 'post', 'put'])) {
-            $data    = (array)$this->request->getData();
+            $data = (array)$this->request->getData();
 
-            // Normalize type and default flag
-            $newType   = (string)($data['type'] ?? $address->type ?? 'shipping');
+            $newType = (string)($data['type'] ?? $address->type ?? 'billing');
             if (!in_array($newType, ['shipping','billing'], true)) {
-                $newType = 'shipping';
+                $newType = 'billing';
             }
             $newDefault = !empty($data['is_default']) ? 1 : 0;
 
-            // If turning into default, clear other defaults within the new type first
             if ($newDefault === 1) {
                 $Addresses->updateAll(
                     ['is_default' => 0],
@@ -422,7 +403,6 @@ class CustomerController extends AppController
                 );
             }
 
-            // Patch entity (force user/type to prevent tampering)
             $data['user_id']    = $userId;
             $data['type']       = $newType;
             $data['is_default'] = $newDefault;
@@ -439,12 +419,7 @@ class CustomerController extends AppController
         $this->set(compact('address'));
     }
 
-    /**
-     * Delete an address owned by the current user.
-     * Soft constraints:
-     * - No special handling if deleting the only default address of a type;
-     *   if you need stricter rules, enforce them here.
-     */
+    /** Delete an address */
     public function deleteAddress($id = null)
     {
         $this->request->allowMethod(['post', 'delete']);
@@ -492,33 +467,37 @@ class CustomerController extends AppController
 
     /**
      * Mark an address as default (scoped to its type).
-     * If the address is 'shipping', we only clear defaults among shipping addresses, etc.
      */
     public function setDefaultAddress($id = null)
     {
         $this->request->allowMethod(['post']);
 
-        $identity = $this->request->getAttribute('identity');
-        $userId   = $identity->get('id');
 
+        $pass = (array)($this->request->getParam('pass') ?? []);
+        $rawId = $id
+            ?? ($pass[0] ?? null)
+            ?? $this->request->getData('id')
+            ?? $this->request->getQuery('id');
+
+        $addrId = is_numeric($rawId) ? (int)$rawId : 0;
+        if ($addrId <= 0) {
+            $this->Flash->error('Invalid address ID.');
+            return $this->redirect(['action' => 'profile']);
+        }
+
+        $identity  = $this->request->getAttribute('identity');
+        $userId    = (int)$identity->get('id');
         $Addresses = $this->fetchTable('Addresses');
 
-        $address = $Addresses->find()
-            ->where(['id' => $id, 'user_id' => $userId])
-            ->first();
 
-        if (!$address) {
+        $exists = $Addresses->exists(['id' => $addrId, 'user_id' => $userId]);
+        if (!$exists) {
             $this->Flash->error('Address not found.');
             return $this->redirect(['action' => 'profile']);
         }
 
-        $type = $address->type ?: 'shipping';
 
-        // Clear other defaults for the same type
-        $Addresses->updateAll(['is_default' => false], ['user_id' => $userId, 'type' => $type]);
-
-        $address->is_default = true;
-        if ($Addresses->save($address)) {
+        if ($Addresses->setDefaultForUser($userId, $addrId)) {
             $this->Flash->success('Default address updated.');
         } else {
             $this->Flash->error('Unable to update default address.');
@@ -526,7 +505,6 @@ class CustomerController extends AppController
 
         return $this->redirect(['action' => 'profile']);
     }
-
     /** Logout */
     public function logout()
     {
