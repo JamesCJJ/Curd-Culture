@@ -18,7 +18,7 @@ $this->assign('title', 'Order #' . $order->id);
             Confirmed <?= $order->created->format('M j, Y') ?>
         </p>
     </div>
-    
+
     <div>
         <?= $this->Html->link(
             'Buy again',
@@ -47,14 +47,15 @@ $this->assign('title', 'Order #' . $order->id);
                         </small>
                     </div>
                 </div>
-                
+
+                <!-- Simple progress visualization -->
                 <div class="progress mb-3" style="height: 8px;">
                     <?php
                     $statusProgress = [
-                        'pending' => 20,
+                        'pending'   => 20,
                         'confirmed' => 40,
-                        'processing' => 60,
-                        'shipped' => 80,
+                        'processing'=> 60,
+                        'shipped'   => 80,
                         'delivered' => 100,
                         'cancelled' => 0
                     ];
@@ -62,7 +63,7 @@ $this->assign('title', 'Order #' . $order->id);
                     ?>
                     <div class="progress-bar" style="width: <?= $progress ?>%"></div>
                 </div>
-                
+
                 <div class="row text-center small">
                     <div class="col">
                         <div class="<?= in_array($order->status, ['confirmed', 'processing', 'shipped', 'delivered']) ? 'text-primary' : 'text-muted' ?>">
@@ -91,7 +92,7 @@ $this->assign('title', 'Order #' . $order->id);
                 </div>
             </div>
         </div>
-        
+
         <!-- Order Items -->
         <div class="card mb-4">
             <div class="card-header d-flex justify-content-between align-items-center">
@@ -106,14 +107,14 @@ $this->assign('title', 'Order #' . $order->id);
                                 <i class="bi bi-box text-muted" style="font-size: 1.5rem;"></i>
                             </div>
                         </div>
-                        
+
                         <div class="flex-grow-1">
                             <h6 class="mb-1"><?= h($item->name) ?></h6>
                             <p class="text-muted mb-0 small">
                                 $<?= number_format($item->price, 2) ?>/ea
                             </p>
                         </div>
-                        
+
                         <div class="text-end">
                             <div class="fw-bold">$<?= number_format($item->price * $item->qty, 2) ?></div>
                             <div class="text-muted small">Qty: <?= $item->qty ?></div>
@@ -123,7 +124,7 @@ $this->assign('title', 'Order #' . $order->id);
             </div>
         </div>
     </div>
-    
+
     <div class="col-md-4">
         <!-- Payment Summary -->
         <div class="card mb-4">
@@ -138,39 +139,52 @@ $this->assign('title', 'Order #' . $order->id);
                     <span>Subtotal</span>
                     <span>$<?= number_format((float)($order->subtotal ?? 0), 2) ?></span>
                 </div>
-                
+
                 <div class="d-flex justify-content-between mb-2">
                     <span>Shipping</span>
                     <span><?= ($order->shipping_fee ?? 0) > 0 ? '$' . number_format((float)$order->shipping_fee, 2) : 'Free' ?></span>
                 </div>
-                
+
                 <?php if (($order->discount ?? 0) > 0): ?>
                     <div class="d-flex justify-content-between mb-2 text-success">
                         <span>Discount</span>
                         <span>-$<?= number_format((float)$order->discount, 2) ?></span>
                     </div>
                 <?php endif; ?>
-                
+
                 <hr>
-                
+
                 <div class="d-flex justify-content-between fw-bold">
                     <span>Total</span>
                     <span>AUD $<?= number_format((float)($order->total ?? 0), 2) ?></span>
                 </div>
-                
+
                 <?php if (($order->total ?? 0) > 50): ?>
                     <small class="text-muted d-block mt-2">
                         Including $<?= number_format((float)$order->total * 0.1, 2) ?> in taxes
                     </small>
                 <?php endif; ?>
-                
-                <div class="mt-3 p-2 bg-success bg-opacity-10 rounded">
-                    <i class="bi bi-check-circle text-success me-2"></i>
-                    <small class="text-success">Your order is fully paid.</small>
-                </div>
+
+                <!-- Status message is now conditional: show "fully paid" ONLY if payment_status === 'paid' -->
+                <?php if (($order->payment_status ?? '') === 'paid'): ?>
+                    <div class="mt-3 p-2 bg-success bg-opacity-10 rounded">
+                        <i class="bi bi-check-circle text-success me-2"></i>
+                        <small class="text-success">Your order is fully paid.</small>
+                    </div>
+                <?php elseif (($order->payment_method ?? '') === 'bank_transfer' && ($order->payment_status ?? '') === 'unpaid'): ?>
+                    <div class="mt-3 p-2 bg-warning bg-opacity-10 rounded">
+                        <i class="bi bi-clock-history text-warning me-2"></i>
+                        <small class="text-warning">Awaiting bank transfer. We will confirm your order after payment is received.</small>
+                    </div>
+                <?php else: ?>
+                    <div class="mt-3 p-2 bg-secondary bg-opacity-10 rounded">
+                        <i class="bi bi-info-circle text-secondary me-2"></i>
+                        <small class="text-secondary">Payment status: <?= h($order->payment_status ?? 'unknown') ?></small>
+                    </div>
+                <?php endif; ?>
             </div>
         </div>
-        
+
         <!-- Contact Information -->
         <div class="card mb-4">
             <div class="card-header">
@@ -181,7 +195,7 @@ $this->assign('title', 'Order #' . $order->id);
                 <p class="text-muted mb-0"><?= h($order->email ?? 'N/A') ?></p>
             </div>
         </div>
-        
+
         <!-- Billing Address -->
         <div class="card mb-4">
             <div class="card-header">
@@ -195,7 +209,7 @@ $this->assign('title', 'Order #' . $order->id);
                 </address>
             </div>
         </div>
-        
+
         <!-- Shipping Method -->
         <div class="card">
             <div class="card-header">
