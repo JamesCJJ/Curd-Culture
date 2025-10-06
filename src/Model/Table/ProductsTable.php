@@ -26,17 +26,12 @@ class ProductsTable extends Table
     public function validationDefault(Validator $v): Validator
     {
         $v->scalar('name')->maxLength('name', 200)->notEmptyString('name');
-
         $v->scalar('slug')->maxLength('slug', 200)->allowEmptyString('slug');
-
         $v->numeric('price')->greaterThanOrEqual('price', 0)->allowEmptyString('price');
-
         $v->scalar('currency')->maxLength('currency', 3)->allowEmptyString('currency');
-
         $v->allowEmptyString('summary');
         $v->allowEmptyString('description');
         $v->allowEmptyString('image_url');
-
 
         $v->integer('stock')->greaterThanOrEqual('stock', 0)->allowEmptyString('stock');
         $v->numeric('rating')->range('rating', [0, 5])->allowEmptyString('rating');
@@ -46,9 +41,7 @@ class ProductsTable extends Table
 
     public function buildRules(RulesChecker $rules): RulesChecker
     {
-
         $rules->add($rules->isUnique(['slug'], 'Slug already exists.'), ['errorField' => 'slug']);
-
         return $rules;
     }
 
@@ -57,5 +50,34 @@ class ProductsTable extends Table
         if (empty($entity->slug) && !empty($entity->name)) {
             $entity->slug = strtolower((string)Text::slug((string)$entity->name));
         }
+    }
+
+
+    public function decrementStockOrFail(int $productId, int $qty): void
+    {
+
+        $product = $this->find()
+            ->where(['id' => $productId])
+            ->epilog('FOR UPDATE')
+            ->first();
+
+        if (!$product) {
+            throw new \RuntimeException('Product not found: ' . $productId);
+        }
+
+
+        if ($product->stock === null) {
+            return;
+        }
+
+        $curr = (int)$product->stock;
+        if ($curr < $qty) {
+            $name = (string)($product->name ?? ('#'.$productId));
+            throw new \RuntimeException('Insufficient stock for: ' . $name);
+        }
+
+        $product->stock = $curr - $qty;
+
+        $this->saveOrFail($product, ['atomic' => false]);
     }
 }
