@@ -43,13 +43,16 @@ $sticky = (array)$this->request->getData();
 
             <?= $this->Form->create(null, ['id' => 'checkout-form', 'aria-describedby' => 'form-help']) ?>
             <?php if (!empty($defaultAddress)): ?>
-                <div class="fg" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem">
-                    <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                <div class="default-address callout">
+                    <label class="switch">
                         <input type="checkbox" id="use-default-address">
-                        <span>Use my default address</span>
+                        <span class="slider" aria-hidden="true"></span>
+                        <span class="switch-label">Use my default address</span>
                     </label>
-                    <div class="muted tiny" title="<?= h($defaultAddress['summary']) ?>">
-                        <?= h($defaultAddress['summary']) ?>
+
+                    <div class="addr-summary" title="<?= h($defaultAddress['summary']) ?>">
+                        <i class="bi bi-geo-alt"></i>
+                        <span class="truncate"><?= h($defaultAddress['summary']) ?></span>
                     </div>
                 </div>
             <?php endif; ?>
@@ -125,14 +128,23 @@ $sticky = (array)$this->request->getData();
                 $selMethod = $sticky['fulfillment_method'] ?? 'delivery';
                 $isPickup  = ($selMethod === 'pickup');
                 ?>
-                <div class="fg radios">
-                    <label class="radio">
+                <div class="option-group" role="group" aria-label="Fulfillment">
+                    <label class="option-tile <?= $isPickup ? '' : 'active' ?>">
                         <input type="radio" name="fulfillment_method" value="delivery" <?= $isPickup ? '' : 'checked' ?>>
-                        <span>Home Delivery</span>
+                        <div class="option-body">
+                            <div class="option-icon">🚚</div>
+                            <div class="option-title">Home Delivery</div>
+                            <div class="option-sub">Choose a date & time window</div>
+                        </div>
                     </label>
-                    <label class="radio">
+
+                    <label class="option-tile <?= $isPickup ? 'active' : '' ?>">
                         <input type="radio" name="fulfillment_method" value="pickup" <?= $isPickup ? 'checked' : '' ?>>
-                        <span>Click &amp; Collect (in-store pickup)</span>
+                        <div class="option-body">
+                            <div class="option-icon">🏬</div>
+                            <div class="option-title">Click & Collect</div>
+                            <div class="option-sub">Pickup from a store (free shipping)</div>
+                        </div>
                     </label>
                 </div>
 
@@ -330,7 +342,13 @@ $sticky = (array)$this->request->getData();
             setVal('postcode',  defaultAddress.postcode  || '');
             setVal('country',   defaultAddress.country   || 'Australia');
         };
-
+        document.querySelectorAll('.option-tile input[name="fulfillment_method"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                document.querySelectorAll('.option-tile').forEach(t => t.classList.remove('active'));
+                const tile = radio.closest('.option-tile');
+                if (tile) tile.classList.add('active');
+            });
+        });
         document.getElementById('use-default-address')?.addEventListener('change', function(){
             if (this.checked) fillFromDefault();
         });
@@ -443,4 +461,65 @@ $sticky = (array)$this->request->getData();
     .theme-dark .btn-primary{background:linear-gradient(180deg,#60a5fa,#2563eb);color:#0b1020}
     .theme-dark .avatar{background:#0a172e;color:#8ab4ff}
     .contrast-high .btn-primary,.contrast-high .progress-bar>span{filter:none}
+    /* ===== Default address callout ===== */
+    .callout{
+        display:flex;align-items:center;gap:1rem;
+        padding:.75rem 1rem;border:1px dashed #cfe0ff;border-radius:.9rem;
+        background:linear-gradient(0deg,#f7fbff,#fff);
+    }
+    .addr-summary{display:flex;align-items:center;gap:.5rem;color:#334155;font-size:.9rem}
+    .addr-summary i{opacity:.6}
+    .truncate{max-width:420px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+    /* Pretty switch */
+    .switch{display:inline-flex;align-items:center;gap:.6rem;cursor:pointer;user-select:none}
+    .switch input{display:none}
+    .switch .slider{
+        width:38px;height:22px;border-radius:999px;background:#e5e7eb;position:relative;transition:.2s;
+        box-shadow:inset 0 0 0 1px #d1d5db;
+    }
+    .switch .slider:before{
+        content:"";position:absolute;left:3px;top:3px;width:16px;height:16px;border-radius:50%;
+        background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.2s;
+    }
+    .switch input:checked + .slider{background:#2563eb}
+    .switch input:checked + .slider:before{transform:translateX(16px)}
+    .switch-label{font-weight:600;color:#1f2937}
+
+    /* ===== Fulfillment tiles ===== */
+    .option-group{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin:.35rem 0 .5rem}
+    @media (max-width:720px){.option-group{grid-template-columns:1fr}}
+    .option-tile{
+        position:relative;border:1px solid #e5e7eb;border-radius:.9rem;background:#fafbff;cursor:pointer;
+        transition:transform .06s ease, box-shadow .2s, border-color .2s, background .2s;
+    }
+    .option-tile:hover{transform:translateY(-1px);box-shadow:0 8px 24px rgba(37,99,235,.08)}
+    .option-tile.active{border-color:#93c5fd;background:#f0f6ff;box-shadow:0 8px 26px rgba(59,130,246,.12)}
+    .option-tile input{display:none}
+    .option-body{padding:.85rem 1rem}
+    .option-icon{font-size:1.25rem;margin-bottom:.25rem}
+    .option-title{font-weight:700;color:#0f172a}
+    .option-sub{color:#64748b;font-size:.9rem;margin-top:.1rem}
+
+    /* ===== Inputs polish ===== */
+    input, select, textarea{
+        background:#f8fafc;border-color:#e6eaf2;
+        box-shadow:0 1px 0 rgba(0,0,0,.02);
+    }
+    input:focus, select:focus, textarea:focus{
+        border-color:#84b6ff;box-shadow:0 0 0 4px rgba(132,182,255,.35),0 1px 0 rgba(0,0,0,.02)
+    }
+
+    /* Sidebar subtle polish */
+    .aside-sticky .title.sm{display:flex;align-items:center;gap:.4rem}
+    .aside-sticky .title.sm::before{
+        content:"🧾";display:inline-block;opacity:.8
+    }
+    .totals .row{padding:.15rem 0}
+    .totals .total .v{font-size:1.2rem}
+
+    /* Small improvements */
+    .card{border-radius:1.05rem}
+    .progress-bar>span{border-radius:999px}
+    .btn{border-radius:.7rem}
 </style>
