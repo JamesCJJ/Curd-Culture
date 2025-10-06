@@ -32,14 +32,18 @@ class OrdersTable extends Table
 
         // Optional: delivery scheduling
         $this->belongsTo('DeliverySlots', [
-            'foreignKey' => 'delivery_slot_id',
-            'joinType'   => 'LEFT',
+            'className'    => 'DeliverySlots',
+            'foreignKey'   => 'delivery_slot_id',
+            'propertyName' => 'delivery_slot',
+            'joinType'     => 'LEFT',
         ]);
 
         // Optional: click & collect
         $this->belongsTo('PickupLocations', [
-            'foreignKey' => 'pickup_location_id',
-            'joinType'   => 'LEFT',
+            'className'    => 'PickupLocations',
+            'foreignKey'   => 'pickup_location_id',
+            'propertyName' => 'pickup_location',
+            'joinType'     => 'LEFT',
         ]);
     }
 

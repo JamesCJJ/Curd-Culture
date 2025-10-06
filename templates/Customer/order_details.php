@@ -93,33 +93,44 @@ $this->assign('title', 'Order #' . $order->id);
         </div>
 
         <!-- Fulfillment Info (Delivery / Pickup) -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="bi bi-calendar2-week me-2"></i>
-                    Fulfillment
-                </h5>
-            </div>
+        <div class="card">
+            <div class="card-header"><h5 class="mb-0">Fulfillment</h5></div>
             <div class="card-body">
-                <?php if (($order->fulfillment_method ?? 'delivery') === 'pickup'): ?>
-                    <p class="mb-1"><strong>Method:</strong> Click &amp; Collect</p>
-                    <?php if (!empty($order->pickup_location_id)): ?>
-                        <p class="mb-1"><strong>Pickup Location:</strong> #<?= (int)$order->pickup_location_id ?></p>
-                    <?php endif; ?>
-                    <?php if (!empty($order->delivery_instructions)): ?>
-                        <p class="mb-0"><strong>Notes:</strong> <?= h($order->delivery_instructions) ?></p>
-                    <?php endif; ?>
+                <p><strong>Method:</strong>
+                    <?= $order->fulfillment_method === 'pickup' ? 'Click & Collect' : 'Home Delivery' ?>
+                </p>
+
+                <?php if ($order->fulfillment_method === 'pickup'): ?>
+                    <p><strong>Pickup Location:</strong>
+                        <?php if (!empty($order->pickup_location)): ?>
+                            <?= h($order->pickup_location->name) ?>
+                            <br>
+                            <small class="text-muted">
+                                <?= h($order->pickup_location->address_line_1) ?>,
+                                <?= h($order->pickup_location->suburb) ?>
+                                <?= h($order->pickup_location->state) ?>
+                                <?= h($order->pickup_location->postcode) ?>
+                            </small>
+                        <?php else: ?>
+                            #<?= (int)$order->pickup_location_id ?>
+                        <?php endif; ?>
+                    </p>
                 <?php else: ?>
-                    <p class="mb-1"><strong>Method:</strong> Home Delivery</p>
-                    <?php if (!empty($order->delivery_date)): ?>
-                        <p class="mb-1"><strong>Date:</strong> <?= h($order->delivery_date->format('M j, Y')) ?></p>
-                    <?php endif; ?>
-                    <?php if (!empty($order->delivery_slot_id)): ?>
-                        <p class="mb-1"><strong>Time Slot:</strong> Slot #<?= (int)$order->delivery_slot_id ?></p>
-                    <?php endif; ?>
-                    <?php if (!empty($order->delivery_instructions)): ?>
-                        <p class="mb-0"><strong>Notes:</strong> <?= h($order->delivery_instructions) ?></p>
-                    <?php endif; ?>
+                    <p><strong>Delivery Window:</strong>
+                        <?php if (!empty($order->delivery_slot)): ?>
+                            <?= h($order->delivery_slot->name) ?>
+                            <?php
+                            $ws = $order->delivery_slot->window_start?->format('g:i A');
+                            $we = $order->delivery_slot->window_end?->format('g:i A');
+                            if ($ws && $we) echo ' (' . h($ws . '–' . $we) . ')';
+                            ?>
+                            <?php if (!empty($order->delivery_date)): ?>
+                                on <?= h((string)$order->delivery_date) ?>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            —
+                        <?php endif; ?>
+                    </p>
                 <?php endif; ?>
             </div>
         </div>

@@ -45,6 +45,8 @@ class Order extends Entity
      * @var array<string, bool>
      */
     protected array $_accessible = [
+
+        '*' => false,
         'user_id' => true,
         'email' => true,
         'full_name' => true,
@@ -59,13 +61,18 @@ class Order extends Entity
         'total' => true,
         'status' => true,
         'payment_status' => true,
+        'fulfillment_method' => true,
+        'delivery_date' => true,
+        'delivery_slot_id' => true,
+        'pickup_location_id' => true,
+        'delivery_instructions' => true,
+
         'payment_method' => true,
+        'stock_deducted' => true,
+        'stock_deducted_at' => true,
         'payment_ref' => true,
         'paid_at' => true,
         'notes' => true,
-        'created' => true,
-        'modified' => true,
-        'user' => true,
         'order_items' => true,
     ];
 }

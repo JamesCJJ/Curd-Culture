@@ -136,7 +136,15 @@ class CustomerController extends AppController
 
         $order = $Orders->find()
             ->where(['Orders.id' => $id, 'Orders.user_id' => $userId])
-            ->contain(['OrderItems' => ['Products']])
+            ->contain([
+                'OrderItems' => ['Products'],
+                'DeliverySlots' => function ($q) {
+                    return $q->select(['id','name','window_start','window_end']);
+                },
+                'PickupLocations' => function ($q) {
+                    return $q->select(['id','name','address_line_1','suburb','state','postcode']);
+                },
+            ])
             ->first();
 
         if (!$order) {
@@ -379,7 +387,7 @@ class CustomerController extends AppController
         $identity = $this->request->getAttribute('identity');
         $userId   = (int)$identity->get('id');
 
-        // ✅ 与 setDefaultAddress 相同的多来源取 id 逻辑
+
         $pass  = (array)($this->request->getParam('pass') ?? []);
         $rawId = $id
             ?? ($pass[0] ?? null)
@@ -403,7 +411,7 @@ class CustomerController extends AppController
             return $this->redirect(['action' => 'profile']);
         }
 
-        // Patch & 保存
+
         $data = (array)$this->request->getData();
 
         $newType = (string)($data['type'] ?? $address->type ?? 'billing');
@@ -413,14 +421,14 @@ class CustomerController extends AppController
         $newDefault = !empty($data['is_default']) ? 1 : 0;
 
         if ($newDefault === 1) {
-            // 清除此用户该类型的其它默认
+
             $Addresses->updateAll(
                 ['is_default' => 0],
                 ['user_id' => $userId, 'type' => $newType]
             );
         }
 
-        // 强制归属与类型
+
         $data['user_id']    = $userId;
         $data['type']       = $newType;
         $data['is_default'] = $newDefault;

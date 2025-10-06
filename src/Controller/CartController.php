@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use Cake\Event\EventInterface;
-use Cake\Http\Exception\NotFoundException;
 use Cake\Core\Configure;
 use Cake\I18n\FrozenTime;
 use Stripe\StripeClient;
@@ -15,11 +14,13 @@ class CartController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
+        $this->loadComponent('Flash');
     }
 
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
+        // 购物车页可匿名浏览
         $this->Authentication->addUnauthenticatedActions(['index']);
     }
 
@@ -32,8 +33,8 @@ class CartController extends AppController
             ->first();
     }
 
-    /** Fetch active delivery slots (optionally filter by DOW on the front end) */
-    private function getActiveDeliverySlots()
+    /** Active delivery slots (for the view) */
+    private function getActiveDeliverySlots(): array
     {
         $DeliverySlots = $this->getTableLocator()->get('DeliverySlots');
         return $DeliverySlots->find()
@@ -44,8 +45,8 @@ class CartController extends AppController
             ->toArray();
     }
 
-    /** Fetch active pickup locations */
-    private function getActivePickupLocations()
+    /** Active pickup locations (for the view) */
+    private function getActivePickupLocations(): array
     {
         $PickupLocations = $this->getTableLocator()->get('PickupLocations');
         return $PickupLocations->find()
@@ -142,7 +143,7 @@ class CartController extends AppController
         $CartItems = $this->getTableLocator()->get('CartItems');
         $Products  = $this->getTableLocator()->get('Products');
 
-        // Load current items to get product ids
+        // current items
         $currentItems = $CartItems->find()
             ->select(['id','product_id','qty'])
             ->where(['cart_id' => $cart->id, 'id IN' => array_keys($qtys)])
@@ -155,7 +156,7 @@ class CartController extends AppController
             $pidMap[(int)$ci['id']] = (int)$ci['product_id'];
         }
 
-        // Fetch stock for those products
+        // stocks
         $stocks = [];
         if ($pidMap) {
             $pids = array_values(array_unique(array_values($pidMap)));
@@ -186,7 +187,6 @@ class CartController extends AppController
                 continue;
             }
 
-            // If stock is defined, enforce it
             if ($stock !== null) {
                 if ($stock <= 0) {
                     $CartItems->deleteAll(['id' => $itemId, 'cart_id' => $cart->id]);
@@ -246,9 +246,9 @@ class CartController extends AppController
 
     /**
      * GET/POST /cart/checkout
-     * Adds: customer-booked delivery times & click-and-collect.
-     * - GET: expose deliverySlots & pickupLocations to the view.
-     * - POST: validate chosen method/slot, atomically decrement stock, write items, close cart.
+     * - GET: render form with delivery slots & pickup locations
+     * - POST: validate, create UNPAID order (bank transfer) with fulfillment fields,
+     *         decrement stock, close cart
      */
     public function checkout()
     {
@@ -319,14 +319,14 @@ class CartController extends AppController
             return $this->redirect(['controller' => 'Products', 'action' => 'index']);
         }
 
+        // base shipping (will become 0 for pickup)
         $shipping = $subtotal > 0 ? 12.90 : 0.0;
         $total    = $subtotal + $shipping;
 
-        // Expose slot & pickup choices to the view
-        $deliverySlots    = $this->getActiveDeliverySlots();
-        $pickupLocations  = $this->getActivePickupLocations();
+        $deliverySlots   = $this->getActiveDeliverySlots();
+        $pickupLocations = $this->getActivePickupLocations();
 
-        // Bank account info (demo)
+        // Demo bank details
         $session = $this->request->getSession();
         $bank = (array)$session->read('Checkout.bank');
         if (empty($bank)) {
@@ -339,9 +339,9 @@ class CartController extends AppController
         }
 
         if ($this->request->is('post')) {
-            // —— BANK TRANSFER flow: create "unpaid" order with chosen fulfillment —— //
             $data = (array)$this->request->getData();
 
+            // Required customer fields (simple)
             $required = ['full_name','email','address','city','postcode','country'];
             foreach ($required as $f) {
                 if (empty(trim((string)($data[$f] ?? '')))) {
@@ -360,18 +360,19 @@ class CartController extends AppController
                         'bankAccountName','bankBsb','bankAccountNo',
                         'deliverySlots','pickupLocations'
                     ));
-                    return;
+                    return; // render view with flash
                 }
             }
 
-            // Read fulfillment choice
-            $fulfillmentMethod   = (string)($data['fulfillment_method'] ?? 'delivery'); // 'delivery' | 'pickup'
-            $deliveryDateStr     = (string)($data['delivery_date']     ?? '');          // 'YYYY-MM-DD'
-            $deliverySlotId      = (int)($data['delivery_slot_id']     ?? 0);
-            $pickupLocationId    = (int)($data['pickup_location_id']   ?? 0);
-            $deliveryInstructions= (string)($data['delivery_instructions'] ?? '');
+            // Normalize fulfillment
+            $fulfillmentMethod = (string)($data['fulfillment_method'] ?? 'delivery');
+            $fulfillmentMethod = in_array($fulfillmentMethod, ['delivery','pickup'], true) ? $fulfillmentMethod : 'delivery';
 
-            // Validate fulfillment fields and recalc shipping if pickup
+            $deliveryDateStr      = (string)($data['delivery_date']   ?? '');
+            $deliverySlotId       = (int)($data['delivery_slot_id']   ?? 0);
+            $pickupLocationId     = (int)($data['pickup_location_id'] ?? 0);
+            $deliveryInstructions = (string)($data['delivery_instructions'] ?? '');
+
             if ($fulfillmentMethod === 'pickup') {
                 if ($pickupLocationId <= 0) {
                     $this->Flash->error('Please choose a pickup location.');
@@ -380,12 +381,11 @@ class CartController extends AppController
                 $shipping = 0.0;
                 $total    = $subtotal + $shipping;
             } else {
-                // delivery
+                // delivery validation
                 if (empty($deliveryDateStr) || $deliverySlotId <= 0) {
                     $this->Flash->error('Please choose a delivery date and time slot.');
                     return $this->redirect(['action' => 'checkout']);
                 }
-                // Sanity check: date not in the past
                 $today = new \DateTimeImmutable('today');
                 try {
                     $chosen = new \DateTimeImmutable($deliveryDateStr);
@@ -398,7 +398,7 @@ class CartController extends AppController
                     return $this->redirect(['action' => 'checkout']);
                 }
 
-                // Capacity check for the chosen slot (if capacity is set)
+                // capacity check
                 $DeliverySlots = $this->getTableLocator()->get('DeliverySlots');
                 $slot = $DeliverySlots->find()
                     ->where(['id' => $deliverySlotId, 'is_active' => 1])
@@ -408,14 +408,13 @@ class CartController extends AppController
                     $this->Flash->error('Selected delivery slot is not available.');
                     return $this->redirect(['action' => 'checkout']);
                 }
-
                 if (!empty($slot['capacity'])) {
                     $Orders = $this->getTableLocator()->get('Orders');
                     $used = $Orders->find()
                         ->where([
-                            'delivery_date'   => $deliveryDateStr,
-                            'delivery_slot_id'=> $deliverySlotId,
-                            'status IN'       => ['pending','confirmed','processing','new'],
+                            'delivery_date'    => $deliveryDateStr,
+                            'delivery_slot_id' => $deliverySlotId,
+                            'status IN'        => ['pending','confirmed','processing','new'],
                         ])
                         ->count();
                     if ($used >= (int)$slot['capacity']) {
@@ -435,7 +434,6 @@ class CartController extends AppController
             $conn = $Orders->getConnection();
             $conn->begin();
             try {
-                // 1) Create UNPAID bank-transfer order with fulfillment info
                 $order = $Orders->newEntity([
                     'user_id'              => $userId,
                     'email'                => (string)$data['email'],
@@ -452,26 +450,24 @@ class CartController extends AppController
                     'status'               => 'pending',
                     'payment_status'       => 'unpaid',
                     'payment_method'       => 'bank_transfer',
-                    'fulfillment_method'   => $fulfillmentMethod,
+                    'fulfillment_method'   => $fulfillmentMethod, // 'delivery' | 'pickup'
                     'delivery_date'        => $fulfillmentMethod === 'delivery' ? $deliveryDateStr : null,
                     'delivery_slot_id'     => $fulfillmentMethod === 'delivery' ? $deliverySlotId : null,
                     'pickup_location_id'   => $fulfillmentMethod === 'pickup'   ? $pickupLocationId : null,
                     'delivery_instructions'=> $deliveryInstructions ?: null,
-                    // optional stock_deducted fields will be set after success
                 ]);
                 $Orders->saveOrFail($order, ['atomic' => false]);
 
-                // 2) Decrement stock with row locks, then persist order items
                 foreach ($items as $it) {
                     $pid = (int)$it['product_id'];
                     $qty = (int)$it['qty'];
 
-                    // Row-level lock + stock decrement (NULL stock = infinite)
+                    // Row lock + stock decrement (NULL stock = infinite)
                     $Products->decrementStockOrFail($pid, $qty);
 
                     $lineTotal = (float)round(((float)$it['price']) * $qty, 2);
                     $OrderItems->saveOrFail($OrderItems->newEntity([
-                        'order_id'   => $order->id,
+                        'order_id'   => (int)$order->id,
                         'product_id' => $pid,
                         'name'       => $it['name'],
                         'slug'       => $it['slug'],
@@ -482,7 +478,6 @@ class CartController extends AppController
                     ]), ['atomic' => false]);
                 }
 
-                // 3) Mark that stock was deducted (if those columns exist)
                 if (property_exists($order, 'stock_deducted')) {
                     $order->set('stock_deducted', 1);
                 }
@@ -491,7 +486,6 @@ class CartController extends AppController
                 }
                 $Orders->saveOrFail($order, ['atomic' => false]);
 
-                // 4) Close and clear the cart
                 $Carts->updateAll(['status' => 'ordered'], ['id' => $cart->id]);
                 $CartItems->deleteAll(['cart_id' => $cart->id]);
 
@@ -539,28 +533,22 @@ class CartController extends AppController
         ));
     }
 
-    /**
-     * GET /checkout/complete
-     * Stripe return path still supported; if webhook didn't fulfill yet,
-     * we create the order here and also attach fulfillment metadata if provided.
-     */
+    /** GET /checkout/complete */
     public function complete()
     {
         $this->request->allowMethod(['get']);
 
-        // Bank Transfer path: no session_id -> just render the page.
+        // Bank transfer path: no session_id
         $sessionId = (string)($this->request->getQuery('session_id') ?? '');
         if ($sessionId === '') {
-            return; // renders templates/Cart/complete.php
+            return; // templates/Cart/complete.php
         }
 
-        // If webhook already created the order, just show the page.
         $Orders = $this->getTableLocator()->get('Orders');
         if ($Orders->exists(['payment_ref' => $sessionId])) {
             return;
         }
 
-        // Verify the Stripe session to ensure the payment actually succeeded.
         $secret = (string)(Configure::read('Stripe.secret_key') ?: env('STRIPE_SECRET_KEY', ''));
         if ($secret === '') {
             $this->Flash->warning('Stripe secret key is not configured.');
@@ -582,17 +570,15 @@ class CartController extends AppController
             return;
         }
 
-        // Pull metadata you attached when creating the Checkout Session (user_id, cart_id, fulfillment meta).
         $meta   = $session->metadata ?? (object)[];
         $userId = isset($meta->user_id) ? (int)$meta->user_id : null;
         $cartId = isset($meta->cart_id) ? (int)$meta->cart_id : null;
 
-        // Optional fulfillment meta coming from the Stripe session
-        $fulfillmentMethod   = (string)($meta->fulfillment_method   ?? 'delivery'); // 'delivery'|'pickup'
-        $deliveryDateStr     = (string)($meta->delivery_date        ?? '');         // 'YYYY-MM-DD'
-        $deliverySlotId      = isset($meta->delivery_slot_id) ? (int)$meta->delivery_slot_id : 0;
-        $pickupLocationId    = isset($meta->pickup_location_id) ? (int)$meta->pickup_location_id : 0;
-        $deliveryInstructions= (string)($meta->delivery_instructions ?? '');
+        $fulfillmentMethod    = (string)($meta->fulfillment_method   ?? 'delivery');
+        $deliveryDateStr      = (string)($meta->delivery_date        ?? '');
+        $deliverySlotId       = isset($meta->delivery_slot_id) ? (int)$meta->delivery_slot_id : 0;
+        $pickupLocationId     = isset($meta->pickup_location_id) ? (int)$meta->pickup_location_id : 0;
+        $deliveryInstructions = (string)($meta->delivery_instructions ?? '');
 
         if (!$cartId) {
             $this->Flash->warning('Cart information is missing; order cannot be finalized.');
@@ -605,7 +591,6 @@ class CartController extends AppController
         $OrderItems = $this->getTableLocator()->get('OrderItems');
         $Carts      = $this->getTableLocator()->get('Carts');
 
-        // Load cart lines
         $rows = $CartItems->find()
             ->select(['product_id','qty','price','currency'])
             ->where(['cart_id' => $cartId])
@@ -613,12 +598,10 @@ class CartController extends AppController
             ->all()
             ->toArray();
 
-        // If webhook already consumed the cart, just render the page.
         if (empty($rows)) {
             return;
         }
 
-        // Build price
         $currency = 'AUD';
         $subtotal = 0.0;
         $items    = [];
@@ -631,11 +614,9 @@ class CartController extends AppController
             $items[] = ['pid'=>$pid,'qty'=>$qty,'price'=>$price,'currency'=>$currency];
         }
 
-        // Shipping: free if pickup, otherwise same rule as cart
         $shipping = ($fulfillmentMethod === 'pickup') ? 0.0 : 12.90;
         $total    = round($subtotal + $shipping, 2);
 
-        // Transaction: create order -> decrement stock -> create items -> close & clear cart.
         $conn = $Orders->getConnection();
         $conn->begin();
         try {
@@ -657,23 +638,21 @@ class CartController extends AppController
                 'payment_method'     => 'card',
                 'payment_ref'        => (string)$session->id,
                 'paid_at'            => FrozenTime::now(),
-                'fulfillment_method' => $fulfillmentMethod,
-                'delivery_date'      => $fulfillmentMethod === 'delivery' ? $deliveryDateStr : null,
-                'delivery_slot_id'   => $fulfillmentMethod === 'delivery' ? $deliverySlotId : null,
-                'pickup_location_id' => $fulfillmentMethod === 'pickup'   ? $pickupLocationId : null,
+                'fulfillment_method' => in_array($fulfillmentMethod, ['delivery','pickup'], true) ? $fulfillmentMethod : 'delivery',
+                'delivery_date'      => ($fulfillmentMethod === 'delivery') ? $deliveryDateStr : null,
+                'delivery_slot_id'   => ($fulfillmentMethod === 'delivery') ? $deliverySlotId : null,
+                'pickup_location_id' => ($fulfillmentMethod === 'pickup')   ? $pickupLocationId : null,
                 'delivery_instructions'=> $deliveryInstructions ?: null,
                 'notes'              => null,
             ]);
             $Orders->saveOrFail($order, ['atomic' => false]);
 
-            // Decrement stock first, then write items
             foreach ($items as $it) {
                 $Products->decrementStockOrFail((int)$it['pid'], (int)$it['qty']);
-
                 $OrderItems->saveOrFail($OrderItems->newEntity([
-                    'order_id'   => $order->id,
+                    'order_id'   => (int)$order->id,
                     'product_id' => (int)$it['pid'],
-                    'name'       => '', // optional snapshot name if you want
+                    'name'       => '',
                     'slug'       => null,
                     'price'      => (float)$it['price'],
                     'qty'        => (int)$it['qty'],
@@ -681,7 +660,6 @@ class CartController extends AppController
                 ]), ['atomic' => false]);
             }
 
-            // Optional: mark that stock was deducted
             if (property_exists($order, 'stock_deducted')) {
                 $order->set('stock_deducted', 1);
             }
@@ -690,7 +668,6 @@ class CartController extends AppController
             }
             $Orders->saveOrFail($order, ['atomic' => false]);
 
-            // Close and clear the cart
             $Carts->updateAll(['status' => 'ordered'], ['id' => $cartId]);
             $CartItems->deleteAll(['cart_id' => $cartId]);
 

@@ -1,7 +1,6 @@
 <?php
 $this->assign('title', 'Checkout');
 
-/** --- Inputs from controller / defaults --- */
 $items    = $items    ?? [];
 $currency = $currency ?? 'AUD';
 $subtotal = $subtotal ?? 0;
@@ -12,14 +11,15 @@ $bankAccountName = $bankAccountName ?? 'Curd & Culture Pty Ltd';
 $bankBsb         = $bankBsb         ?? '000-000';
 $bankAccountNo   = $bankAccountNo   ?? '000000000';
 
-/** New: delivery slots & pickup locations fed by CartController::checkout() */
-$deliverySlots   = $deliverySlots   ?? []; // each: ['id','name','dow','window_start','window_end','capacity',...]
-$pickupLocations = $pickupLocations ?? []; // each: ['id','name','address_line_1','suburb','state','postcode',...]
+$deliverySlots   = $deliverySlots   ?? [];
+$pickupLocations = $pickupLocations ?? [];
 $today = date('Y-m-d');
+
+// sticky values when post failed
+$sticky = (array)$this->request->getData();
 ?>
 <div class="checkout-page">
 
-    <!-- Step progress -->
     <div class="progress">
         <div class="progress-steps" aria-label="Checkout progress">
             <span class="step done">Cart</span>
@@ -34,7 +34,7 @@ $today = date('Y-m-d');
     </div>
 
     <div class="grid">
-        <!-- MAIN: shipping / fulfillment form -->
+        <!-- MAIN -->
         <section class="card">
             <header class="card-hd">
                 <h2 class="title">Shipping & Fulfillment</h2>
@@ -43,7 +43,6 @@ $today = date('Y-m-d');
 
             <?= $this->Form->create(null, ['id' => 'checkout-form', 'aria-describedby' => 'form-help']) ?>
 
-            <!-- Customer contact + address -->
             <fieldset class="fs">
                 <div class="fg">
                     <label for="full_name">Full name</label>
@@ -52,7 +51,7 @@ $today = date('Y-m-d');
                            required
                            autocomplete="name"
                            placeholder="e.g. Alex Johnson"
-                           value="<?= h($prefill['full_name'] ?? '') ?>">
+                           value="<?= h($sticky['full_name'] ?? ($prefill['full_name'] ?? '')) ?>">
                 </div>
 
                 <div class="fg">
@@ -63,7 +62,7 @@ $today = date('Y-m-d');
                            required
                            autocomplete="email"
                            placeholder="you@example.com"
-                           value="<?= h($prefill['email'] ?? '') ?>">
+                           value="<?= h($sticky['email'] ?? ($prefill['email'] ?? '')) ?>">
                 </div>
 
                 <div class="fg">
@@ -72,7 +71,8 @@ $today = date('Y-m-d');
                            name="address"
                            required
                            autocomplete="address-line1"
-                           placeholder="Street, number and unit">
+                           placeholder="Street, number and unit"
+                           value="<?= h($sticky['address'] ?? '') ?>">
                 </div>
 
                 <div class="row2">
@@ -82,7 +82,8 @@ $today = date('Y-m-d');
                                name="city"
                                required
                                autocomplete="address-level2"
-                               placeholder="Suburb / City">
+                               placeholder="Suburb / City"
+                               value="<?= h($sticky['city'] ?? '') ?>">
                     </div>
                     <div class="fg">
                         <label for="postcode">Postcode</label>
@@ -91,7 +92,8 @@ $today = date('Y-m-d');
                                required
                                inputmode="numeric"
                                autocomplete="postal-code"
-                               placeholder="Postcode">
+                               placeholder="Postcode"
+                               value="<?= h($sticky['postcode'] ?? '') ?>">
                     </div>
                 </div>
 
@@ -101,34 +103,38 @@ $today = date('Y-m-d');
                            name="country"
                            required
                            autocomplete="country-name"
-                           value="Australia">
+                           value="<?= h($sticky['country'] ?? 'Australia') ?>">
                 </div>
             </fieldset>
 
-            <!-- New: Fulfillment method -->
+            <!-- Fulfillment -->
             <fieldset class="fs">
                 <h3 class="title sm">Fulfillment</h3>
-
+                <?php
+                $selMethod = $sticky['fulfillment_method'] ?? 'delivery';
+                $isPickup  = ($selMethod === 'pickup');
+                ?>
                 <div class="fg radios">
                     <label class="radio">
-                        <input type="radio" name="fulfillment_method" value="delivery" checked>
+                        <input type="radio" name="fulfillment_method" value="delivery" <?= $isPickup ? '' : 'checked' ?>>
                         <span>Home Delivery</span>
                     </label>
                     <label class="radio">
-                        <input type="radio" name="fulfillment_method" value="pickup">
+                        <input type="radio" name="fulfillment_method" value="pickup" <?= $isPickup ? 'checked' : '' ?>>
                         <span>Click &amp; Collect (in-store pickup)</span>
                     </label>
                 </div>
 
-                <!-- Delivery-only fields -->
-                <div id="delivery-fields">
+                <!-- Delivery-only -->
+                <div id="delivery-fields" <?= $isPickup ? 'hidden' : '' ?>>
                     <div class="row2">
                         <div class="fg">
                             <label for="delivery_date">Delivery date</label>
                             <input id="delivery_date"
                                    name="delivery_date"
                                    type="date"
-                                   min="<?= h($today) ?>">
+                                   min="<?= h($today) ?>"
+                                   value="<?= h($sticky['delivery_date'] ?? '') ?>">
                         </div>
                         <div class="fg">
                             <label for="delivery_slot_id">Preferred time slot</label>
@@ -139,15 +145,12 @@ $today = date('Y-m-d');
                                     $label = (string)($slot['name'] ?? 'Slot');
                                     $ws = isset($slot['window_start']) ? substr((string)$slot['window_start'], 0, 5) : '';
                                     $we = isset($slot['window_end'])   ? substr((string)$slot['window_end'], 0, 5)   : '';
-                                    if ($ws && $we) {
-                                        $label .= " ({$ws}–{$we})";
-                                    }
+                                    if ($ws && $we) { $label .= " ({$ws}–{$we})"; }
                                     $cap = $slot['capacity'] ?? null;
-                                    if ($cap) {
-                                        $label .= " · cap {$cap}";
-                                    }
+                                    if ($cap) { $label .= " · cap {$cap}"; }
+                                    $selected = ((int)($sticky['delivery_slot_id'] ?? 0) === (int)$slot['id']) ? 'selected' : '';
                                     ?>
-                                    <option value="<?= (int)$slot['id'] ?>"><?= h($label) ?></option>
+                                    <option value="<?= (int)$slot['id'] ?>" <?= $selected ?>><?= h($label) ?></option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
@@ -156,12 +159,12 @@ $today = date('Y-m-d');
                     <div class="fg">
                         <label for="delivery_instructions">Delivery instructions (optional)</label>
                         <textarea id="delivery_instructions" name="delivery_instructions" rows="2"
-                                  placeholder="Gate code, safe drop note, contactless delivery…"></textarea>
+                                  placeholder="Gate code, safe drop note, contactless delivery…"><?= h($sticky['delivery_instructions'] ?? '') ?></textarea>
                     </div>
                 </div>
 
-                <!-- Pickup-only fields -->
-                <div id="pickup-fields" hidden>
+                <!-- Pickup-only -->
+                <div id="pickup-fields" <?= $isPickup ? '' : 'hidden' ?>>
                     <div class="fg">
                         <label for="pickup_location_id">Pickup location</label>
                         <select id="pickup_location_id" name="pickup_location_id">
@@ -174,8 +177,9 @@ $today = date('Y-m-d');
                                     . ' ' . ($loc['state'] ?? '')
                                     . ' ' . ($loc['postcode'] ?? ''));
                                 if ($addr) $line .= ' — ' . $addr;
+                                $selected = ((int)($sticky['pickup_location_id'] ?? 0) === (int)$loc['id']) ? 'selected' : '';
                                 ?>
-                                <option value="<?= (int)$loc['id'] ?>"><?= h($line) ?></option>
+                                <option value="<?= (int)$loc['id'] ?>" <?= $selected ?>><?= h($line) ?></option>
                             <?php endforeach; ?>
                         </select>
                         <p class="muted tiny" style="margin-top:.35rem">
@@ -192,12 +196,12 @@ $today = date('Y-m-d');
             <div class="actions">
                 <a class="btn btn-subtle" href="<?= $this->Url->build(['controller'=>'Cart','action'=>'index']) ?>">Back to cart</a>
 
-                <!-- Native POST to CartController::checkout() -> bank transfer unpaid order -->
+                <!-- Native POST to CartController::checkout() (bank transfer) -->
                 <button class="btn" title="Place order and pay via bank transfer">
                     Place order (Bank transfer)
                 </button>
 
-                <!-- Stripe card button will switch form action to Payments/checkout -->
+                <!-- Stripe: will set action to Payments/checkout -->
                 <button type="button" id="btn-stripe" class="btn btn-primary">
                     <span class="lock" aria-hidden="true"></span>
                     Pay with card
@@ -212,7 +216,7 @@ $today = date('Y-m-d');
             <?= $this->Form->end() ?>
         </section>
 
-        <!-- SIDEBAR: order summary -->
+        <!-- SIDEBAR -->
         <aside class="card aside-sticky" aria-label="Order summary">
             <h3 class="title sm">Your order</h3>
 
@@ -271,7 +275,7 @@ $today = date('Y-m-d');
 
 <script>
     (function(){
-        // Toggle delivery vs pickup blocks + live price preview
+        // Toggle delivery vs pickup + live price preview
         const methodRadios = document.querySelectorAll('input[name="fulfillment_method"]');
         const elDelivery   = document.getElementById('delivery-fields');
         const elPickup     = document.getElementById('pickup-fields');
@@ -281,7 +285,6 @@ $today = date('Y-m-d');
         const currencyIso  = <?= json_encode((string)$currency) ?>;
 
         function fmtMoney(num){
-            // Basic client-side formatting (server is authoritative)
             return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyIso }).format(num);
         }
 
@@ -305,18 +308,17 @@ $today = date('Y-m-d');
         methodRadios.forEach(r => r.addEventListener('change', toggleBlocks));
         toggleBlocks();
 
-        // Stripe button: validate minimal fields then submit to Payments/checkout
+        // Stripe button -> post to Payments/checkout
         document.getElementById('btn-stripe')?.addEventListener('click', function () {
             const form = document.getElementById('checkout-form');
             if (!form) return;
 
-            // base customer fields
             const req = ['full_name','email','address','city','postcode','country'];
             for (const id of req) {
                 const el = document.getElementById(id);
                 if (el && !el.value.trim()) { el.focus(); return; }
             }
-            // fulfillment fields
+
             const method = document.querySelector('input[name="fulfillment_method"]:checked')?.value || 'delivery';
             if (method === 'delivery') {
                 const dd = document.getElementById('delivery_date');
@@ -336,13 +338,11 @@ $today = date('Y-m-d');
 </script>
 
 <style>
-    /* --- Layout --- */
     .checkout-page{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
     .grid{display:grid;grid-template-columns:2fr 1fr;gap:1rem}
     @media (max-width:960px){.grid{grid-template-columns:1fr}}
     .aside-sticky{position:sticky;top:1rem}
 
-    /* --- Progress --- */
     .progress{margin:0 0 1rem}
     .progress-steps{font-size:.9rem;color:#6b7280;display:flex;align-items:center;gap:.4rem}
     .progress-steps .step.done{color:#10b981}
@@ -350,14 +350,12 @@ $today = date('Y-m-d');
     .progress-bar{height:6px;background:#eef0f3;border-radius:999px;margin-top:.4rem;overflow:hidden}
     .progress-bar>span{display:block;height:100%;background:linear-gradient(90deg,#60a5fa,#2c7be5)}
 
-    /* --- Card --- */
     .card{background:#fff;border:1px solid #eef0f3;border-radius:1rem;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:1rem}
     .card-hd{margin-bottom:.5rem}
     .title{margin:.1rem 0 .2rem}
     .title.sm{font-size:1.1rem;margin-bottom:.35rem}
     .sub{color:#6b7280;margin:0}
 
-    /* --- Form --- */
     .fs{margin-top:.6rem}
     .fg{margin-bottom:.85rem}
     label{display:block;margin-bottom:.25rem;color:#6b7280}
@@ -375,7 +373,6 @@ $today = date('Y-m-d');
     .small{font-size:.9rem}
     .tiny{font-size:.8rem}
 
-    /* --- Buttons --- */
     .actions{display:flex;flex-wrap:wrap;gap:.6rem;justify-content:flex-end;margin-top:.8rem}
     .btn{
         display:inline-flex;align-items:center;gap:.45rem;
@@ -393,7 +390,6 @@ $today = date('Y-m-d');
     .btn .brand{width:24px;height:12px;opacity:.6}
     .btn .brand rect{fill:#fff}
 
-    /* --- Items --- */
     .mini{list-style:none;margin:.2rem 0 0;padding:0;display:grid;gap:.55rem}
     .mini li{display:grid;grid-template-columns:32px 1fr;gap:.6rem;align-items:center}
     .avatar{
@@ -406,18 +402,15 @@ $today = date('Y-m-d');
 
     .sep{border:none;border-top:1px solid #eef0f3;margin:1rem 0}
 
-    /* --- Totals --- */
     .totals{display:grid;gap:.35rem}
     .totals .row{display:flex;justify-content:space-between;align-items:center}
     .totals .total{font-weight:700}
     .totals .total .v{font-size:1.15rem}
 
-    /* --- Bank block --- */
     details.bank summary{cursor:pointer;font-weight:600;margin:.2rem 0 .4rem}
     .bank-block .kv{display:flex;justify-content:space-between;padding:.25rem 0}
     .bank-block .kv span{color:#6b7280}
 
-    /* --- Themes --- */
     .theme-dark .card{background:#0b1020;border-color:#121a2d;box-shadow:0 16px 48px rgba(0,0,0,.45)}
     .theme-dark input, .theme-dark select, .theme-dark textarea{background:#0f172a;border-color:#334155;color:#e5e7eb}
     .theme-dark .btn{background:#18202f;color:#e5e7eb;border-color:#2b3546}
