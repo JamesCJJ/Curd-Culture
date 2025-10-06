@@ -6,7 +6,7 @@
  */
 $this->assign('title', 'Delivery Slots');
 ?>
-<div class="admin-products">
+<div class="admin-deliveries"><!-- NOTE: use admin-deliveries so CSS below applies -->
 
     <!-- Header -->
     <div class="page-header">
@@ -21,9 +21,27 @@ $this->assign('title', 'Delivery Slots');
 
     <!-- Stats -->
     <div class="stats-grid">
-        <div class="stat-card"><div class="stat-icon stat-icon-blue">⏱</div><div class="stat-content"><div class="stat-value"><?= number_format($stats['total']) ?></div><div class="stat-label">Total Slots</div></div></div>
-        <div class="stat-card"><div class="stat-icon stat-icon-green">✅</div><div class="stat-content"><div class="stat-value"><?= number_format($stats['active']) ?></div><div class="stat-label">Active</div></div></div>
-        <div class="stat-card"><div class="stat-icon stat-icon-red">⛔</div><div class="stat-content"><div class="stat-value"><?= number_format($stats['inactive']) ?></div><div class="stat-label">Inactive</div></div></div>
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-blue">⏱</div>
+            <div class="stat-content">
+                <div class="stat-value"><?= number_format($stats['total']) ?></div>
+                <div class="stat-label">Total Slots</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-green">✅</div>
+            <div class="stat-content">
+                <div class="stat-value"><?= number_format($stats['active']) ?></div>
+                <div class="stat-label">Active</div>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon stat-icon-red">⛔</div>
+            <div class="stat-content">
+                <div class="stat-value"><?= number_format($stats['inactive']) ?></div>
+                <div class="stat-label">Inactive</div>
+            </div>
+        </div>
     </div>
 
     <!-- Filters -->
@@ -64,22 +82,27 @@ $this->assign('title', 'Delivery Slots');
                 </thead>
                 <tbody>
                 <?php if ($slots->isEmpty()): ?>
-                    <tr><td colspan="6" class="empty-state">
+                    <tr>
+                        <td colspan="6" class="empty-state">
                             <div class="empty-content">
                                 <h3>No slots found</h3>
                                 <p>Click “Add Slot” to create your first delivery window.</p>
                                 <?= $this->Html->link('Add Slot', ['action'=>'add'], ['class'=>'btn btn-primary']) ?>
                             </div>
-                        </td></tr>
+                        </td>
+                    </tr>
                 <?php else: foreach ($slots as $s): ?>
+                    <?php
+                    // Pretty HH:MM AM/PM with safe fallback
+                    $ws = $s->window_start;
+                    $we = $s->window_end;
+                    $wsTxt = $ws ? (is_object($ws) ? $ws->format('g:i A') : (is_string($ws) ? date('g:i A', strtotime($ws)) : '')) : '';
+                    $weTxt = $we ? (is_object($we) ? $we->format('g:i A') : (is_string($we) ? date('g:i A', strtotime($we)) : '')) : '';
+                    ?>
                     <tr>
                         <td><strong><?= h($s->name) ?></strong></td>
-                        <td>
-                            <?= h($s->window_start) ?> – <?= h($s->window_end) ?>
-                        </td>
-                        <td>
-                            <?= $s->capacity === null ? 'No limit' : number_format((int)$s->capacity) ?>
-                        </td>
+                        <td><?= h($wsTxt) ?> – <?= h($weTxt) ?></td>
+                        <td><?= $s->capacity === null ? 'No limit' : number_format((int)$s->capacity) ?></td>
                         <td>
                             <?php if ((int)$s->is_active === 1): ?>
                                 <span class="badge badge-success">Active</span>
@@ -87,33 +110,30 @@ $this->assign('title', 'Delivery Slots');
                                 <span class="badge badge-danger">Inactive</span>
                             <?php endif; ?>
                         </td>
-                        <td>
-                            <?= $s->created ? $s->created->format('M j, Y') : '—' ?>
-                        </td>
+                        <td><?= $s->created ? $s->created->format('M j, Y') : '—' ?></td>
                         <td class="col-actions">
                             <div class="action-buttons">
                                 <?= $this->Html->link(
                                     '<i class="icon-edit"></i> Edit',
-                                    ['prefix' => 'Admin', 'controller' => 'DeliverySlots', 'action' => 'edit', $slot->id],
+                                    ['prefix' => 'Admin', 'controller' => 'DeliverySlots', 'action' => 'edit', $s->id],
                                     ['class' => 'btn btn-outline btn-sm', 'escape' => false, 'title' => 'Edit']
                                 ) ?>
 
-                                <?php if ((int)$slot->is_active === 1): ?>
+                                <?php if ((int)$s->is_active === 1): ?>
                                     <?= $this->Form->postLink(
                                         'Disable',
-                                        ['prefix' => 'Admin', 'controller' => 'DeliverySlots', 'action' => 'toggle', $slot->id],
+                                        ['prefix' => 'Admin', 'controller' => 'DeliverySlots', 'action' => 'toggle', $s->id],
                                         ['class' => 'btn btn-outline btn-sm', 'confirm' => 'Disable this slot?']
                                     ) ?>
                                 <?php else: ?>
                                     <?= $this->Form->postLink(
                                         'Enable',
-                                        ['prefix' => 'Admin', 'controller' => 'DeliverySlots', 'action' => 'toggle', $slot->id],
+                                        ['prefix' => 'Admin', 'controller' => 'DeliverySlots', 'action' => 'toggle', $s->id],
                                         ['class' => 'btn btn-outline btn-sm']
                                     ) ?>
                                 <?php endif; ?>
                             </div>
                         </td>
-
                     </tr>
                 <?php endforeach; endif; ?>
                 </tbody>
@@ -121,7 +141,7 @@ $this->assign('title', 'Delivery Slots');
         </div>
     </div>
 
-    <?php if ($pagination['totalPages'] > 1): ?>
+    <?php if (!empty($pagination) && $pagination['totalPages'] > 1): ?>
         <div class="pagination-section">
             <div class="pagination-info">
                 Showing <?= number_format(($pagination['page']-1)*20+1) ?>
@@ -140,6 +160,7 @@ $this->assign('title', 'Delivery Slots');
         </div>
     <?php endif; ?>
 </div>
+
 <style>
     /* Root */
     .admin-deliveries { max-width: 1400px; margin: 0 auto; padding: 2rem 1rem; }
@@ -162,35 +183,22 @@ $this->assign('title', 'Delivery Slots');
     .stat-icon { width:3rem; height:3rem; border-radius:.75rem; display:flex; align-items:center; justify-content:center; font-size:1.25rem; }
     .stat-icon-blue { background:#dbeafe; color:#1d4ed8; }
     .stat-icon-green { background:#dcfce7; color:#16a34a; }
-    .stat-icon-orange { background:#fed7aa; color:#ea580c; }
     .stat-icon-red { background:#fecaca; color:#dc2626; }
     .stat-value { font-size:1.6rem; font-weight:700; color:#111827; }
     .stat-label { color:#6b7280; font-size:.9rem; }
 
-    /* Tables */
+    /* Table */
     .table-section { background:#fff; border:1px solid #e5e7eb; border-radius:.75rem; overflow:hidden; margin-bottom:1rem; }
-    .table-header { display:flex; justify-content:space-between; align-items:center; padding:1rem 1rem .75rem 1rem; border-bottom:1px solid #e5e7eb; }
-    .slot-meta { display:flex; align-items:baseline; gap:.75rem; }
-    .slot-title { margin:0; font-size:1.1rem; }
-    .slot-sub { color:#6b7280; }
-
     .table-container { overflow-x:auto; }
     .data-table { width:100%; border-collapse:collapse; }
     .data-table th { background:#f9fafb; padding:0.8rem 1rem; text-align:left; font-weight:600; color:#374151; border-bottom:1px solid #e5e7eb; white-space:nowrap;}
     .data-table td { padding:0.8rem 1rem; border-bottom:1px solid #f3f4f6; vertical-align:top; }
     .data-table tbody tr:hover { background:#f9fafb; }
+
+    /* Forms & buttons */
     .inline-form { display:flex; gap:.4rem; align-items:center; }
     .form-control { width:100%; padding:.5rem .6rem; border:1px solid #d1d5db; border-radius:.5rem; font-size:.85rem; }
     .form-control-sm { padding:.35rem .5rem; font-size:.82rem; }
-    .price { font-weight:600; color:#059669; }
-    .muted { color:#6b7280; }
-
-    /* Badges & Buttons */
-    .badge { display:inline-block; padding:.2rem .6rem; border-radius:9999px; font-size:.75rem; font-weight:600; background:#eef2f7; color:#374151;}
-    .badge-success { background:#dcfce7; color:#166534; }
-    .badge-warning { background:#fef3c7; color:#92400e; }
-    .badge-danger  { background:#fecaca; color:#991b1b; }
-
     .btn { display:inline-flex; align-items:center; gap:.5rem; padding:.55rem .9rem; border-radius:.5rem; font-size:.875rem; font-weight:500; text-decoration:none; transition:all .2s; border:1px solid transparent; cursor:pointer;}
     .btn-primary { background:#2563eb; color:#fff; }
     .btn-primary:hover { background:#1d4ed8; }
@@ -200,10 +208,20 @@ $this->assign('title', 'Delivery Slots');
     .btn-subtle:hover { color:#374151; background:#f3f4f6; }
     .btn-sm { padding:.35rem .6rem; font-size:.82rem; }
 
+    /* Badges */
+    .badge { display:inline-block; padding:.2rem .6rem; border-radius:9999px; font-size:.75rem; font-weight:600; background:#eef2f7; color:#374151;}
+    .badge-success { background:#dcfce7; color:#166534; }
+    .badge-danger  { background:#fecaca; color:#991b1b; }
+
     /* Empty */
     .empty-state { text-align:center; padding:2.5rem 1rem; }
     .empty-content { max-width:460px; margin:0 auto; }
-    .empty-icon { font-size:2.25rem; color:#d1d5db; margin-bottom:.5rem; }
+
+    /* Pagination */
+    .pagination-section { display:flex; justify-content:space-between; align-items:center; padding:1rem 0; }
+    .pagination-info { color:#6b7280; font-size:.875rem; }
+    .pagination-controls { display:flex; align-items:center; gap:1rem; }
+    .page-info { color:#374151; font-size:.875rem; }
 
     /* Responsive */
     @media (max-width: 1024px) {
