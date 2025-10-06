@@ -31,9 +31,9 @@ class PaymentsController extends AppController
 
         $userId = (int)$identity->get('id');
 
-        $Carts      = $this->getTableLocator()->get('Carts');
-        $CartItems  = $this->getTableLocator()->get('CartItems');
-        $Products   = $this->getTableLocator()->get('Products');
+        $Carts     = $this->getTableLocator()->get('Carts');
+        $CartItems = $this->getTableLocator()->get('CartItems');
+        $Products  = $this->getTableLocator()->get('Products');
 
         $cart = $Carts->find()->where(['user_id' => $userId, 'status' => 'open'])->first();
         if (!$cart) {
@@ -54,16 +54,17 @@ class PaymentsController extends AppController
         }
 
         $pids = array_column($rows, 'product_id');
-        $map  = [];
-        foreach ($Products->find()->select(['id','name'])->where(['id IN' => $pids])->enableHydration(false)->all() as $p) {
-            $map[(int)$p['id']] = $p['name'];
+        $nameMap = [];
+        foreach ($Products->find()->select(['id', 'name'])->where(['id IN' => $pids])->enableHydration(false)->all() as $p) {
+            $nameMap[(int)$p['id']] = (string)$p['name'];
         }
 
         $currency  = 'AUD';
         $subtotal  = 0.0;
         $lineItems = [];
         foreach ($rows as $it) {
-            $name  = $map[(int)$it['product_id']] ?? ('Product #'.$it['product_id']);
+            $pid   = (int)$it['product_id'];
+            $name  = $nameMap[$pid] ?? ('Product #' . $pid);
             $qty   = (int)$it['qty'];
             $price = (float)$it['price'];
             $subtotal += $price * $qty;
@@ -72,14 +73,14 @@ class PaymentsController extends AppController
                 'price_data' => [
                     'currency'     => $currency,
                     'product_data' => ['name' => $name],
-                    'unit_amount'  => (int) round($price * 100),
+                    'unit_amount'  => (int)round($price * 100),
                 ],
                 'quantity' => $qty,
             ];
         }
 
         $data = (array)$this->request->getData();
-        $required = ['full_name','email','address','city','postcode','country'];
+        $required = ['full_name', 'email', 'address', 'city', 'postcode', 'country'];
         foreach ($required as $f) {
             if (empty(trim((string)($data[$f] ?? '')))) {
                 $this->Flash->error('Please fill all required fields.');
@@ -88,7 +89,7 @@ class PaymentsController extends AppController
         }
 
         $method = (string)($data['fulfillment_method'] ?? 'delivery');
-        $method = in_array($method, ['delivery','pickup'], true) ? $method : 'delivery';
+        $method = in_array($method, ['delivery', 'pickup'], true) ? $method : 'delivery';
 
         $deliveryDateStr      = (string)($data['delivery_date']   ?? '');
         $deliverySlotId       = (int)($data['delivery_slot_id']   ?? 0);
@@ -107,23 +108,19 @@ class PaymentsController extends AppController
             }
         }
 
-        $shipping = $subtotal > 0 ? 12.90 : 0.0;
-        if ($method === 'pickup') {
-            $shipping = 0.0;
-        }
+        $shipping = ($method === 'pickup') ? 0.0 : (($subtotal > 0) ? 12.90 : 0.0);
         if ($shipping > 0) {
             $lineItems[] = [
                 'price_data' => [
                     'currency'     => $currency,
                     'product_data' => ['name' => 'Shipping'],
-                    'unit_amount'  => (int) round($shipping * 100),
+                    'unit_amount'  => (int)round($shipping * 100),
                 ],
                 'quantity' => 1,
             ];
         }
-        $total = $subtotal + $shipping;
 
-        $secret = (string) (Configure::read('Stripe.secret_key') ?: env('STRIPE_SECRET_KEY', ''));
+        $secret = (string)(Configure::read('Stripe.secret_key') ?: env('STRIPE_SECRET_KEY', ''));
         if ($secret === '') {
             $this->Flash->error('Stripe secret key is not configured.');
             return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
@@ -135,22 +132,22 @@ class PaymentsController extends AppController
         $cancelUrl  = Router::url(['controller' => 'Cart', 'action' => 'checkout'], true);
 
         $metadata = [
-            'user_id'  => (string)$userId,
-            'cart_id'  => (string)$cart->id,
-            'email'    => (string)$data['email'],
-            'full_name'=> (string)$data['full_name'],
-            'address'  => (string)$data['address'],
-            'city'     => (string)$data['city'],
-            'postcode' => (string)$data['postcode'],
-            'country'  => (string)$data['country'],
-            'fulfillment_method' => $method,
+            'user_id'               => (string)$userId,
+            'cart_id'               => (string)$cart->id,
+            'email'                 => (string)$data['email'],
+            'full_name'             => (string)$data['full_name'],
+            'address'               => (string)$data['address'],
+            'city'                  => (string)$data['city'],
+            'postcode'              => (string)$data['postcode'],
+            'country'               => (string)$data['country'],
+            'fulfillment_method'    => $method,
             'delivery_instructions' => $deliveryInstructions,
         ];
         if ($method === 'pickup') {
             $metadata['pickup_location_id'] = (string)$pickupLocationId;
         } else {
-            $metadata['delivery_date']      = (string)$deliveryDateStr;
-            $metadata['delivery_slot_id']   = (string)$deliverySlotId;
+            $metadata['delivery_date']    = $deliveryDateStr;
+            $metadata['delivery_slot_id'] = (string)$deliverySlotId;
         }
 
         $session = $stripe->checkout->sessions->create([

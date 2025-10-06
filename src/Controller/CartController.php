@@ -135,7 +135,7 @@ class CartController extends AppController
         $Products  = $this->getTableLocator()->get('Products');
 
         $currentItems = $CartItems->find()
-            ->select(['id','product_id','qty'])
+            ->select(['id', 'product_id', 'qty'])
             ->where(['cart_id' => $cart->id, 'id IN' => array_keys($qtys)])
             ->enableHydration(false)
             ->all()
@@ -150,7 +150,7 @@ class CartController extends AppController
         if ($pidMap) {
             $pids = array_values(array_unique(array_values($pidMap)));
             $stocksRows = $Products->find()
-                ->select(['id','stock'])
+                ->select(['id', 'stock'])
                 ->where(['id IN' => $pids])
                 ->enableHydration(false)
                 ->all()
@@ -318,7 +318,7 @@ class CartController extends AppController
         if ($this->request->is('post')) {
             $data = (array)$this->request->getData();
 
-            $required = ['full_name','email','address','city','postcode','country'];
+            $required = ['full_name', 'email', 'address', 'city', 'postcode', 'country'];
             foreach ($required as $f) {
                 if (empty(trim((string)($data[$f] ?? '')))) {
                     $this->Flash->error('Please fill all required fields.');
@@ -332,16 +332,16 @@ class CartController extends AppController
                     $bankAccountNo   = $bank['account_no'];
 
                     $this->set(compact(
-                        'items','currency','subtotal','shipping','total','prefill',
-                        'bankAccountName','bankBsb','bankAccountNo',
-                        'deliverySlots','pickupLocations'
+                        'items', 'currency', 'subtotal', 'shipping', 'total', 'prefill',
+                        'bankAccountName', 'bankBsb', 'bankAccountNo',
+                        'deliverySlots', 'pickupLocations'
                     ));
                     return;
                 }
             }
 
             $fulfillmentMethod = (string)($data['fulfillment_method'] ?? 'delivery');
-            $fulfillmentMethod = in_array($fulfillmentMethod, ['delivery','pickup'], true) ? $fulfillmentMethod : 'delivery';
+            $fulfillmentMethod = in_array($fulfillmentMethod, ['delivery', 'pickup'], true) ? $fulfillmentMethod : 'delivery';
 
             $deliveryDateStr      = (string)($data['delivery_date']   ?? '');
             $deliverySlotId       = (int)($data['delivery_slot_id']   ?? 0);
@@ -387,7 +387,7 @@ class CartController extends AppController
                         ->where([
                             'delivery_date'    => $deliveryDateStr,
                             'delivery_slot_id' => $deliverySlotId,
-                            'status IN'        => ['pending','confirmed','processing','new'],
+                            'status IN'        => ['pending', 'confirmed', 'processing', 'new'],
                         ])
                         ->count();
                     if ($used >= (int)$slot['capacity']) {
@@ -476,7 +476,7 @@ class CartController extends AppController
                         ' (' . strtoupper($order->fulfillment_method) . ') ' .
                         'Total: ' . $currency . ' ' . number_format((float)$order->total, 2),
                 ]));
-            } catch (\Throwable $e) { /* ignore */ }
+            } catch (\Throwable $e) {}
 
             $this->Flash->success(
                 $fulfillmentMethod === 'pickup'
@@ -529,9 +529,9 @@ class CartController extends AppController
         $bankAccountNo   = $bank['account_no'];
 
         $this->set(compact(
-            'items','currency','subtotal','shipping','total','prefill',
-            'bankAccountName','bankBsb','bankAccountNo',
-            'deliverySlots','pickupLocations',
+            'items', 'currency', 'subtotal', 'shipping', 'total', 'prefill',
+            'bankAccountName', 'bankBsb', 'bankAccountNo',
+            'deliverySlots', 'pickupLocations',
             'defaultAddress'
         ));
     }
@@ -575,49 +575,15 @@ class CartController extends AppController
         $userId = isset($meta->user_id) ? (int)$meta->user_id : null;
         $cartId = isset($meta->cart_id) ? (int)$meta->cart_id : null;
 
-        $fulfillmentMethod    = (string)($meta->fulfillment_method   ?? 'delivery');
-        $deliveryDateStr      = (string)($meta->delivery_date        ?? '');
-        $deliverySlotId       = isset($meta->delivery_slot_id) ? (int)$meta->delivery_slot_id : 0;
-        $pickupLocationId     = isset($meta->pickup_location_id) ? (int)$meta->pickup_location_id : 0;
-        $deliveryInstructions = (string)($meta->delivery_instructions ?? '');
-
-// normalize fulfillment fields
-        $fulfillmentMethod = in_array($fulfillmentMethod, ['delivery','pickup'], true) ? $fulfillmentMethod : 'delivery';
-
-        if ($fulfillmentMethod === 'pickup') {
-            // for pickup, delivery fields must be NULL
-            $deliverySlotId  = null;
-            $deliveryDateStr = null;
-        } else {
-            // for delivery, pickup FK must be NULL; also guard invalid slot/date
-            $pickupLocationId = null;
-            if ($deliverySlotId <= 0) { $deliverySlotId = null; }
-            if ($deliveryDateStr === '') { $deliveryDateStr = null; }
-        }
+        $fm               = in_array((string)($meta->fulfillment_method ?? 'delivery'), ['delivery', 'pickup'], true) ? (string)$meta->fulfillment_method : 'delivery';
+        $deliveryDateStr  = (string)($meta->delivery_date ?? '');
+        $deliverySlotId   = isset($meta->delivery_slot_id) ? (int)$meta->delivery_slot_id : 0;
+        $pickupLocationId = isset($meta->pickup_location_id) ? (int)$meta->pickup_location_id : 0;
+        $instructions     = (string)($meta->delivery_instructions ?? '');
 
         if (!$cartId) {
             $this->Flash->warning('Cart information is missing; order cannot be finalized.');
             return;
-        }
-
-        // Normalize metadata and avoid invalid foreign keys
-        $fulfillmentMethod = in_array($fulfillmentMethod, ['delivery','pickup'], true) ? $fulfillmentMethod : 'delivery';
-        $deliverySlotId    = (int)$deliverySlotId;
-        $pickupLocationId  = (int)$pickupLocationId;
-
-        if ($fulfillmentMethod === 'delivery') {
-            if ($deliverySlotId <= 0) {
-                $deliverySlotId = null;
-            }
-            if ($deliveryDateStr === '') {
-                $deliveryDateStr = null;
-            }
-        }
-        if ($fulfillmentMethod === 'delivery' && $pickupLocationId > 0 && $deliverySlotId === null) {
-            $fulfillmentMethod = 'pickup';
-        }
-        if ($fulfillmentMethod === 'pickup' && $pickupLocationId <= 0) {
-            $pickupLocationId = null;
         }
 
         $CartItems  = $this->getTableLocator()->get('CartItems');
@@ -627,7 +593,7 @@ class CartController extends AppController
         $Carts      = $this->getTableLocator()->get('Carts');
 
         $rows = $CartItems->find()
-            ->select(['product_id','qty','price','currency'])
+            ->select(['product_id', 'qty', 'price', 'currency'])
             ->where(['cart_id' => $cartId])
             ->enableHydration(false)
             ->all()
@@ -646,62 +612,61 @@ class CartController extends AppController
             $price = (float)$r['price'];
             $currency = $r['currency'] ?: $currency;
             $subtotal += $price * $qty;
-            $items[] = ['pid'=>$pid,'qty'=>$qty,'price'=>$price,'currency'=>$currency];
+            $items[] = ['pid' => $pid, 'qty' => $qty, 'price' => $price, 'currency' => $currency];
         }
 
-        $shipping = ($fulfillmentMethod === 'pickup') ? 0.0 : 12.90;
-        $total    = round($subtotal + $shipping, 2);
+        if ($fm === 'pickup') {
+            $shipping = 0.0;
+            $deliverySlotId   = null;
+            $deliveryDateStr  = null;
+            $pickupLocationId = $pickupLocationId > 0 ? $pickupLocationId : null;
+        } else {
+            $shipping = 12.90;
+            $pickupLocationId = null;
+            $deliverySlotId   = $deliverySlotId > 0 ? $deliverySlotId : null;
+            $deliveryDateStr  = ($deliveryDateStr !== '') ? $deliveryDateStr : null;
+        }
+
+        $total = round($subtotal + $shipping, 2);
 
         $conn = $Orders->getConnection();
         $conn->begin();
-        error_log(sprintf(
-            'Finalize order meta -> method=%s, slot=%s, date=%s, pickup=%s',
-            $fulfillmentMethod,
-            var_export($deliverySlotId, true),
-            var_export($deliveryDateStr, true),
-            var_export($pickupLocationId, true)
-        ));
         try {
             $order = $Orders->newEntity([
-                'user_id'            => $userId,
-                'email'              => (string)($session->customer_email ?? $meta->email ?? ''),
-                'full_name'          => (string)($meta->full_name ?? ''),
-                'address'            => (string)($meta->address ?? ''),
-                'city'               => (string)($meta->city ?? ''),
-                'postcode'           => (string)($meta->postcode ?? ''),
-                'country'            => (string)($meta->country ?? ''),
-                'currency'           => $currency,
-                'subtotal'           => round($subtotal, 2),
-                'shipping_fee'       => round($shipping, 2),
-                'discount'           => 0.0,
-                'total'              => $total,
-                'status'             => 'pending',
-                'payment_status'     => 'paid',
-                'payment_method'     => 'card',
-                'payment_ref'        => (string)$session->id,
-                'paid_at'            => FrozenTime::now(),
-                'fulfillment_method' => $fulfillmentMethod,
-                'delivery_date'      => ($fulfillmentMethod === 'delivery') ? $deliveryDateStr : null,
-                'delivery_slot_id'   => ($fulfillmentMethod === 'delivery') ? $deliverySlotId : null,
-                'pickup_location_id' => ($fulfillmentMethod === 'pickup')   ? $pickupLocationId : null,
-                'delivery_instructions'=> $deliveryInstructions ?: null,
-                'notes'              => null,
+                'user_id'              => $userId,
+                'email'                => (string)($session->customer_email ?? $meta->email ?? ''),
+                'full_name'            => (string)($meta->full_name ?? ''),
+                'address'              => (string)($meta->address ?? ''),
+                'city'                 => (string)($meta->city ?? ''),
+                'postcode'             => (string)($meta->postcode ?? ''),
+                'country'              => (string)($meta->country ?? ''),
+                'currency'             => $currency,
+                'subtotal'             => round($subtotal, 2),
+                'shipping_fee'         => round($shipping, 2),
+                'discount'             => 0.0,
+                'total'                => $total,
+                'status'               => 'pending',
+                'payment_status'       => 'paid',
+                'payment_method'       => 'card',
+                'payment_ref'          => (string)$session->id,
+                'paid_at'              => FrozenTime::now(),
+                'fulfillment_method'   => $fm,
+                'delivery_date'        => $deliveryDateStr,
+                'delivery_slot_id'     => $deliverySlotId,
+                'pickup_location_id'   => $pickupLocationId,
+                'delivery_instructions'=> $instructions ?: null,
+                'notes'                => null,
             ]);
-
             $Orders->saveOrFail($order, ['atomic' => false]);
+
             $pids = array_map(fn($i) => (int)$i['pid'], $items);
             $prodMap = [];
             if ($pids) {
-                $rowsP = $Products->find()
-                    ->select(['id','name','slug'])
-                    ->where(['id IN' => $pids])
-                    ->enableHydration(false)
-                    ->all()
-                    ->toArray();
-                foreach ($rowsP as $p) {
+                foreach ($Products->find()->select(['id', 'name', 'slug'])->where(['id IN' => $pids])->enableHydration(false)->all() as $p) {
                     $prodMap[(int)$p['id']] = ['name' => (string)$p['name'], 'slug' => $p['slug'] ?? null];
                 }
             }
+
             foreach ($items as $it) {
                 $Products->decrementStockOrFail((int)$it['pid'], (int)$it['qty']);
 
@@ -719,7 +684,6 @@ class CartController extends AppController
                     'currency'   => $it['currency'],
                 ]), ['atomic' => false]);
             }
-
 
             if (property_exists($order, 'stock_deducted')) {
                 $order->set('stock_deducted', 1);

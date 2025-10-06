@@ -20,7 +20,6 @@ class WebhooksController extends AppController
         $this->request->allowMethod(['post']);
     }
 
-    /** POST /webhooks/stripe */
     public function stripe()
     {
         $payload   = (string)$this->request->getBody()->getContents();
@@ -43,13 +42,11 @@ class WebhooksController extends AppController
             /** @var \Stripe\Checkout\Session $session */
             $session = $event->data->object;
 
-            $userId  = isset($session->metadata->user_id) ? (int)$session->metadata->user_id : null;
-            $cartId  = isset($session->metadata->cart_id) ? (int)$session->metadata->cart_id : 0;
+            $userId = isset($session->metadata->user_id) ? (int)$session->metadata->user_id : null;
+            $cartId = isset($session->metadata->cart_id) ? (int)$session->metadata->cart_id : 0;
 
             if (!$cartId) {
-
                 $this->log('Webhook missing cart_id for session: ' . (string)$session->id, 'error');
-
                 return $this->response->withStringBody('ok');
             }
 
@@ -60,13 +57,12 @@ class WebhooksController extends AppController
             /** @var \App\Model\Table\ProductsTable $Products */
             $Products   = $this->getTableLocator()->get('Products');
 
-            $existing = $Orders->find()->where(['payment_ref' => (string)$session->id])->first();
-            if ($existing) {
+            if ($Orders->exists(['payment_ref' => (string)$session->id])) {
                 return $this->response->withStringBody('ok');
             }
 
             $rows = $CartItems->find()
-                ->select(['product_id','qty','price','currency'])
+                ->select(['product_id', 'qty', 'price', 'currency'])
                 ->where(['cart_id' => $cartId])
                 ->enableHydration(false)
                 ->all()
@@ -84,47 +80,65 @@ class WebhooksController extends AppController
                     $currency = (string)$it['currency'];
                 }
             }
-            $shipping = $subtotal > 0 ? 12.90 : 0.0;
-            $total    = $subtotal + $shipping;
+
+            $meta = $session->metadata ?? (object)[];
+            $fm   = in_array((string)($meta->fulfillment_method ?? 'delivery'), ['delivery', 'pickup'], true)
+                ? (string)$meta->fulfillment_method : 'delivery';
+
+            $deliveryDateStr  = (string)($meta->delivery_date ?? '');
+            $deliverySlotId   = isset($meta->delivery_slot_id) ? (int)$meta->delivery_slot_id : 0;
+            $pickupLocationId = isset($meta->pickup_location_id) ? (int)$meta->pickup_location_id : 0;
+            $instructions     = (string)($meta->delivery_instructions ?? '');
+
+            if ($fm === 'pickup') {
+                $shipping = 0.0;
+                $deliveryDateStr  = null;
+                $deliverySlotId   = null;
+                $pickupLocationId = $pickupLocationId > 0 ? $pickupLocationId : null;
+            } else {
+                $shipping = ($subtotal > 0) ? 12.90 : 0.0;
+                $pickupLocationId = null;
+                $deliverySlotId   = $deliverySlotId > 0 ? $deliverySlotId : null;
+                $deliveryDateStr  = ($deliveryDateStr !== '') ? $deliveryDateStr : null;
+            }
+
+            $total = round($subtotal + $shipping, 2);
 
             $conn = $Orders->getConnection();
             $conn->begin();
             try {
-                $order = $Orders->newEmptyEntity();
-                $order = $Orders->patchEntity($order, [
-                    'user_id'        => $userId,
-                    'email'          => (string)($session->customer_details->email ?? $session->customer_email ?? ''),
-                    'full_name'      => (string)($session->metadata->full_name ?? ''),
-                    'address'        => (string)($session->metadata->address ?? ''),
-                    'city'           => (string)($session->metadata->city ?? ''),
-                    'postcode'       => (string)($session->metadata->postcode ?? ''),
-                    'country'        => (string)($session->metadata->country ?? ''),
-                    'currency'       => $currency,
-                    'subtotal'       => round($subtotal, 2),
-                    'shipping_fee'   => round($shipping, 2),
-                    'discount'       => 0.0,
-                    'total'          => round($total, 2),
-                    'status'         => 'pending',
-                    'payment_status' => 'paid',
-                    'payment_method' => 'card',
-                    'payment_ref'    => (string)$session->id,
-                    'paid_at'        => FrozenTime::now(),
-                    'notes'          => null,
+                $order = $Orders->patchEntity($Orders->newEmptyEntity(), [
+                    'user_id'              => $userId,
+                    'email'                => (string)($session->customer_details->email ?? $session->customer_email ?? ''),
+                    'full_name'            => (string)($meta->full_name ?? ''),
+                    'address'              => (string)($meta->address ?? ''),
+                    'city'                 => (string)($meta->city ?? ''),
+                    'postcode'             => (string)($meta->postcode ?? ''),
+                    'country'              => (string)($meta->country ?? ''),
+                    'currency'             => $currency,
+                    'subtotal'             => round($subtotal, 2),
+                    'shipping_fee'         => round($shipping, 2),
+                    'discount'             => 0.0,
+                    'total'                => $total,
+                    'status'               => 'pending',
+                    'payment_status'       => 'paid',
+                    'payment_method'       => 'card',
+                    'payment_ref'          => (string)$session->id,
+                    'paid_at'              => FrozenTime::now(),
+                    'fulfillment_method'   => $fm,
+                    'delivery_date'        => $deliveryDateStr,
+                    'delivery_slot_id'     => $deliverySlotId,
+                    'pickup_location_id'   => $pickupLocationId,
+                    'delivery_instructions'=> $instructions ?: null,
+                    'notes'                => null,
                 ]);
                 $Orders->saveOrFail($order, ['atomic' => false]);
 
-// before foreach saving items
                 $pids = array_map(fn($r) => (int)$r['product_id'], $rows);
                 $prodMap = [];
                 if ($pids) {
-                    $rowsP = $Products->find()
-                        ->select(['id','name'])
-                        ->where(['id IN' => $pids])
-                        ->enableHydration(false)
-                        ->all()
-                        ->toArray();
-                    foreach ($rowsP as $p) {
-                        $prodMap[(int)$p['id']] = (string)$p['name'];
+                    foreach ($Products->find()->select(['id', 'name', 'slug'])->where(['id IN' => $pids])->enableHydration(false)->all() as $p) {
+                        $prodMap[(int)$p['id']] = ['name' => (string)$p['name'], 'slug' => $p['slug'] ?? null];
                     }
                 }
 
@@ -135,15 +149,15 @@ class WebhooksController extends AppController
                     $Products->decrementStockOrFail($pid, $qty);
 
                     $OrderItems->saveOrFail($OrderItems->newEntity([
-                        'order_id'   => $order->id,
+                        'order_id'   => (int)$order->id,
                         'product_id' => $pid,
-                        'name'       => $prodMap[$pid] ?? ('Product #'.$pid),
+                        'name'       => $prodMap[$pid]['name'] ?? ('Product #' . $pid),
+                        'slug'       => $prodMap[$pid]['slug'] ?? null,
                         'price'      => (float)$it['price'],
                         'qty'        => $qty,
                         'currency'   => (string)($it['currency'] ?? $currency),
                     ]), ['atomic' => false]);
                 }
-
 
                 $Carts->updateAll(['status' => 'ordered'], ['id' => $cartId]);
                 $CartItems->deleteAll(['cart_id' => $cartId]);
@@ -152,7 +166,6 @@ class WebhooksController extends AppController
             } catch (Throwable $e) {
                 $conn->rollback();
                 $this->log('Webhook fulfillment error (session ' . $session->id . '): ' . $e->getMessage(), 'error');
-
                 return $this->response->withStringBody('ok');
             }
         }
