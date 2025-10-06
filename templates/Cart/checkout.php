@@ -11,6 +11,11 @@ $total    = $total    ?? ($subtotal + $shipping);
 $bankAccountName = $bankAccountName ?? 'Curd & Culture Pty Ltd';
 $bankBsb         = $bankBsb         ?? '000-000';
 $bankAccountNo   = $bankAccountNo   ?? '000000000';
+
+/** New: delivery slots & pickup locations fed by CartController::checkout() */
+$deliverySlots   = $deliverySlots   ?? []; // each: ['id','name','dow','window_start','window_end','capacity',...]
+$pickupLocations = $pickupLocations ?? []; // each: ['id','name','address_line_1','suburb','state','postcode',...]
+$today = date('Y-m-d');
 ?>
 <div class="checkout-page">
 
@@ -29,15 +34,16 @@ $bankAccountNo   = $bankAccountNo   ?? '000000000';
     </div>
 
     <div class="grid">
-        <!-- MAIN: shipping form -->
+        <!-- MAIN: shipping / fulfillment form -->
         <section class="card">
             <header class="card-hd">
-                <h2 class="title">Shipping details</h2>
-                <p class="sub">We’ll only use this information to deliver your order.</p>
+                <h2 class="title">Shipping & Fulfillment</h2>
+                <p class="sub">We’ll only use this information to fulfill your order.</p>
             </header>
 
             <?= $this->Form->create(null, ['id' => 'checkout-form', 'aria-describedby' => 'form-help']) ?>
 
+            <!-- Customer contact + address -->
             <fieldset class="fs">
                 <div class="fg">
                     <label for="full_name">Full name</label>
@@ -99,6 +105,86 @@ $bankAccountNo   = $bankAccountNo   ?? '000000000';
                 </div>
             </fieldset>
 
+            <!-- New: Fulfillment method -->
+            <fieldset class="fs">
+                <h3 class="title sm">Fulfillment</h3>
+
+                <div class="fg radios">
+                    <label class="radio">
+                        <input type="radio" name="fulfillment_method" value="delivery" checked>
+                        <span>Home Delivery</span>
+                    </label>
+                    <label class="radio">
+                        <input type="radio" name="fulfillment_method" value="pickup">
+                        <span>Click &amp; Collect (in-store pickup)</span>
+                    </label>
+                </div>
+
+                <!-- Delivery-only fields -->
+                <div id="delivery-fields">
+                    <div class="row2">
+                        <div class="fg">
+                            <label for="delivery_date">Delivery date</label>
+                            <input id="delivery_date"
+                                   name="delivery_date"
+                                   type="date"
+                                   min="<?= h($today) ?>">
+                        </div>
+                        <div class="fg">
+                            <label for="delivery_slot_id">Preferred time slot</label>
+                            <select id="delivery_slot_id" name="delivery_slot_id">
+                                <option value="">Select a time slot…</option>
+                                <?php foreach ((array)$deliverySlots as $slot): ?>
+                                    <?php
+                                    $label = (string)($slot['name'] ?? 'Slot');
+                                    $ws = isset($slot['window_start']) ? substr((string)$slot['window_start'], 0, 5) : '';
+                                    $we = isset($slot['window_end'])   ? substr((string)$slot['window_end'], 0, 5)   : '';
+                                    if ($ws && $we) {
+                                        $label .= " ({$ws}–{$we})";
+                                    }
+                                    $cap = $slot['capacity'] ?? null;
+                                    if ($cap) {
+                                        $label .= " · cap {$cap}";
+                                    }
+                                    ?>
+                                    <option value="<?= (int)$slot['id'] ?>"><?= h($label) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="fg">
+                        <label for="delivery_instructions">Delivery instructions (optional)</label>
+                        <textarea id="delivery_instructions" name="delivery_instructions" rows="2"
+                                  placeholder="Gate code, safe drop note, contactless delivery…"></textarea>
+                    </div>
+                </div>
+
+                <!-- Pickup-only fields -->
+                <div id="pickup-fields" hidden>
+                    <div class="fg">
+                        <label for="pickup_location_id">Pickup location</label>
+                        <select id="pickup_location_id" name="pickup_location_id">
+                            <option value="">Select a store…</option>
+                            <?php foreach ((array)$pickupLocations as $loc): ?>
+                                <?php
+                                $line = (string)($loc['name'] ?? 'Store');
+                                $addr = trim(($loc['address_line_1'] ?? '')
+                                    . ', ' . ($loc['suburb'] ?? '')
+                                    . ' ' . ($loc['state'] ?? '')
+                                    . ' ' . ($loc['postcode'] ?? ''));
+                                if ($addr) $line .= ' — ' . $addr;
+                                ?>
+                                <option value="<?= (int)$loc['id'] ?>"><?= h($line) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="muted tiny" style="margin-top:.35rem">
+                            Picking up? Shipping becomes <strong>free</strong>. Bring your order confirmation at collection.
+                        </p>
+                    </div>
+                </div>
+            </fieldset>
+
             <p id="form-help" class="muted small">
                 All payments are encrypted. Your data is protected and used only to fulfil your order.
             </p>
@@ -106,14 +192,14 @@ $bankAccountNo   = $bankAccountNo   ?? '000000000';
             <div class="actions">
                 <a class="btn btn-subtle" href="<?= $this->Url->build(['controller'=>'Cart','action'=>'index']) ?>">Back to cart</a>
 
-
+                <!-- Native POST to CartController::checkout() -> bank transfer unpaid order -->
                 <button class="btn" title="Place order and pay via bank transfer">
                     Place order (Bank transfer)
                 </button>
 
-
+                <!-- Stripe card button will switch form action to Payments/checkout -->
                 <button type="button" id="btn-stripe" class="btn btn-primary">
-                    <span class="lock" aria-hidden="true"><?= /* lock icon */ '' ?></span>
+                    <span class="lock" aria-hidden="true"></span>
                     Pay with card
                     <span class="brands" aria-hidden="true">
                         <svg viewBox="0 0 36 12" class="brand"><rect x="0" y="0" width="36" height="12" rx="2"/></svg>
@@ -154,15 +240,15 @@ $bankAccountNo   = $bankAccountNo   ?? '000000000';
             <div class="totals" role="table" aria-label="Price breakdown">
                 <div class="row" role="row">
                     <div class="k" role="cell">Subtotal</div>
-                    <div class="v" role="cell"><?= $this->Number->currency((float)$subtotal, $currency) ?></div>
+                    <div class="v" role="cell" id="subtotal-val"><?= $this->Number->currency((float)$subtotal, $currency) ?></div>
                 </div>
                 <div class="row" role="row">
                     <div class="k" role="cell">Shipping</div>
-                    <div class="v" role="cell"><?= $this->Number->currency((float)$shipping, $currency) ?></div>
+                    <div class="v" role="cell" id="shipping-val"><?= $this->Number->currency((float)$shipping, $currency) ?></div>
                 </div>
                 <div class="row total" role="row">
                     <div class="k" role="cell">Total</div>
-                    <div class="v" role="cell"><?= $this->Number->currency((float)$total, $currency) ?></div>
+                    <div class="v" role="cell" id="total-val"><?= $this->Number->currency((float)$total, $currency) ?></div>
                 </div>
                 <p class="muted tiny">Prices include GST where applicable.</p>
             </div>
@@ -184,19 +270,69 @@ $bankAccountNo   = $bankAccountNo   ?? '000000000';
 </div>
 
 <script>
-    document.getElementById('btn-stripe')?.addEventListener('click', function () {
-        const form = document.getElementById('checkout-form');
-        if (!form) return;
+    (function(){
+        // Toggle delivery vs pickup blocks + live price preview
+        const methodRadios = document.querySelectorAll('input[name="fulfillment_method"]');
+        const elDelivery   = document.getElementById('delivery-fields');
+        const elPickup     = document.getElementById('pickup-fields');
 
-        const req = ['full_name','email','address','city','postcode','country'];
-        for (const id of req) {
-            const el = document.getElementById(id);
-            if (el && !el.value.trim()) { el.focus(); return; }
+        const shippingPhp  = <?= json_encode((float)$shipping) ?>;
+        const subtotalPhp  = <?= json_encode((float)$subtotal) ?>;
+        const currencyIso  = <?= json_encode((string)$currency) ?>;
+
+        function fmtMoney(num){
+            // Basic client-side formatting (server is authoritative)
+            return new Intl.NumberFormat(undefined, { style: 'currency', currency: currencyIso }).format(num);
         }
-        form.action = "<?= $this->Url->build(['controller'=>'Payments','action'=>'checkout']) ?>";
-        form.method = "post";
-        form.submit();
-    });
+
+        function updatePricePreview(){
+            const method = document.querySelector('input[name="fulfillment_method"]:checked')?.value || 'delivery';
+            const shipping = (method === 'pickup') ? 0 : shippingPhp;
+            const total = subtotalPhp + shipping;
+            const sv = document.getElementById('shipping-val');
+            const tv = document.getElementById('total-val');
+            if (sv) sv.textContent = fmtMoney(shipping);
+            if (tv) tv.textContent = fmtMoney(total);
+        }
+
+        function toggleBlocks(){
+            const isPickup = document.querySelector('input[name="fulfillment_method"]:checked')?.value === 'pickup';
+            elDelivery.hidden = isPickup;
+            elPickup.hidden   = !isPickup;
+            updatePricePreview();
+        }
+
+        methodRadios.forEach(r => r.addEventListener('change', toggleBlocks));
+        toggleBlocks();
+
+        // Stripe button: validate minimal fields then submit to Payments/checkout
+        document.getElementById('btn-stripe')?.addEventListener('click', function () {
+            const form = document.getElementById('checkout-form');
+            if (!form) return;
+
+            // base customer fields
+            const req = ['full_name','email','address','city','postcode','country'];
+            for (const id of req) {
+                const el = document.getElementById(id);
+                if (el && !el.value.trim()) { el.focus(); return; }
+            }
+            // fulfillment fields
+            const method = document.querySelector('input[name="fulfillment_method"]:checked')?.value || 'delivery';
+            if (method === 'delivery') {
+                const dd = document.getElementById('delivery_date');
+                const ds = document.getElementById('delivery_slot_id');
+                if (!dd?.value) { dd.focus(); return; }
+                if (!ds?.value) { ds.focus(); return; }
+            } else {
+                const pl = document.getElementById('pickup_location_id');
+                if (!pl?.value) { pl.focus(); return; }
+            }
+
+            form.action = "<?= $this->Url->build(['controller'=>'Payments','action'=>'checkout']) ?>";
+            form.method = "post";
+            form.submit();
+        });
+    })();
 </script>
 
 <style>
@@ -225,12 +361,15 @@ $bankAccountNo   = $bankAccountNo   ?? '000000000';
     .fs{margin-top:.6rem}
     .fg{margin-bottom:.85rem}
     label{display:block;margin-bottom:.25rem;color:#6b7280}
-    input{
+    input, select, textarea{
         width:100%;border-radius:.65rem;border:1px solid #e5e7eb;
         padding:.62rem .8rem;background:#f9fafb;transition:box-shadow .15s,border-color .15s,background .15s
     }
-    input:focus{outline:none;border-color:#93c5fd;box-shadow:0 0 0 3px rgba(147,197,253,.45);background:#fff}
+    input:focus, select:focus, textarea:focus{outline:none;border-color:#93c5fd;box-shadow:0 0 0 3px rgba(147,197,253,.45);background:#fff}
+    textarea{resize:vertical}
     .row2{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+    .radios{display:flex;gap:1rem;align-items:center}
+    .radio{display:inline-flex;gap:.45rem;align-items:center;cursor:pointer;color:#374151}
 
     .muted{color:#6b7280}
     .small{font-size:.9rem}
@@ -280,7 +419,7 @@ $bankAccountNo   = $bankAccountNo   ?? '000000000';
 
     /* --- Themes --- */
     .theme-dark .card{background:#0b1020;border-color:#121a2d;box-shadow:0 16px 48px rgba(0,0,0,.45)}
-    .theme-dark input{background:#0f172a;border-color:#334155;color:#e5e7eb}
+    .theme-dark input, .theme-dark select, .theme-dark textarea{background:#0f172a;border-color:#334155;color:#e5e7eb}
     .theme-dark .btn{background:#18202f;color:#e5e7eb;border-color:#2b3546}
     .theme-dark .btn-primary{background:linear-gradient(180deg,#60a5fa,#2563eb);color:#0b1020}
     .theme-dark .avatar{background:#0a172e;color:#8ab4ff}
