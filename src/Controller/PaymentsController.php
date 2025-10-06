@@ -15,7 +15,6 @@ class PaymentsController extends AppController
         $this->loadComponent('Authentication.Authentication');
     }
 
-    /** POST /checkout/stripe */
     public function checkout()
     {
         $this->request->allowMethod(['post']);
@@ -32,7 +31,6 @@ class PaymentsController extends AppController
 
         $userId = (int)$identity->get('id');
 
-        // Tables
         $Carts      = $this->getTableLocator()->get('Carts');
         $CartItems  = $this->getTableLocator()->get('CartItems');
         $Products   = $this->getTableLocator()->get('Products');
@@ -80,8 +78,39 @@ class PaymentsController extends AppController
             ];
         }
 
-        // Flat shipping
+        $data = (array)$this->request->getData();
+        $required = ['full_name','email','address','city','postcode','country'];
+        foreach ($required as $f) {
+            if (empty(trim((string)($data[$f] ?? '')))) {
+                $this->Flash->error('Please fill all required fields.');
+                return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
+            }
+        }
+
+        $method = (string)($data['fulfillment_method'] ?? 'delivery');
+        $method = in_array($method, ['delivery','pickup'], true) ? $method : 'delivery';
+
+        $deliveryDateStr      = (string)($data['delivery_date']   ?? '');
+        $deliverySlotId       = (int)($data['delivery_slot_id']   ?? 0);
+        $pickupLocationId     = (int)($data['pickup_location_id'] ?? 0);
+        $deliveryInstructions = (string)($data['delivery_instructions'] ?? '');
+
+        if ($method === 'pickup') {
+            if ($pickupLocationId <= 0) {
+                $this->Flash->error('Please choose a pickup location.');
+                return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
+            }
+        } else {
+            if ($deliverySlotId <= 0 || $deliveryDateStr === '') {
+                $this->Flash->error('Please choose a delivery date and time slot.');
+                return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
+            }
+        }
+
         $shipping = $subtotal > 0 ? 12.90 : 0.0;
+        if ($method === 'pickup') {
+            $shipping = 0.0;
+        }
         if ($shipping > 0) {
             $lineItems[] = [
                 'price_data' => [
@@ -94,17 +123,6 @@ class PaymentsController extends AppController
         }
         $total = $subtotal + $shipping;
 
-        // Validate checkout form payload
-        $data = (array)$this->request->getData();
-        $required = ['full_name','email','address','city','postcode','country'];
-        foreach ($required as $f) {
-            if (empty(trim((string)($data[$f] ?? '')))) {
-                $this->Flash->error('Please fill all required fields.');
-                return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
-            }
-        }
-
-
         $secret = (string) (Configure::read('Stripe.secret_key') ?: env('STRIPE_SECRET_KEY', ''));
         if ($secret === '') {
             $this->Flash->error('Stripe secret key is not configured.');
@@ -116,33 +134,39 @@ class PaymentsController extends AppController
         $successUrl = Router::url(['controller' => 'Cart', 'action' => 'complete'], true);
         $cancelUrl  = Router::url(['controller' => 'Cart', 'action' => 'checkout'], true);
 
+        $metadata = [
+            'user_id'  => (string)$userId,
+            'cart_id'  => (string)$cart->id,
+            'email'    => (string)$data['email'],
+            'full_name'=> (string)$data['full_name'],
+            'address'  => (string)$data['address'],
+            'city'     => (string)$data['city'],
+            'postcode' => (string)$data['postcode'],
+            'country'  => (string)$data['country'],
+            'fulfillment_method' => $method,
+            'delivery_instructions' => $deliveryInstructions,
+        ];
+        if ($method === 'pickup') {
+            $metadata['pickup_location_id'] = (string)$pickupLocationId;
+        } else {
+            $metadata['delivery_date']      = (string)$deliveryDateStr;
+            $metadata['delivery_slot_id']   = (string)$deliverySlotId;
+        }
+
         $session = $stripe->checkout->sessions->create([
             'mode'           => 'payment',
             'customer_email' => (string)$data['email'],
             'line_items'     => $lineItems,
             'success_url'    => $successUrl . '?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url'     => $cancelUrl,
-            'metadata'       => [
-                'user_id'   => (string)$userId,
-                'cart_id'   => (string)$cart->id,
-                'full_name' => (string)$data['full_name'],
-                'address'   => (string)$data['address'],
-                'city'      => (string)$data['city'],
-                'postcode'  => (string)$data['postcode'],
-                'country'   => (string)$data['country'],
-                'subtotal'  => number_format($subtotal, 2, '.', ''),
-                'shipping'  => number_format($shipping, 2, '.', ''),
-                'total'     => number_format($total, 2, '.', ''),
-            ],
+            'metadata'       => $metadata,
         ]);
 
         return $this->redirect($session->url);
     }
 
-    /** GET /checkout/success  */
     public function success() {}
 
-    /** GET /checkout/cancel  */
     public function cancel()
     {
         $this->Flash->warning('Payment was cancelled.');

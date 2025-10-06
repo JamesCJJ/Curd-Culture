@@ -113,6 +113,21 @@ class WebhooksController extends AppController
                 ]);
                 $Orders->saveOrFail($order, ['atomic' => false]);
 
+// before foreach saving items
+                $pids = array_map(fn($r) => (int)$r['product_id'], $rows);
+                $prodMap = [];
+                if ($pids) {
+                    $rowsP = $Products->find()
+                        ->select(['id','name'])
+                        ->where(['id IN' => $pids])
+                        ->enableHydration(false)
+                        ->all()
+                        ->toArray();
+                    foreach ($rowsP as $p) {
+                        $prodMap[(int)$p['id']] = (string)$p['name'];
+                    }
+                }
+
                 foreach ($rows as $it) {
                     $pid = (int)$it['product_id'];
                     $qty = (int)$it['qty'];
@@ -122,12 +137,13 @@ class WebhooksController extends AppController
                     $OrderItems->saveOrFail($OrderItems->newEntity([
                         'order_id'   => $order->id,
                         'product_id' => $pid,
-                        'name'       => '', // 若要冗余名称可查询 product 再写入
+                        'name'       => $prodMap[$pid] ?? ('Product #'.$pid),
                         'price'      => (float)$it['price'],
                         'qty'        => $qty,
                         'currency'   => (string)($it['currency'] ?? $currency),
                     ]), ['atomic' => false]);
                 }
+
 
                 $Carts->updateAll(['status' => 'ordered'], ['id' => $cartId]);
                 $CartItems->deleteAll(['cart_id' => $cartId]);
