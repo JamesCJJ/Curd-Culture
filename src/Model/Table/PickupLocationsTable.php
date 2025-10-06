@@ -29,6 +29,7 @@ class PickupLocationsTable extends Table
 
     public function validationDefault(Validator $validator): Validator
     {
+        // 基本字段
         $validator
             ->scalar('name')
             ->maxLength('name', 120)
@@ -69,8 +70,74 @@ class PickupLocationsTable extends Table
         $validator->allowEmptyTime('open_to');
 
 
+        $validator->add('open_to', 'pairedWithFrom', [
+            'rule' => function ($value, array $context): bool {
+                $from = $context['data']['open_from'] ?? null;
+                $hasFrom = !($from === null || $from === '');
+                $hasTo   = !($value === null || $value === '');
+
+                return ($hasFrom && $hasTo) || (!$hasFrom && !$hasTo);
+            },
+            'message' => 'Please provide both "Open From" and "Open To", or leave both blank.',
+        ]);
+
+        $validator->add('open_from', 'pairedWithTo', [
+            'rule' => function ($value, array $context): bool {
+                $to = $context['data']['open_to'] ?? null;
+                $hasFrom = !($value === null || $value === '');
+                $hasTo   = !($to === null || $to === '');
+                return ($hasFrom && $hasTo) || (!$hasFrom && !$hasTo);
+            },
+            'message' => 'Please provide both "Open From" and "Open To", or leave both blank.',
+        ]);
+
+
+        $validator->add('open_to', 'timeOrder', [
+            'rule' => function ($to, array $context): bool {
+                $from = $context['data']['open_from'] ?? null;
+
+
+                if ($from === null || $from === '' || $to === null || $to === '') {
+                    return true;
+                }
+
+
+                $toSec   = self::toSeconds($to);
+                $fromSec = self::toSeconds($from);
+                if ($toSec === null || $fromSec === null) {
+                    return false;
+                }
+
+                return $fromSec < $toSec;
+            },
+            'message' => '"Open To" must be later than "Open From" (same day).',
+        ]);
+
+
         $validator->boolean('is_active')->allowEmptyString('is_active');
 
         return $validator;
+    }
+
+
+    private static function toSeconds(mixed $t): ?int
+    {
+        if ($t instanceof \DateTimeInterface) {
+            return ((int)$t->format('H')) * 3600 + ((int)$t->format('i')) * 60 + (int)$t->format('s');
+        }
+        if (is_string($t)) {
+            $t = trim($t);
+            if ($t === '') {
+                return null;
+            }
+            $dt = \DateTimeImmutable::createFromFormat('H:i:s', $t)
+                ?: \DateTimeImmutable::createFromFormat('H:i', $t)
+                    ?: @new \DateTimeImmutable($t);
+            if ($dt === false) {
+                return null;
+            }
+            return ((int)$dt->format('H')) * 3600 + ((int)$dt->format('i')) * 60 + (int)$dt->format('s');
+        }
+        return null;
     }
 }
