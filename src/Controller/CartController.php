@@ -521,7 +521,39 @@ class CartController extends AppController
             'full_name' => (string)($identity->get('name')  ?? ''),
             'email'     => (string)($identity->get('email') ?? ''),
         ];
+        $defaultAddress = null;
+        try {
+            $Addresses = $this->getTableLocator()->get('Addresses');
 
+            $da = $Addresses->find()
+                ->where(['user_id' => $userId, 'is_default' => 1, 'type' => 'shipping'])
+                ->first();
+
+            if (!$da) {
+                $da = $Addresses->find()
+                    ->where(['user_id' => $userId, 'is_default' => 1, 'type' => 'billing'])
+                    ->first();
+            }
+
+            if ($da) {
+                $defaultAddress = [
+                    'id'        => (int)$da->id,
+                    'full_name' => trim((string)($da->first_name ?? '') . ' ' . (string)($da->last_name ?? '')),
+                    'address'   => trim((string)$da->address_line_1 . (empty($da->address_line_2) ? '' : ', ' . $da->address_line_2)),
+                    'city'      => (string)($da->suburb ?? ''),
+                    'postcode'  => (string)($da->postcode ?? ''),
+                    'country'   => (string)($da->country ?? 'Australia'),
+                    'summary'   => trim(
+                        (string)$da->address_line_1 . ', ' .
+                        (string)($da->suburb ?? '') . ' ' .
+                        (string)($da->state ?? '')  . ' ' .
+                        (string)($da->postcode ?? '')
+                    ),
+                ];
+            }
+        } catch (\Throwable $e) {
+            $defaultAddress = null;
+        }
         $bankAccountName = $bank['account_name'];
         $bankBsb         = $bank['bsb'];
         $bankAccountNo   = $bank['account_no'];
@@ -529,7 +561,8 @@ class CartController extends AppController
         $this->set(compact(
             'items','currency','subtotal','shipping','total','prefill',
             'bankAccountName','bankBsb','bankAccountNo',
-            'deliverySlots','pickupLocations'
+            'deliverySlots','pickupLocations',
+            'defaultAddress'
         ));
     }
 

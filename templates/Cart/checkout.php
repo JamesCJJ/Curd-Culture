@@ -42,6 +42,17 @@ $sticky = (array)$this->request->getData();
             </header>
 
             <?= $this->Form->create(null, ['id' => 'checkout-form', 'aria-describedby' => 'form-help']) ?>
+            <?php if (!empty($defaultAddress)): ?>
+                <div class="fg" style="display:flex;align-items:center;justify-content:space-between;gap:.75rem">
+                    <label style="display:flex;align-items:center;gap:.5rem;cursor:pointer">
+                        <input type="checkbox" id="use-default-address">
+                        <span>Use my default address</span>
+                    </label>
+                    <div class="muted tiny" title="<?= h($defaultAddress['summary']) ?>">
+                        <?= h($defaultAddress['summary']) ?>
+                    </div>
+                </div>
+            <?php endif; ?>
 
             <fieldset class="fs">
                 <div class="fg">
@@ -308,6 +319,21 @@ $sticky = (array)$this->request->getData();
         methodRadios.forEach(r => r.addEventListener('change', toggleBlocks));
         toggleBlocks();
 
+        const defaultAddress = <?= json_encode($defaultAddress ?? null) ?>;
+
+        const fillFromDefault = () => {
+            if (!defaultAddress) return;
+            const setVal = (id, v) => { const el = document.getElementById(id); if (el) el.value = v ?? ''; };
+            setVal('full_name', defaultAddress.full_name || '');
+            setVal('address',   defaultAddress.address   || '');
+            setVal('city',      defaultAddress.city      || '');
+            setVal('postcode',  defaultAddress.postcode  || '');
+            setVal('country',   defaultAddress.country   || 'Australia');
+        };
+
+        document.getElementById('use-default-address')?.addEventListener('change', function(){
+            if (this.checked) fillFromDefault();
+        });
         // Stripe button -> post to Payments/checkout
         document.getElementById('btn-stripe')?.addEventListener('click', function () {
             const form = document.getElementById('checkout-form');
