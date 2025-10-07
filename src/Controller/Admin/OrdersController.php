@@ -322,6 +322,7 @@ class OrdersController extends AppController
         }
 
         // Top selling products: only lines from delivered+paid orders
+        // Order by total_revenue (qty * price) first, then by total_qty as tiebreaker
         $orderItems  = $this->fetchTable('OrderItems');
         $topProducts = $orderItems->find()
             ->contain(['Products'])
@@ -342,6 +343,7 @@ class OrdersController extends AppController
                 ];
             })
             ->group(['OrderItems.product_id', 'Products.name'])
+            ->orderByDesc('total_revenue')
             ->orderByDesc('total_qty')
             ->limit(10)
             ->all();
