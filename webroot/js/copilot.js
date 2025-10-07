@@ -16,7 +16,10 @@
             <strong>🧀 Curd & Culture Assistant</strong>
             <small>Ask me about orders & products</small>
           </div>
-          <button class="copilot__close" aria-label="Close chat">✕</button>
+          <div class="copilot__head-actions">
+            <button class="copilot__clear" aria-label="Clear chat history" title="Clear chat">🗑️</button>
+            <button class="copilot__close" aria-label="Close chat">✕</button>
+          </div>
         </div>
         <div class="copilot__feed" role="log"></div>
         <form class="copilot__form" autocomplete="off">
@@ -43,8 +46,10 @@
     .copilot__title{display:flex;flex-direction:column;gap:.1rem}
     .copilot__title strong{font-size:1rem;font-weight:600}
     .copilot__title small{font-size:.75rem;opacity:.85}
-    .copilot__close{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:1.2rem;line-height:1;transition:background .2s}
-    .copilot__close:hover{background:rgba(255,255,255,.25)}
+    .copilot__head-actions{display:flex;gap:.4rem}
+    .copilot__clear,.copilot__close{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:1rem;line-height:1;transition:background .2s;display:flex;align-items:center;justify-content:center}
+    .copilot__clear:hover,.copilot__close:hover{background:rgba(255,255,255,.25)}
+    .copilot__close{font-size:1.2rem}
     .copilot__feed{flex:1;overflow-y:auto;padding:1rem;background:#f9fafb;display:flex;flex-direction:column;gap:.75rem}
     .copilot__feed::-webkit-scrollbar{width:6px}
     .copilot__feed::-webkit-scrollbar-track{background:transparent}
@@ -81,6 +86,7 @@
     const toggle = ui.querySelector('.copilot__toggle');
     const panel = ui.querySelector('#copilot__panel');
     const closeBtn = ui.querySelector('.copilot__close');
+    const clearBtn = ui.querySelector('.copilot__clear');
     const feed = ui.querySelector('.copilot__feed');
     const form = ui.querySelector('.copilot__form');
     const input = ui.querySelector('.copilot__input');
@@ -92,14 +98,54 @@
     }
     toggle.addEventListener('click', ()=> showPanel(panel.hidden));
     closeBtn.addEventListener('click', ()=> showPanel(false));
+    
+    clearBtn.addEventListener('click', ()=> {
+      if (confirm('Clear all chat history?')) {
+        feed.innerHTML = '';
+        localStorage.removeItem('copilot_history');
+        addMsg("Hi! I can help with orders and products.", 'bot');
+      }
+    });
 
     function addMsg(text, who){
       const msg = el(`<div class="copilot__msg copilot__msg--${who}"><div class="copilot__bubble"></div></div>`);
       msg.querySelector('.copilot__bubble').textContent = text;
       feed.appendChild(msg); feed.scrollTop = feed.scrollHeight;
+      saveHistory();
     }
 
-    addMsg("Hi! I can help with orders and products.", 'bot');
+    function saveHistory(){
+      const messages = [];
+      feed.querySelectorAll('.copilot__msg').forEach(msg => {
+        const bubble = msg.querySelector('.copilot__bubble');
+        const who = msg.classList.contains('copilot__msg--you') ? 'you' : 'bot';
+        messages.push({ text: bubble.textContent, who: who });
+      });
+      localStorage.setItem('copilot_history', JSON.stringify(messages));
+    }
+
+    function loadHistory(){
+      try {
+        const saved = localStorage.getItem('copilot_history');
+        if (saved) {
+          const messages = JSON.parse(saved);
+          messages.forEach(m => {
+            const msg = el(`<div class="copilot__msg copilot__msg--${m.who}"><div class="copilot__bubble"></div></div>`);
+            msg.querySelector('.copilot__bubble').textContent = m.text;
+            feed.appendChild(msg);
+          });
+          feed.scrollTop = feed.scrollHeight;
+        }
+      } catch(e) {
+        console.error('Failed to load chat history:', e);
+      }
+    }
+
+    // Load existing history or show welcome message
+    loadHistory();
+    if (feed.children.length === 0) {
+      addMsg("Hi! I can help with orders and products.", 'bot');
+    }
 
     form.addEventListener('submit', async (e)=>{
       e.preventDefault();
