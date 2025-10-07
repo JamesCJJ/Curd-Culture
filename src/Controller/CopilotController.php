@@ -5,6 +5,7 @@ namespace App\Controller;
 
 use Cake\Datasource\EntityInterface;
 use Cake\Http\Response;
+use Cake\ORM\TableRegistry;
 
 /**
  * Lightweight in-app Copilot (chatbot)
@@ -16,9 +17,10 @@ class CopilotController extends AppController
     public function initialize(): void
     {
         parent::initialize();
-        $this->loadModel('Products');
-        $this->loadModel('Orders');
-        $this->loadModel('OrderItems');
+        // Fetch tables explicitly (avoid loadModel to support all setups)
+        $this->Products   = TableRegistry::getTableLocator()->get('Products');
+        $this->Orders     = TableRegistry::getTableLocator()->get('Orders');
+        $this->OrderItems = TableRegistry::getTableLocator()->get('OrderItems');
         $this->viewBuilder()->setClassName('Json');
         
         // Allow unauthenticated access
@@ -132,9 +134,11 @@ class CopilotController extends AppController
 
     private function json(array $data): Response
     {
-        $this->set($data);
-        $this->viewBuilder()->setOption('serialize', array_keys($data));
-        return $this->response;
+        // Build explicit JSON response to avoid empty-body issues
+        $payload = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        return $this->response
+            ->withType('application/json')
+            ->withStringBody($payload === false ? '{}' : $payload);
     }
 
     /**
