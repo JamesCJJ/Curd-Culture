@@ -43,6 +43,7 @@ if ($identity && $role === 'customer') {
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= h($this->fetch('title') ?: 'Curd & Culture') ?></title>
 
+    <?= $this->Html->meta('csrfToken', $this->getRequest()->getAttribute('csrfToken')) ?>
     <?= $this->fetch('meta') ?>
 
     <?= $this->Html->css('home') ?>
@@ -51,6 +52,7 @@ if ($identity && $role === 'customer') {
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css" rel="stylesheet">
 
+    <script>window.CakeWebroot = <?= json_encode($this->Url->webroot) ?>;</script>
     <?= $this->fetch('css') ?>
     <?= $this->fetch('script') ?>
 </head>
@@ -306,6 +308,7 @@ if ($identity && $role === 'customer') {
 </script>
 
 <?= $this->Html->script('accessibility.js') ?>
+<?= $this->Html->script('copilot.js') ?>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>

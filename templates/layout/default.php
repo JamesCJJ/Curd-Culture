@@ -10,11 +10,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title><?= h($this->fetch('title') ?: 'Curd & Culture') ?></title>
 
+    <?= $this->Html->meta('csrfToken', $this->getRequest()->getAttribute('csrfToken')) ?>
     <?= $this->fetch('meta') ?>
 
     <?= $this->Html->css('home') ?>
     <?= $this->Html->css('app') ?>
     <?= $this->fetch('css') ?>
+    <script>window.CakeWebroot = <?= json_encode($this->Url->webroot) ?>;</script>
     <?= $this->fetch('script') ?>
 </head>
 <?php
@@ -520,5 +522,6 @@ if ($identity && $role === 'customer') {
 </script>
 
 <?= $this->Html->script('accessibility.js') ?>
+    <?= $this->Html->script('copilot.js') ?>
 </body>
 </html>

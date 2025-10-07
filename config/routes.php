@@ -8,6 +8,9 @@ return static function (RouteBuilder $routes): void {
     // Home
     $routes->connect('/', ['controller' => 'Pages', 'action' => 'display', 'home']);
 
+    // Copilot chatbot API (accept POST)
+    $routes->connect('/copilot/talk', ['controller' => 'Copilot', 'action' => 'talk']);
+
     // Auth shortcuts
     $routes->connect('/login',    ['controller' => 'Users', 'action' => 'login']);
     $routes->connect('/register', ['controller' => 'Users', 'action' => 'register']);
