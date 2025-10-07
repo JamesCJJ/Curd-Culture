@@ -151,13 +151,219 @@ if ($identity && $role === 'customer') {
     <?= $this->fetch('content') ?>
 </main>
 
-<footer class="footer" role="contentinfo">
-    <small>© <?= date('Y') ?> Curd &amp; Culture</small>
+<footer class="site-footer" role="contentinfo">
+    <div class="footer-content">
+        <div class="footer-grid">
+            <div class="footer-section">
+                <div class="footer-brand">
+                    <?= $this->Html->image('logo.png', ['alt' => 'Curd & Culture', 'class' => 'footer-logo']) ?>
+                    <h3>Curd &amp; Culture</h3>
+                </div>
+                <p class="footer-tagline">Premium artisan cheese, handcrafted with love since 1985. From our family farm to your table.</p>
+                <div class="footer-social">
+                    <a href="#" class="social-link" aria-label="Facebook" title="Follow us on Facebook">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                        </svg>
+                    </a>
+                    <a href="#" class="social-link" aria-label="Instagram" title="Follow us on Instagram">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
+                        </svg>
+                    </a>
+                    <a href="#" class="social-link" aria-label="Twitter" title="Follow us on Twitter">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/>
+                        </svg>
+                    </a>
+                </div>
+            </div>
+
+            <div class="footer-section">
+                <h4 class="footer-heading">Shop</h4>
+                <ul class="footer-links">
+                    <li><?= $this->Html->link('All Cheeses', ['prefix' => false, 'controller' => 'Products', 'action' => 'index']) ?></li>
+                    <li><?= $this->Html->link('New Arrivals', ['prefix' => false, 'controller' => 'Products', 'action' => 'index']) ?></li>
+                    <li><?= $this->Html->link('Best Sellers', ['prefix' => false, 'controller' => 'Products', 'action' => 'index']) ?></li>
+                    <li><?= $this->Html->link('Gift Sets', ['prefix' => false, 'controller' => 'Products', 'action' => 'index']) ?></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4 class="footer-heading">Customer Service</h4>
+                <ul class="footer-links">
+                    <li><?= $this->Html->link('Contact Us', ['prefix' => false, 'controller' => 'ContactMessages', 'action' => 'add']) ?></li>
+                    <li><?= $this->Html->link('Delivery Info', ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home']) ?></li>
+                    <li><?= $this->Html->link('My Account', ['prefix' => false, 'controller' => 'Users', 'action' => 'login']) ?></li>
+                    <li><?= $this->Html->link('Track Order', ['prefix' => false, 'controller' => 'Customer', 'action' => 'orders']) ?></li>
+                </ul>
+            </div>
+
+            <div class="footer-section">
+                <h4 class="footer-heading">About</h4>
+                <ul class="footer-links">
+                    <li><?= $this->Html->link('Our Story', ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home']) ?></li>
+                    <li><?= $this->Html->link('Our Farm', ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home']) ?></li>
+                    <li><?= $this->Html->link('Sustainability', ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home']) ?></li>
+                    <li><?= $this->Html->link('Privacy Policy', ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home']) ?></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="footer-bottom">
+            <div class="footer-bottom-content">
+                <p class="footer-copyright">&copy; <?= date('Y') ?> Curd &amp; Culture. All rights reserved.</p>
+            </div>
+        </div>
+    </div>
 </footer>
 
 <style>
     #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
-    .footer{text-align:center;color:#6b7280;padding:1.25rem 1rem}
+    
+    /* ===== Footer Styles ===== */
+    .site-footer {
+        background: #1f2937;
+        color: #e5e7eb;
+        margin-top: auto;
+    }
+    .footer-content {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 3rem 2rem 1.5rem;
+    }
+    .footer-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr 1fr 1fr;
+        gap: 3rem;
+        margin-bottom: 3rem;
+    }
+    .footer-brand {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        margin-bottom: 1rem;
+    }
+    .footer-logo {
+        width: 36px;
+        height: 36px;
+        border-radius: 6px;
+    }
+    .footer-brand h3 {
+        font-size: 1.25rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0;
+    }
+    .footer-tagline {
+        color: #9ca3af;
+        line-height: 1.6;
+        margin: 0 0 1.5rem;
+        max-width: 320px;
+    }
+    .footer-social {
+        display: flex;
+        gap: 0.75rem;
+    }
+    .social-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 40px;
+        height: 40px;
+        background: #374151;
+        border-radius: 8px;
+        color: #e5e7eb;
+        transition: all 0.2s ease;
+    }
+    .social-link:hover {
+        background: #f59e0b;
+        color: white;
+        transform: translateY(-2px);
+    }
+    .footer-heading {
+        font-size: 1rem;
+        font-weight: 700;
+        color: #ffffff;
+        margin: 0 0 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .footer-links {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+    .footer-links li {
+        margin-bottom: 0.75rem;
+    }
+    .footer-links a {
+        color: #9ca3af;
+        text-decoration: none;
+        transition: color 0.2s ease;
+        font-size: 0.9375rem;
+    }
+    .footer-links a:hover {
+        color: #f59e0b;
+    }
+    .footer-bottom {
+        border-top: 1px solid #374151;
+        padding-top: 1.5rem;
+    }
+    .footer-bottom-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 1rem;
+    }
+    .footer-copyright {
+        color: #9ca3af;
+        font-size: 0.875rem;
+        margin: 0;
+    }
+    .footer-payment {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+    }
+    .payment-text {
+        color: #9ca3af;
+        font-size: 0.875rem;
+    }
+    .payment-icons {
+        display: flex;
+        gap: 0.5rem;
+    }
+    .payment-icon {
+        font-size: 1.5rem;
+        opacity: 0.8;
+    }
+    
+    /* Footer responsive */
+    @media (max-width: 1024px) {
+        .footer-grid {
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+    }
+    @media (max-width: 640px) {
+        .footer-content {
+            padding: 2rem 1.5rem 1rem;
+        }
+        .footer-grid {
+            grid-template-columns: 1fr;
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+        .footer-tagline {
+            max-width: 100%;
+        }
+        .footer-bottom-content {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+    }
 
     .topbar{position:sticky;top:0;z-index:1000;background:#fff;border-bottom:1px solid #e5e7eb}
     .topbar__inner{max-width:1100px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
@@ -194,12 +400,24 @@ if ($identity && $role === 'customer') {
     .theme-dark .topbar .btn-primary{background:#60a5fa;color:#111}
     .theme-dark .footer{color:#cbd5e1}
 
+    /* High Contrast Mode */
     .page.hc{background:#0b1220;color:#e5e7eb}
     .page.hc a{color:#93c5fd}
     .page.hc .topbar{background:#0f172a;border-color:#334155}
     .page.hc .brand-name{color:#e5e7eb}
     .page.hc .btn{background:#1f2937;color:#fff;border-color:#475569}
     .page.hc .topbar .btn-primary{background:#60a5fa;color:#111}
+    .page.hc .site-footer{background:#0f172a;color:#e5e7eb}
+    .page.hc .footer-brand h3{color:#ffffff}
+    .page.hc .footer-heading{color:#ffffff}
+    .page.hc .footer-tagline,
+    .page.hc .footer-links a,
+    .page.hc .footer-copyright,
+    .page.hc .payment-text{color:#cbd5e1}
+    .page.hc .footer-links a:hover{color:#fbbf24}
+    .page.hc .social-link{background:#1f2937;border:1px solid #374155}
+    .page.hc .social-link:hover{background:#fbbf24;color:#0f172a}
+    .page.hc .footer-bottom{border-color:#374155}
 
     @media (max-width:680px){
         .topbar__inner{padding:.5rem .75rem}
@@ -221,17 +439,35 @@ if ($identity && $role === 'customer') {
         const plus = document.getElementById('font-plus');
         const minus = document.getElementById('font-minus');
         const contrast = document.getElementById('contrast-toggle');
-        let scale = parseFloat(getComputedStyle(document.documentElement).fontSize)/16 || 1;
+        
+        // Restore high contrast preference from localStorage
+        const isHighContrast = localStorage.getItem('highContrast') === 'true';
+        if (isHighContrast) {
+            root.classList.add('hc');
+        }
+        
+        // Font size controls
+        let scale = parseFloat(localStorage.getItem('fontSize')) || 1;
+        if (scale !== 1) {
+            document.documentElement.style.fontSize = (16 * scale) + 'px';
+        }
+        
         plus && plus.addEventListener('click', function(){
             scale = Math.min(1.25, +(scale + 0.05).toFixed(2));
             document.documentElement.style.fontSize = (16 * scale) + 'px';
+            localStorage.setItem('fontSize', scale);
         });
         minus && minus.addEventListener('click', function(){
             scale = Math.max(0.9, +(scale - 0.05).toFixed(2));
             document.documentElement.style.fontSize = (16 * scale) + 'px';
+            localStorage.setItem('fontSize', scale);
         });
+        
+        // High contrast toggle with persistence
         contrast && contrast.addEventListener('click', function(){
-            (root.classList || document.body.classList).toggle('hc');
+            root.classList.toggle('hc');
+            const isNowHighContrast = root.classList.contains('hc');
+            localStorage.setItem('highContrast', isNowHighContrast);
         });
     })();
 

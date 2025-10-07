@@ -227,17 +227,33 @@ if ($identity && $role === 'customer') {
         const plus = document.getElementById('font-plus');
         const minus = document.getElementById('font-minus');
         const contrast = document.getElementById('contrast-toggle');
-        let scale = parseFloat(getComputedStyle(document.documentElement).fontSize)/16 || 1;
+        
+        // Restore high contrast from localStorage
+        const isHighContrast = localStorage.getItem('highContrast') === 'true';
+        if (isHighContrast) {
+            root.classList.add('hc');
+        }
+        
+        // Restore font size from localStorage
+        let scale = parseFloat(localStorage.getItem('fontSize')) || 1;
+        if (scale !== 1) {
+            document.documentElement.style.fontSize = (16 * scale) + 'px';
+        }
+        
         plus && plus.addEventListener('click', function(){
             scale = Math.min(1.25, +(scale + 0.05).toFixed(2));
             document.documentElement.style.fontSize = (16 * scale) + 'px';
+            localStorage.setItem('fontSize', scale);
         });
         minus && minus.addEventListener('click', function(){
             scale = Math.max(0.9, +(scale - 0.05).toFixed(2));
             document.documentElement.style.fontSize = (16 * scale) + 'px';
+            localStorage.setItem('fontSize', scale);
         });
         contrast && contrast.addEventListener('click', function(){
-            (root.classList || document.body.classList).toggle('hc');
+            root.classList.toggle('hc');
+            const isNowHighContrast = root.classList.contains('hc');
+            localStorage.setItem('highContrast', isNowHighContrast);
         });
     })();
 
