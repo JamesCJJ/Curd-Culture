@@ -3,17 +3,21 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\AIService;
 use Cake\Datasource\EntityInterface;
 use Cake\Http\Response;
 use Cake\ORM\TableRegistry;
 
 /**
- * Lightweight in-app Copilot (chatbot)
- * - Answers basic questions about products and orders
- * - Uses simple intent parsing; keeps logic server-side for security
+ * AI-Enhanced Copilot (chatbot)
+ * - Answers questions about products and orders naturally using AI (Google Gemini or OpenAI)
+ * - Falls back to rule-based parsing when AI is disabled
+ * - Keeps logic server-side for security
  */
 class CopilotController extends AppController
 {
+    private ?AIService $aiService = null;
+
     public function initialize(): void
     {
         parent::initialize();
@@ -22,6 +26,9 @@ class CopilotController extends AppController
         $this->Orders     = TableRegistry::getTableLocator()->get('Orders');
         $this->OrderItems = TableRegistry::getTableLocator()->get('OrderItems');
         $this->viewBuilder()->setClassName('Json');
+        
+        // Initialize AI service (supports Gemini and OpenAI)
+        $this->aiService = new AIService();
         
         // Allow unauthenticated access
         if (isset($this->Authentication)) {
@@ -48,19 +55,150 @@ class CopilotController extends AppController
         if ($message === '') {
             return $this->json([
                 'ok' => true,
-                'reply' => "Hi! I can help with orders and products. Try: 'Where is my order 100?' or 'Search cheddar'",
+                'reply' => "Hi! I can help with orders and products. Try asking me anything!",
             ]);
         }
 
         $identity = $this->request->getAttribute('identity');
 
+        // Try AI-powered response first
+        if ($this->aiService && $this->aiService->isEnabled()) {
+            try {
+                return $this->handleWithAI($message, $identity);
+            } catch (\Throwable $e) {
+                // Fall through to rule-based handler on any error
+            }
+        }
+
+        // Fall back to rule-based system
+        return $this->handleWithRules($message, $identity);
+    }
+
+    /**
+     * Handle message with AI (OpenAI)
+     */
+    private function handleWithAI(string $message, ?EntityInterface $identity): Response
+    {
+        // Build context for AI
+        $context = [];
+        
+        if ($identity) {
+            $context['user_id'] = (int)$identity->get('id');
+            
+            // Get recent orders for context (tolerate DB issues)
+            $recentOrders = [];
+            try {
+                $recentOrders = $this->recentOrders($identity, 3);
+            } catch (\Throwable $e) {
+                $recentOrders = [];
+            }
+            if (!empty($recentOrders)) {
+                $context['recent_orders'] = $recentOrders;
+            }
+        }
+
+        // Get some product names for context (tolerate DB issues)
+        $products = [];
+        try {
+            $products = $this->Products->find()
+                ->select(['name'])
+                ->orderAsc('name')
+                ->limit(10)
+                ->all()
+                ->extract('name')
+                ->toArray();
+        } catch (\Throwable $e) {
+            $products = [];
+        }
+        if (!empty($products)) {
+            $context['available_products'] = $products;
+        }
+
+        // Get AI response
+        $aiResponse = $this->aiService->chat($message, $context);
+
+        if (!$aiResponse['success']) {
+            // AI failed, fall back to rules
+            return $this->handleWithRules($message, $identity);
+        }
+
+        $reply = $aiResponse['message'];
+        $payload = [];
+
+        // Check if message mentions specific orders and fetch data
+        if (preg_match('/order\s*#?\s*(\d{1,8})/i', $message, $m)) {
+            $orderId = (int)$m[1];
+            $orderData = $this->lookupOrder($orderId, $identity);
+            if ($orderData) {
+                $payload['order'] = $orderData;
+            }
+        }
+
+        // Check if message is about recent orders
+        if (preg_match('/\b(my|recent)\s*(orders?|purchases?)\b/i', $message) && $identity) {
+            $ordersList = $this->recentOrders($identity, 3);
+            if (!empty($ordersList)) {
+                $payload['orders'] = $ordersList;
+            }
+        }
+
+        // Check if message is searching for products
+        if (preg_match('/(search|find|looking for|want|need)\s+(.+)/i', $message, $m)) {
+            $term = trim((string)($m[2] ?? ''));
+            $term = preg_replace('/\b(cheese|product|some|any|a)\b/i', '', $term);
+            $term = trim($term);
+            if ($term !== '') {
+                $results = $this->searchProducts($term, 6);
+                if (!empty($results)) {
+                    $payload['products'] = $results;
+                }
+            }
+        }
+
+        return $this->json([
+            'ok' => true,
+            'reply' => $reply,
+            'data' => $payload,
+            'ai_powered' => true,
+        ]);
+    }
+
+    /**
+     * Handle message with rule-based system (original logic)
+     */
+    private function handleWithRules(string $message, ?EntityInterface $identity): Response
+    {
         $reply = null;
         $payload = [];
+
+        // General inventory question e.g., "what do you have" / "what do you sell"
+        if (preg_match('/what[^\n\r]*\b(have|sell|offer|carry)\b/i', $message)) {
+            $names = [];
+            try {
+                $rows = $this->Products->find()->select(['name','slug'])->orderAsc('name')->limit(6)->all();
+                foreach ($rows as $r) {
+                    $names[] = (string)$r->get('name');
+                }
+            } catch (\Throwable $e) {
+                // ignore and fall back
+            }
+            if (!empty($names)) {
+                $reply = 'We have: ' . implode(', ', $names) . '. You can ask me to search a specific name (e.g., "search cheddar").';
+            } else {
+                $reply = 'We carry artisan cheeses like cheddar, brie, gouda and blue. Ask me to search a specific name!';
+            }
+            return $this->json(['ok' => true, 'reply' => $reply]);
+        }
 
         // Order by explicit number e.g., order 1234
         if (preg_match('/order\s*#?\s*(\d{1,8})/i', $message, $m)) {
             $orderId = (int)$m[1];
-            $replyData = $this->lookupOrder($orderId, $identity);
+            $replyData = null;
+            try {
+                $replyData = $this->lookupOrder($orderId, $identity);
+            } catch (\Throwable $e) {
+                $replyData = null;
+            }
             if ($replyData) {
                 $payload['order'] = $replyData;
                 $reply = sprintf(
@@ -79,7 +217,12 @@ class CopilotController extends AppController
 
         // My recent orders
         if (preg_match('/\b(my )?orders?\b|where is my order|order status/i', $message)) {
-            $ordersList = $this->recentOrders($identity, 3);
+            $ordersList = [];
+            try {
+                $ordersList = $this->recentOrders($identity, 3);
+            } catch (\Throwable $e) {
+                $ordersList = [];
+            }
             if (!empty($ordersList)) {
                 $payload['orders'] = $ordersList;
                 $lines = array_map(function ($o) {
@@ -99,7 +242,12 @@ class CopilotController extends AppController
                 $term = $message; // fallback to whole message
             }
             $term = preg_replace('/^(for|any|some|me|products?)/i', '', $term);
-            $results = $this->searchProducts($term, 6);
+            $results = [];
+            try {
+                $results = $this->searchProducts($term, 6);
+            } catch (\Throwable $e) {
+                $results = [];
+            }
             if (!empty($results)) {
                 $payload['products'] = $results;
                 $names = array_map(fn($p) => $p['name'], $results);
@@ -113,8 +261,13 @@ class CopilotController extends AppController
         // Open product by slug e.g., view aged-gouda-18m
         if (preg_match('/\b(view|open)\s+([a-z0-9\-]{3,})/i', $message, $m)) {
             $slug = strtolower($m[2]);
-            $product = $this->Products->find()->select(['id', 'name', 'slug'])
-                ->where(['slug' => $slug])->first();
+            $product = null;
+            try {
+                $product = $this->Products->find()->select(['id', 'name', 'slug'])
+                    ->where(['slug' => $slug])->first();
+            } catch (\Throwable $e) {
+                $product = null;
+            }
             if ($product) {
                 $webroot = (string)($this->request->getAttribute('webroot') ?? '/');
                 $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($slug);

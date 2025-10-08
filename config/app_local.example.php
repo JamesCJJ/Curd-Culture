@@ -29,6 +29,18 @@ return [
     ],
 
     /*
+     * OpenAI Configuration for AI-powered Copilot
+     * Get your API key from: https://platform.openai.com/api-keys
+     */
+    'OpenAI' => [
+        'api_key' => env('OPENAI_API_KEY', ''), // Set your OpenAI API key here
+        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'), // gpt-4o-mini is cost-effective and fast
+        'max_tokens' => 500,
+        'temperature' => 0.7,
+        'enabled' => env('OPENAI_ENABLED', false), // Set to true to enable AI features
+    ],
+
+    /*
      * Connection information used by the ORM to connect
      * to your application's datastores.
      *

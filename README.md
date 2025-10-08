@@ -1,6 +1,29 @@
-# team202-onboarding-project
+# Curd Culture - Artisan Cheese Shop
 
+A CakePHP-based e-commerce platform for artisan cheese products with an AI-powered customer service chatbot.
 
+## ✨ Key Features
+
+- 🛒 Full e-commerce functionality with cart and checkout
+- 💳 Stripe payment integration
+- 🤖 **AI-Powered Chatbot** for customer service (NEW!)
+- 📦 Order management and tracking
+- 👤 User authentication and profiles
+- 📱 Responsive design
+
+## 🤖 AI Chatbot
+
+The application includes an intelligent chatbot that can:
+- Answer questions about products in natural language
+- Check order status and history
+- Provide product recommendations
+- Help customers find what they're looking for
+
+The chatbot supports both:
+1. **AI-powered mode** (using OpenAI GPT) - Natural, conversational responses
+2. **Rule-based mode** (default) - Fast, keyword-based responses
+
+See [AI_CHATBOT_SETUP.md](AI_CHATBOT_SETUP.md) for detailed setup instructions.
 
 ## Getting started
 
