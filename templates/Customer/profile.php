@@ -107,7 +107,8 @@ $this->assign('title', 'Profile');
                                             <li>
                                                 <?= $this->Form->postLink(
                                                     '<i class="bi bi-trash me-2"></i>Delete',
-                                                    ['prefix'=>false,'controller'=>'Customer','action'=>'deleteAddress',(int)$address->id],
+                                                    // Use the named route defined in routes.php for stability
+                                                    ['_name' => 'dashboard:address_delete', 'id' => (int)$address->id],
                                                     [
                                                         'class'   => 'dropdown-item text-danger',
                                                         'escape'  => false,
@@ -407,6 +408,7 @@ $this->assign('title', 'Profile');
 </div>
 
 <script>
+    // Populate the edit form from data-* attributes on the clicked "Edit" button
     document.addEventListener('DOMContentLoaded', function () {
         const addModal = document.getElementById('addAddressModal');
         if (addModal) {

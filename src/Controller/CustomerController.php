@@ -5,7 +5,14 @@ namespace App\Controller;
 
 use Cake\Event\EventInterface;
 use Cake\Http\Cookie\Cookie;
+use Cake\Datasource\Exception\RecordNotFoundException;
+use Cake\Http\Exception\MethodNotAllowedException;
 
+/**
+ * CustomerController
+ * - Adds a secure deleteAddress() action (POST/DELETE only, user-ownership check).
+ * - Other actions kept as-is.
+ */
 class CustomerController extends AppController
 {
     public function initialize(): void
@@ -138,6 +145,7 @@ class CustomerController extends AppController
             ->where(['Orders.id' => $id, 'Orders.user_id' => $userId])
             ->contain([
                 'OrderItems' => ['Products'],
+                // NOTE: keep your custom selects here; ensure columns exist in DB.
                 'DeliverySlots' => function ($q) {
                     return $q->select(['id','name','window_start','window_end']);
                 },
@@ -155,7 +163,6 @@ class CustomerController extends AppController
         $this->set(compact('order'));
     }
 
-
     public function profile()
     {
         $identity = $this->request->getAttribute('identity');
@@ -166,12 +173,10 @@ class CustomerController extends AppController
 
         $user = $Users->get($userId);
 
-
         $addresses = $Addresses->find()
             ->where(['user_id' => $userId])
             ->order(['is_default' => 'DESC', 'created' => 'ASC'])
             ->all();
-
 
         $defaultShippingId = null;
         $defaultBillingId  = null;
@@ -330,9 +335,6 @@ class CustomerController extends AppController
 
     /**
      * Add a new address for the current user.
-     * Accepts:
-     *  - type: 'shipping' or 'billing'（若未提供，默认 'billing' 与界面一致）
-     *  - is_default: 1/0; if 1, clears other defaults within the same type for this user
      */
     public function addAddress()
     {
@@ -387,7 +389,6 @@ class CustomerController extends AppController
         $identity = $this->request->getAttribute('identity');
         $userId   = (int)$identity->get('id');
 
-
         $pass  = (array)($this->request->getParam('pass') ?? []);
         $rawId = $id
             ?? ($pass[0] ?? null)
@@ -411,7 +412,6 @@ class CustomerController extends AppController
             return $this->redirect(['action' => 'profile']);
         }
 
-
         $data = (array)$this->request->getData();
 
         $newType = (string)($data['type'] ?? $address->type ?? 'billing');
@@ -421,13 +421,11 @@ class CustomerController extends AppController
         $newDefault = !empty($data['is_default']) ? 1 : 0;
 
         if ($newDefault === 1) {
-
             $Addresses->updateAll(
                 ['is_default' => 0],
                 ['user_id' => $userId, 'type' => $newType]
             );
         }
-
 
         $data['user_id']    = $userId;
         $data['type']       = $newType;
@@ -444,14 +442,12 @@ class CustomerController extends AppController
         return $this->redirect(['action' => 'profile']);
     }
 
-
     /**
      * Mark an address as default (scoped to its type).
      */
     public function setDefaultAddress($id = null)
     {
         $this->request->allowMethod(['post']);
-
 
         $pass = (array)($this->request->getParam('pass') ?? []);
         $rawId = $id
@@ -469,15 +465,25 @@ class CustomerController extends AppController
         $userId    = (int)$identity->get('id');
         $Addresses = $this->fetchTable('Addresses');
 
-
         $exists = $Addresses->exists(['id' => $addrId, 'user_id' => $userId]);
         if (!$exists) {
             $this->Flash->error('Address not found.');
             return $this->redirect(['action' => 'profile']);
         }
 
+        // You might have a custom Table method; call it if present.
+        if (method_exists($Addresses, 'setDefaultForUser')) {
+            $ok = $Addresses->setDefaultForUser($userId, $addrId);
+        } else {
+            // Fallback: mark given address default and unset others of same type.
+            $addr = $Addresses->get($addrId);
+            $type = $addr->type ?? 'billing';
+            $Addresses->updateAll(['is_default' => 0], ['user_id' => $userId, 'type' => $type]);
+            $addr->is_default = 1;
+            $ok = (bool)$Addresses->save($addr);
+        }
 
-        if ($Addresses->setDefaultForUser($userId, $addrId)) {
+        if ($ok) {
             $this->Flash->success('Default address updated.');
         } else {
             $this->Flash->error('Unable to update default address.');
@@ -485,11 +491,54 @@ class CustomerController extends AppController
 
         return $this->redirect(['action' => 'profile']);
     }
+
     /** Logout */
     public function logout()
     {
         $this->Authentication->logout();
         $this->Flash->success('Signed out successfully.');
         return $this->redirect(['controller' => 'Users', 'action' => 'login']);
+    }
+
+    /**
+     * NEW: Securely delete an address that belongs to the logged-in user.
+     * Route: POST/DELETE /dashboard/address/delete/:id
+     */
+    public function deleteAddress($id = null)
+    {
+        // Enforce HTTP method safety (prevents GET deletion)
+        $this->request->allowMethod(['post','delete']);
+
+        $pass  = (array)($this->request->getParam('pass') ?? []);
+        $rawId = $id
+            ?? ($pass[0] ?? null)
+            ?? $this->request->getData('id')
+            ?? $this->request->getQuery('id');
+
+        $addrId = is_numeric($rawId) ? (int)$rawId : 0;
+        if ($addrId <= 0) {
+            throw new MethodNotAllowedException('Invalid address id.');
+        }
+
+        $identity  = $this->request->getAttribute('identity');
+        $userId    = (int)$identity->get('id');
+        $Addresses = $this->fetchTable('Addresses');
+
+        // Only delete if the address belongs to the current user
+        $address = $Addresses->find()
+            ->where(['Addresses.id' => $addrId, 'Addresses.user_id' => $userId])
+            ->first();
+
+        if (!$address) {
+            throw new RecordNotFoundException('Address not found or not owned by you.');
+        }
+
+        if ($Addresses->delete($address)) {
+            $this->Flash->success('Address deleted.');
+        } else {
+            $this->Flash->error('Failed to delete address. Please try again.');
+        }
+
+        return $this->redirect(['action' => 'profile']);
     }
 }

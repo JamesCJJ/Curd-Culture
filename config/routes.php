@@ -48,17 +48,44 @@ return static function (RouteBuilder $routes): void {
     $routes->connect('/dashboard/profile',      ['controller' => 'Customer', 'action' => 'profile']);
     $routes->connect('/dashboard/settings',     ['controller' => 'Customer', 'action' => 'settings']);
     $routes->connect('/dashboard/buy-again/:id',['controller' => 'Customer', 'action' => 'buyAgain'], ['pass' => ['id'], 'id' => '[0-9]+']);
-    $routes->connect('/dashboard/address/add',            ['controller' => 'Customer', 'action' => 'addAddress']);
-    $routes->connect('/dashboard/address/edit/:id',       ['controller' => 'Customer', 'action' => 'editAddress'], ['pass' => ['id'], 'id' => '[0-9]+']);
-    $routes->connect('/dashboard/address/delete/:id',     ['controller' => 'Customer', 'action' => 'deleteAddress'], ['pass' => ['id'], 'id' => '[0-9]+']);
-    $routes->connect('/dashboard/address/default/:id',    ['controller' => 'Customer', 'action' => 'setDefaultAddress'], ['pass' => ['id'], 'id' => '[0-9]+']);
+
+    // Address management routes.
+    // IMPORTANT: delete/default are restricted to POST/DELETE to prevent CSRF via GET.
+    $routes->connect('/dashboard/address/add',      ['controller' => 'Customer', 'action' => 'addAddress']);
+    $routes->connect(
+        '/dashboard/address/edit/:id',
+        ['controller' => 'Customer', 'action' => 'editAddress'],
+        ['pass' => ['id'], 'id' => '[0-9]+']
+    );
+    $routes->connect(
+        '/dashboard/address/delete/:id',
+        ['controller' => 'Customer', 'action' => 'deleteAddress'],
+        [
+            'pass'    => ['id'],
+            'id'      => '[0-9]+',
+            '_method' => ['POST','DELETE'],            // <-- enforce POST/DELETE
+            '_name'   => 'dashboard:address_delete'    // <-- named route for safer URL building
+        ]
+    );
+    $routes->connect(
+        '/dashboard/address/default/:id',
+        ['controller' => 'Customer', 'action' => 'setDefaultAddress'],
+        [
+            'pass'    => ['id'],
+            'id'      => '[0-9]+',
+            '_method' => ['POST']                      // <-- enforce POST
+        ]
+    );
+
     $routes->connect('/logout', ['controller' => 'Customer', 'action' => 'logout']);
 
     // Admin
     $routes->prefix('Admin', function (RouteBuilder $builder) {
         $builder->connect('/login',  ['controller' => 'Users', 'action' => 'login']);
         $builder->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
-        $builder->connect('/',       ['controller' => 'ContactMessages', 'action' => 'index']);
+
+        // Admin landing page
+        $builder->connect('/', ['controller' => 'ContactMessages', 'action' => 'index']);
 
         // Deliveries board + actions
         $builder->connect('/deliveries',             ['controller' => 'Deliveries', 'action' => 'index']);
