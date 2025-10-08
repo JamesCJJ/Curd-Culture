@@ -6,25 +6,65 @@ namespace App\Controller\Admin;
 use Cake\I18n\DateTime;
 
 /**
- * Admin/ContactMessages controller
+ * Admin > Contact Messages
+ * - Safe date filtering: normalize and validate "from" / "to" before building conditions
+ * - Never construct DateTime with an invalid string
+ * - Manual pagination to match the view
  */
 class ContactMessagesController extends AppController
 {
     /**
-     * GET /admin/contact-messages
+     * Normalize a date string to YYYY-MM-DD and validate it.
+     * Returns null when invalid/empty. Accepts separators "/", "." and "-".
+     */
+    private function normalizeYmd(?string $s): ?string
+    {
+        $s = trim((string)$s);
+        if ($s === '') {
+            return null;
+        }
+
+        // Unify separators and strip spaces
+        $s = str_replace(['/', '.'], '-', $s);
+        $s = preg_replace('/\s+/', '', $s ?? '') ?? '';
+
+        // Only 4-digit year is allowed
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $s)) {
+            return null;
+        }
+
+        [$y, $m, $d] = array_map('intval', explode('-', $s));
+        if (!checkdate($m, $d, $y)) {
+            return null;
+        }
+
+        return $s; // YYYY-MM-DD
+    }
+
+    /**
+     * Index: list messages with filters and pagination.
      */
     public function index()
     {
-        $q       = trim((string)$this->request->getQuery('q'));
-        $status  = (string)$this->request->getQuery('status'); // '', unread, read, in_progress, closed
-        $from    = $this->request->getQuery('from');
-        $to      = $this->request->getQuery('to');
+        $q      = trim((string)$this->request->getQuery('q'));
+        $status = (string)$this->request->getQuery('status');
+        $fromIn = (string)$this->request->getQuery('from');
+        $toIn   = (string)$this->request->getQuery('to');
 
-        $table = $this->fetchTable('ContactMessages');
+        // Normalize/validate dates; null if invalid
+        $from = $this->normalizeYmd($fromIn);
+        $to   = $this->normalizeYmd($toIn);
 
-        $query = $table->find()
-            ->contain(['Users'])
-            ->orderByDesc('ContactMessages.created'); // Cake 5
+        // If both present but reversed, swap to make a valid range
+        if ($from !== null && $to !== null && $from > $to) {
+            [$from, $to] = [$to, $from];
+            $this->Flash->warning('Date range was corrected: "From" was after "To".');
+        }
+
+        $Messages = $this->fetchTable('ContactMessages');
+
+        $query = $Messages->find()
+            ->orderByDesc('ContactMessages.created');
 
         if ($q !== '') {
             $query->where([
@@ -32,219 +72,43 @@ class ContactMessagesController extends AppController
                     'ContactMessages.name LIKE'    => '%' . $q . '%',
                     'ContactMessages.email LIKE'   => '%' . $q . '%',
                     'ContactMessages.message LIKE' => '%' . $q . '%',
-                ],
+                ]
             ]);
         }
 
         if ($status !== '') {
-            $query->where(['ContactMessages.status' => $status]);
+            // Accept known states; ignore unknowns silently
+            $allowed = ['new', 'in_progress', 'closed', 'unread', 'read'];
+            if (in_array($status, $allowed, true)) {
+                $query->where(['ContactMessages.status' => $status]);
+            }
         }
 
-        if (!empty($from)) {
+        // Safe date conditions (only add when normalized OK)
+        if ($from !== null) {
             $query->where(['ContactMessages.created >=' => new DateTime($from . ' 00:00:00')]);
         }
-        if (!empty($to)) {
+        if ($to !== null) {
             $query->where(['ContactMessages.created <=' => new DateTime($to . ' 23:59:59')]);
         }
 
-        // Custom pagination instead of CakePHP Paginator
-        $limit = 12;
-        $page = max(1, (int)$this->request->getQuery('page', 1));
+        // Manual pagination to match the template
+        $limit  = 20;
+        $page   = max(1, (int)$this->request->getQuery('page', 1));
         $offset = ($page - 1) * $limit;
-        
-        $messages = $query->limit($limit)->offset($offset)->all();
-        $totalCount = $query->count();
-        $totalPages = (int)ceil($totalCount / $limit);
-        
-        $pagination = [
-            'page' => $page,
-            'pages' => $totalPages,
-            'limit' => $limit,
-            'count' => $totalCount,
-            'hasPrev' => $page > 1,
-            'hasNext' => $page < $totalPages,
+
+        $messages    = $query->limit($limit)->offset($offset)->all();
+        $totalCount  = $query->count();
+        $totalPages  = (int)ceil($totalCount / $limit);
+        $pagination  = [
+            'page'   => $page,
+            'pages'  => $totalPages,
+            'count'  => $totalCount,
+            'hasPrev'=> $page > 1,
+            'hasNext'=> $page < $totalPages,
         ];
 
-        $statuses = [
-            ''            => 'All',
-            'unread'      => 'Unread',
-            'read'        => 'Read',
-            'in_progress' => 'In Progress',
-            'closed'      => 'Closed',
-        ];
-
-        $this->set(compact('messages', 'q', 'status', 'from', 'to', 'statuses', 'pagination'));
-    }
-
-    /**
-     * GET /admin/contact-messages/view/{id}
-     * View-only page for contact message
-     */
-    public function view(int $id)
-    {
-        $table = $this->fetchTable('ContactMessages');
-        $msg   = $table->get($id, contain: ['Users']);
-
-        // Auto mark as read on GET if currently unread
-        if ($this->request->is('get') && $msg->status === 'unread') {
-            $msg->status = 'read';
-            $table->save($msg);
-        }
-
-        // Handle status-only updates via AJAX
-        if ($this->request->is(['post', 'put', 'patch'])) {
-            $data = $this->request->getData();
-
-            if (!empty($data['status'])) {
-                if (in_array($data['status'], ['unread', 'read', 'in_progress', 'closed'], true)) {
-                    $oldStatus = $msg->status;
-                    $msg->status = $data['status'];
-
-                    if ($table->save($msg)) {
-                        $this->Flash->success("Status updated from '{$oldStatus}' to '{$data['status']}'.");
-                        return $this->redirect(['action' => 'view', $id]);
-                    }
-                    $this->Flash->error('Failed to update status.');
-                } else {
-                    $this->Flash->error('Invalid status selected.');
-                }
-            }
-        }
-
-        $statuses = [
-            'unread'      => 'Unread',
-            'read'        => 'Read',
-            'in_progress' => 'In Progress',
-            'closed'      => 'Closed',
-        ];
-
-        $this->set(compact('msg', 'statuses'));
-    }
-
-    /**
-     * GET/POST /admin/contact-messages/reply/{id}
-     * Reply page for contact message
-     */
-    public function reply(int $id)
-    {
-        $table = $this->fetchTable('ContactMessages');
-        $msg   = $table->get($id, contain: ['Users']);
-
-        // Auto mark as read on GET if currently unread
-        if ($this->request->is('get') && $msg->status === 'unread') {
-            $msg->status = 'read';
-            $table->save($msg);
-        }
-
-        if ($this->request->is(['post', 'put', 'patch'])) {
-            $data = $this->request->getData();
-
-            // Reply + optional status update
-            $msg = $table->patchEntity($msg, $data, [
-                'fields' => ['status', 'reply_note'],
-            ]);
-
-            $user = $this->request->getSession()->read('Auth.AdminUser');
-
-            if (!empty($data['reply_note'])) {
-                $msg->replied_at = DateTime::now();
-                $msg->replied_by = $user['id'] ?? null;
-            }
-
-            if ($table->save($msg)) {
-                $this->Flash->success('Reply saved successfully.');
-                return $this->redirect(['action' => 'index', '?' => $this->request->getQueryParams()]);
-            }
-            $this->Flash->error('Failed to save reply. Please check the form.');
-        }
-
-        $statuses = [
-            'unread'      => 'Unread',
-            'read'        => 'Read',
-            'in_progress' => 'In Progress',
-            'closed'      => 'Closed',
-        ];
-
-        $this->set(compact('msg', 'statuses'));
-    }
-
-    /**
-     * GET /admin/contact-messages/export
-     * Direct download CSV (no flash, no redirect)
-     */
-    public function export()
-    {
-        $this->request->allowMethod(['get']);
-        $this->disableAutoRender(); // important: no templates, no extra output
-
-        $query = $this->ContactMessages->find()
-            ->select(['id','name','email','message','status','created','modified'])
-            ->orderByDesc('created'); // Cake 5
-
-        $rows = $query->all();
-
-        $filename = 'contact_messages_' . DateTime::now()->format('Ymd_His') . '.csv';
-
-        $this->response = $this->response
-            ->withType('csv')
-            ->withDownload($filename);
-
-        $out = fopen('php://temp', 'r+');
-        fputcsv($out, ['ID','Name','Email','Message','Status','Created','Modified']);
-        foreach ($rows as $r) {
-            fputcsv($out, [
-                $r->id,
-                (string)$r->name,
-                (string)$r->email,
-                (string)$r->message,
-                (string)$r->status,
-                $r->created?->format('Y-m-d H:i:s') ?? '',
-                $r->modified?->format('Y-m-d H:i:s') ?? '',
-            ]);
-        }
-        rewind($out);
-        $csv = stream_get_contents($out);
-        fclose($out);
-
-        return $this->response->withStringBody($csv);
-    }
-
-    /**
-     * POST /admin/contact-messages/markAllRead
-     */
-    public function markAllRead()
-    {
-        $this->request->allowMethod(['post']);
-        $now = DateTime::now();
-
-        $updated = $this->ContactMessages->updateAll(
-            ['status' => 'read', 'modified' => $now],
-            ['status' => 'unread']
-        );
-
-        $updated === false
-            ? $this->Flash->error('Failed to mark messages as read.')
-            : $this->Flash->success("Marked {$updated} message(s) as read.");
-
-        return $this->redirect(['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'index']);
-    }
-
-    /**
-     * POST /admin/contact-messages/delete/{id}
-     */
-    public function delete(int $id)
-    {
-        $this->request->allowMethod(['post', 'delete']);
-
-        $table = $this->fetchTable('ContactMessages');
-        $msg   = $table->get($id);
-
-        if ($table->delete($msg)) {
-            $this->Flash->success('Message deleted.');
-        } else {
-            $this->Flash->error('Delete failed.');
-        }
-
-        return $this->redirect($this->referer(['action' => 'index'], true));
+        // Pass normalized values back to the view so inputs refill correctly
+        $this->set(compact('messages', 'pagination', 'q', 'status', 'from', 'to'));
     }
 }

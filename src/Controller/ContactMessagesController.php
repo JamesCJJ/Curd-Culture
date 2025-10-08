@@ -1,114 +1,89 @@
 <?php
 declare(strict_types=1);
 
-namespace App\Controller\Admin;
+namespace App\Controller;
 
-use Cake\I18n\DateTime;
+use Cake\Core\Configure;
+use Cake\Event\EventInterface;
 
-/**
- * Admin > Contact Messages
- * - Safe date filtering: normalize and validate "from" / "to" before building conditions
- * - Never construct DateTime with an invalid string
- * - Manual pagination to match the view
- */
 class ContactMessagesController extends AppController
 {
-    /**
-     * Normalize a date string to YYYY-MM-DD and validate it.
-     * Returns null when invalid/empty. Accepts separators "/", "." and "-".
-     */
-    private function normalizeYmd(?string $s): ?string
+
+    public function beforeFilter(EventInterface $event)
     {
-        $s = trim((string)$s);
-        if ($s === '') {
-            return null;
-        }
-
-        // Unify separators and strip spaces
-        $s = str_replace(['/', '.'], '-', $s);
-        $s = preg_replace('/\s+/', '', $s ?? '') ?? '';
-
-        // Only 4-digit year is allowed
-        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $s)) {
-            return null;
-        }
-
-        [$y, $m, $d] = array_map('intval', explode('-', $s));
-        if (!checkdate($m, $d, $y)) {
-            return null;
-        }
-
-        return $s; // YYYY-MM-DD
+        parent::beforeFilter($event);
     }
 
-    /**
-     * Index: list messages with filters and pagination.
-     */
-    public function index()
+
+    public function add()
     {
-        $q      = trim((string)$this->request->getQuery('q'));
-        $status = (string)$this->request->getQuery('status');
-        $fromIn = (string)$this->request->getQuery('from');
-        $toIn   = (string)$this->request->getQuery('to');
+        $contact = $this->ContactMessages->newEmptyEntity();
 
-        // Normalize/validate dates; null if invalid
-        $from = $this->normalizeYmd($fromIn);
-        $to   = $this->normalizeYmd($toIn);
+        if ($this->request->is('post')) {
+            $token = $this->request->getData('g-recaptcha-response') ?? '';
+            if (!$this->verifyRecaptcha($token)) {
+                $this->Flash->error(__('Captcha validation failed. Please try again.'));
 
-        // If both present but reversed, swap to make a valid range
-        if ($from !== null && $to !== null && $from > $to) {
-            [$from, $to] = [$to, $from];
-            $this->Flash->warning('Date range was corrected: "From" was after "To".');
-        }
-
-        $Messages = $this->fetchTable('ContactMessages');
-
-        $query = $Messages->find()
-            ->orderByDesc('ContactMessages.created');
-
-        if ($q !== '') {
-            $query->where([
-                'OR' => [
-                    'ContactMessages.name LIKE'    => '%' . $q . '%',
-                    'ContactMessages.email LIKE'   => '%' . $q . '%',
-                    'ContactMessages.message LIKE' => '%' . $q . '%',
-                ]
-            ]);
-        }
-
-        if ($status !== '') {
-            // Accept known states; ignore unknowns silently
-            $allowed = ['new', 'in_progress', 'closed', 'unread', 'read'];
-            if (in_array($status, $allowed, true)) {
-                $query->where(['ContactMessages.status' => $status]);
+                $contact = $this->ContactMessages->patchEntity($contact, $this->request->getData());
+                $this->set(compact('contact'));
+                return;
             }
+
+            $contact = $this->ContactMessages->patchEntity($contact, $this->request->getData());
+            if ($this->ContactMessages->save($contact)) {
+                $this->Flash->success(__('Thanks! Your message was sent.'));
+                return $this->redirect(['action' => 'add']);
+            }
+
+            $this->Flash->error(__('Please correct the errors and try again.'));
         }
 
-        // Safe date conditions (only add when normalized OK)
-        if ($from !== null) {
-            $query->where(['ContactMessages.created >=' => new DateTime($from . ' 00:00:00')]);
+        $this->set(compact('contact'));
+    }
+
+
+    private function verifyRecaptcha(string $token): bool
+    {
+        // In development mode, allow bypassing reCAPTCHA for testing
+        if (Configure::read('debug') && $token === 'test') {
+            return true;
         }
-        if ($to !== null) {
-            $query->where(['ContactMessages.created <=' => new DateTime($to . ' 23:59:59')]);
+
+        // For development, also allow empty token if debug is enabled
+        if (Configure::read('debug') && $token === '') {
+            return true;
         }
 
-        // Manual pagination to match the template
-        $limit  = 20;
-        $page   = max(1, (int)$this->request->getQuery('page', 1));
-        $offset = ($page - 1) * $limit;
+        if ($token === '') {
+            return false;
+        }
 
-        $messages    = $query->limit($limit)->offset($offset)->all();
-        $totalCount  = $query->count();
-        $totalPages  = (int)ceil($totalCount / $limit);
-        $pagination  = [
-            'page'   => $page,
-            'pages'  => $totalPages,
-            'count'  => $totalCount,
-            'hasPrev'=> $page > 1,
-            'hasNext'=> $page < $totalPages,
-        ];
+        $secret = (string)Configure::read('Security.recaptcha.secret_key');
+        if ($secret === '') {
 
-        // Pass normalized values back to the view so inputs refill correctly
-        $this->set(compact('messages', 'pagination', 'q', 'status', 'from', 'to'));
+            return false;
+        }
+
+
+        $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
+        curl_setopt_array($ch, [
+            CURLOPT_POST => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT => 8,
+            CURLOPT_POSTFIELDS => http_build_query([
+                'secret' => $secret,
+                'response' => $token,
+                'remoteip' => $this->request->clientIp(),
+            ]),
+        ]);
+        $raw = curl_exec($ch);
+        curl_close($ch);
+
+        if (!$raw) {
+            return false;
+        }
+
+        $json = json_decode($raw, true);
+        return !empty($json['success']);
     }
 }
