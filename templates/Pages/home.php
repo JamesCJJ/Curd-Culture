@@ -38,7 +38,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
                 <?= $this->Html->link('Shop Our Cheeses', ['controller' => 'Products', 'action' => 'index'], ['class' => 'btn btn-hero btn-primary', 'aria-label' => 'Browse our cheese products']) ?>
                 <?= $this->Html->link('Contact Us', ['controller' => 'ContactMessages', 'action' => 'add'], ['class' => 'btn btn-hero btn-outline', 'aria-label' => 'Get in touch with us']) ?>
             </div>
-            
+
             <div class="hero__trust">
                 <span class="trust-text">Trusted by 500+ cheese lovers across Australia</span>
             </div>
@@ -66,7 +66,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         <h2 id="featured-title">Our Signature Cheeses</h2>
         <p class="section-subtitle">Handcrafted with passion, aged to perfection</p>
     </div>
-    
+
     <div class="product-grid">
         <div class="product-card">
             <div class="product-image">
@@ -175,7 +175,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         <div class="delivery-text">
             <h2 id="delivery">Freshness First: Refrigerated Delivery</h2>
             <p class="delivery-lead">Your cheese deserves the best care. We maintain optimal temperature (~4°C) throughout the entire journey from our farm to your doorstep.</p>
-            
+
             <div class="delivery-features">
                 <div class="delivery-feature">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -209,7 +209,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
                 </div>
             </div>
         </div>
-        
+
         <div class="delivery-visual">
             <div class="delivery-card highlight">
                 <div class="delivery-card-icon">📦</div>
@@ -231,7 +231,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         <div class="why-content">
             <h2 id="why-us">Why Choose Curd &amp; Culture?</h2>
             <p class="why-intro">For over 35 years, we've been dedicated to producing the finest artisan cheeses using time-honored techniques and sustainable farming practices.</p>
-            
+
             <div class="why-list">
                 <div class="why-item">
                     <div class="why-number">01</div>
@@ -267,7 +267,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         <h2 id="how">How It Works</h2>
         <p class="section-subtitle">From browsing to enjoying — simple, seamless, and fresh</p>
     </div>
-    
+
     <div class="steps-grid">
         <div class="step-card">
             <div class="step-icon">
@@ -314,7 +314,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         <h2 id="testimonials">What Our Customers Say</h2>
         <p class="section-subtitle">Join hundreds of happy cheese lovers</p>
     </div>
-    
+
     <div class="testimonials-grid">
         <div class="testimonial-card">
             <div class="testimonial-stars">⭐⭐⭐⭐⭐</div>
@@ -362,7 +362,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
 
 <style>
     /* ===== Modern Theme Variables ===== */
-    .page { 
+    .page {
         --bg: #ffffff;
         --bg-alt: #f8fafc;
         --text: #0f172a;
@@ -538,8 +538,8 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         margin: 0;
     }
 
-    /* ===== Buttons ===== */
-    .btn {
+    /* ===== Buttons (scoped; won't affect topbar) ===== */
+    .page .btn {
         display: inline-flex;
         align-items: center;
         justify-content: center;
@@ -554,35 +554,35 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         transition: all 0.2s ease;
         cursor: pointer;
     }
-    .btn-primary {
+    .page .btn-primary {
         background: var(--brand);
         color: white;
         border-color: var(--brand);
     }
-    .btn-primary:hover {
+    .page .btn-primary:hover {
         background: var(--brand-dark);
         border-color: var(--brand-dark);
         transform: translateY(-2px);
         box-shadow: 0 8px 20px rgba(245, 158, 11, 0.3);
     }
-    .btn-outline {
+    .page .btn-outline {
         background: transparent;
         color: var(--text);
         border-color: var(--border);
     }
-    .btn-outline:hover {
+    .page .btn-outline:hover {
         border-color: var(--text);
         background: var(--bg-alt);
     }
-    .btn-hero {
+    .page .btn-hero {
         padding: 1rem 2rem;
         font-size: 1.0625rem;
     }
-    .btn-large {
+    .page .btn-large {
         padding: 1.125rem 2.25rem;
         font-size: 1.0625rem;
     }
-    .btn:focus-visible {
+    .page .btn:focus-visible {
         outline: 3px solid var(--ring);
         outline-offset: 2px;
     }
