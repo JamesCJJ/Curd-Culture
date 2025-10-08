@@ -163,25 +163,7 @@ if ($identity && $role === 'customer') {
 
     .dashboard-content{padding:2rem}
 
-    /* 主题/辅助（沿用 default） */
-    .topbar{position:sticky;top:0;z-index:1000;background:#fff;border-bottom:1px solid #e5e7eb}
-    .topbar__inner{max-width:1100px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
-    .nav-actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
-    .brand-link{display:flex;align-items:center;gap:.5rem;text-decoration:none}
-    .brand-logo{height:28px;width:auto;border-radius:.25rem}
-    .brand-name{font-weight:700;color:#0f172a}
-    .btn{display:inline-block;padding:.55rem .9rem;border-radius:.6rem;border:1px solid transparent;background:#e5e7eb;color:#111;text-decoration:none;font-size:.95rem}
-    .btn:hover{filter:brightness(.97)}
-    .btn:focus-visible{outline:3px solid rgba(44,123,229,.25);outline-offset:2px}
-    .btn-subtle{background:transparent;border-color:#d1d5db;color:#374151}
-    .small{font-size:.85rem;padding:.3rem .6rem}
-    .topbar .btn-primary{background:#2563eb;color:#fff;border-color:transparent;width:auto !important;display:inline-block !important;border-radius:.6rem;padding:.55rem .9rem;box-shadow:none}
-    .glyph{display:inline-block;width:12px;height:12px;margin-right:.35rem;vertical-align:-1px}
-    .glyph--play{clip-path:polygon(0 0,100% 50%,0 100%);background:currentColor}
-    .glyph--pause-square{display:none;position:relative;width:12px;height:12px;border-radius:2px;background:transparent;border:1.5px solid currentColor}
-    .glyph--pause-square::before,.glyph--pause-square::after{content:"";position:absolute;top:2px;bottom:2px;width:2px;background:currentColor}
-    .glyph--pause-square::before{left:3px}
-    .glyph--pause-square::after{right:3px}
+
 
     .theme-dark{background:#0b1220;color:#e5e7eb}
     .theme-dark .topbar{background:#111827;border-color:#1f2937}
@@ -211,12 +193,12 @@ if ($identity && $role === 'customer') {
             acc[key] = value;
             return acc;
         }, {});
-        
+
         const savedFontScale = parseFloat(cookies.pref_font_scale) || 1.0;
         if (savedFontScale !== 1.0) {
             document.documentElement.style.fontSize = (16 * savedFontScale) + 'px';
         }
-        
+
         // Apply contrast from cookie
         const savedContrast = cookies.pref_contrast;
         if (savedContrast === 'high') {
@@ -229,19 +211,19 @@ if ($identity && $role === 'customer') {
         const plus = document.getElementById('font-plus');
         const minus = document.getElementById('font-minus');
         const contrast = document.getElementById('contrast-toggle');
-        
+
         // Restore high contrast from localStorage
         const isHighContrast = localStorage.getItem('highContrast') === 'true';
         if (isHighContrast) {
             root.classList.add('hc');
         }
-        
+
         // Restore font size from localStorage
         let scale = parseFloat(localStorage.getItem('fontSize')) || 1;
         if (scale !== 1) {
             document.documentElement.style.fontSize = (16 * scale) + 'px';
         }
-        
+
         plus && plus.addEventListener('click', function(){
             scale = Math.min(1.25, +(scale + 0.05).toFixed(2));
             document.documentElement.style.fontSize = (16 * scale) + 'px';
