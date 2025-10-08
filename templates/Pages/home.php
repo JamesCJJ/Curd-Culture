@@ -520,5 +520,20 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         .product-img,.hero__img{height:300px}
         .section-header h2{font-size:1.75rem}
         .delivery-text h2,.why-content h2{font-size:1.75rem}
+        @media (max-width:480px){
+            .hero__cta{gap:.75rem}
+            .hero__cta .btn{
+                width:100%;
+                padding:.9rem 1rem;
+                font-size:1rem;
+                border-radius:14px;
+            }
+
+            .cta-buttons .btn{
+                width:100%;
+                padding:1rem 1.1rem;
+                font-size:1rem;border-radius:14px;
+            }
     }
+
 </style>

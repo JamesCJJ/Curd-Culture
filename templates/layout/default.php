@@ -209,59 +209,84 @@ if ($identity && $role === 'customer') {
 </footer>
 
 <style>
-    /* Content wrapper */
-    #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
+    :root{
+        --nav-font-px:14px;
+        --nav-pad-x:12px;
+        --nav-pad-y:10px;
+        --nav-radius:12px;
+    }
 
-    /* --- Topbar: unify font with the rest of the site --- */
+    /* Content wrapper */
+    #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem;position:relative;z-index:1}
+
+    /* -------- Topbar: decoupled from A+/A− (uses px) -------- */
     .topbar,
     .topbar *{
         font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
     }
+    .topbar{
+        position:sticky;top:0;z-index:1001;background:#fff;border-bottom:1px solid #e5e7eb;
+        font-size:var(--nav-font-px)!important;line-height:1;
+    }
+    .topbar__inner{
+        max-width:1100px;margin:0 auto;padding:8px 16px;
+        display:flex;align-items:center;justify-content:space-between;gap:8px;
+    }
+    .brand-link{display:flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap}
+    .brand-logo{height:28px;width:auto;border-radius:4px}
+    .brand-name{font-weight:800;color:#0f172a;font-size:var(--nav-font-px);letter-spacing:.2px}
+    .theme-dark .brand-name{color:#e5e7eb}
 
-    .topbar{position:sticky;top:0;z-index:1000;background:#fff;border-bottom:1px solid #e5e7eb}
-    .topbar__inner{max-width:1100px;margin:0 auto;padding:.6rem 1rem;display:flex;align-items:center;justify-content:space-between;gap:.75rem}
-    .nav-actions{display:flex;align-items:center;gap:.5rem;flex-wrap:wrap}
+    /* only navbar buttons */
+    .topbar .btn{
+        display:inline-flex;align-items:center;justify-content:center;
+        padding:var(--nav-pad-y) var(--nav-pad-x);
+        border-radius:var(--nav-radius);border:1px solid #d1d5db;background:#fff;color:#111;
+        font-size:var(--nav-font-px)!important;line-height:1!important;text-decoration:none;white-space:nowrap;
+        box-shadow:none;transition:filter .15s ease;
+    }
+    .topbar .btn:hover{filter:brightness(.98)}
+    .topbar .btn-subtle{background:transparent}
+    .topbar .small{font-size:12px!important;padding:6px 10px}
+    .topbar .btn-primary{background:#2563eb;color:#fff;border-color:#2563eb}
+    .theme-dark .topbar{background:#111827;border-color:#1f2937}
+    .theme-dark .topbar .btn{background:#374151;color:#f9fafb;border-color:#475569}
+    .theme-dark .topbar .btn-primary{background:#60a5fa;color:#111;border-color:#60a5fa}
 
-    .brand-link{display:flex;align-items:center;gap:.5rem;text-decoration:none}
-    .brand-logo{height:28px;width:auto;border-radius:.25rem}
-    .brand-name{font-weight:700;color:#0f172a}
 
-    .btn{display:inline-block;padding:.55rem .9rem;border-radius:.6rem;border:1px solid transparent;background:#e5e7eb;color:#111;text-decoration:none;font-size:.95rem;font-weight:600}
-    .btn:hover{filter:brightness(.97)}
-    .btn:focus-visible{outline:3px solid rgba(44,123,229,.25);outline-offset:2px}
-    .btn-subtle{background:transparent;border-color:#d1d5db;color:#374151}
-    .small{font-size:.85rem;padding:.3rem .6rem}
+    .nav-actions{
+        display:flex;align-items:center;gap:8px;flex-wrap:nowrap;
+        overflow:auto hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none;
+        max-width:unset;
+    }
+    .nav-actions::-webkit-scrollbar{display:none}
 
-    .topbar .btn-primary{
-        background:#2563eb;color:#fff;border-color:transparent;
-        width:auto !important;display:inline-block !important;
-        border-radius:.6rem;padding:.55rem .9rem;box-shadow:none;
+
+    @media (max-width:600px){
+        .topbar__inner{flex-wrap:wrap;align-items:flex-start;gap:6px 8px}
+        .brand{flex:1 0 100%}
+        .nav-actions{
+            flex:1 0 100%;max-width:100%;
+            overflow:visible;flex-wrap:wrap;gap:6px
+        }
+        .nav-actions .btn{flex:0 0 auto;padding:10px 12px}
+        #btn-read, .a11y-tools{order:2}
+        .a11y-tools{width:100%;display:flex;gap:6px;justify-content:flex-start}
     }
 
     .glyph{display:inline-block;width:12px;height:12px;margin-right:.35rem;vertical-align:-1px}
     .glyph--play{clip-path:polygon(0 0,100% 50%,0 100%);background:currentColor}
     .glyph--pause-square{display:none;position:relative;width:12px;height:12px;border-radius:2px;background:transparent;border:1.5px solid currentColor}
     .glyph--pause-square::before,.glyph--pause-square::after{content:"";position:absolute;top:2px;bottom:2px;width:2px;background:currentColor}
-    .glyph--pause-square::before{left:3px}
-    .glyph--pause-square::after{right:3px}
+    .glyph--pause-square::before{left:3px}.glyph--pause-square::after{right:3px}
 
-    .theme-dark{background:#0b1220;color:#e5e7eb}
-    .theme-dark .topbar{background:#111827;border-color:#1f2937}
-    .theme-dark .brand-name{color:#e5e7eb}
-    .theme-dark .btn{background:#374151;color:#f9fafb;border-color:#475569}
-    .theme-dark .btn-subtle{background:transparent;border-color:#475569;color:#e5e7eb}
-    .theme-dark .topbar .btn-primary{background:#60a5fa;color:#111}
-    .theme-dark .footer{color:#cbd5e1}
-
-    /* High Contrast Mode */
-    .page.hc{background:#0b1220;color:#e5e7eb}
-    .page.hc a{color:#93c5fd}
+    /* High Contrast bits affecting header colors only */
     .page.hc .topbar{background:#0f172a;border-color:#334155}
     .page.hc .brand-name{color:#e5e7eb}
-    .page.hc .btn{background:#1f2937;color:#fff;border-color:#475569}
+    .page.hc .topbar .btn{background:#1f2937;color:#fff;border-color:#475569}
     .page.hc .topbar .btn-primary{background:#60a5fa;color:#111}
 
-    /* Footer */
+    /* ----- Footer (unchanged) ----- */
     .site-footer{background:#1f2937;color:#e5e7eb;margin-top:auto}
     .footer-content{max-width:1200px;margin:0 auto;padding:3rem 2rem 1.5rem}
     .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
@@ -281,7 +306,6 @@ if ($identity && $role === 'customer') {
     .footer-bottom-content{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:1rem}
     .footer-copyright{color:#9ca3af;font-size:.875rem;margin:0}
 
-    /* Footer responsive */
     @media (max-width:1024px){.footer-grid{grid-template-columns:1fr 1fr;gap:2rem}}
     @media (max-width:640px){
         .footer-content{padding:2rem 1.5rem 1rem}
@@ -289,7 +313,7 @@ if ($identity && $role === 'customer') {
         .footer-bottom-content{flex-direction:column;align-items:flex-start}
     }
 
-    /* Cart button */
+    /* Cart badge */
     .cart-link{position:relative;display:inline-flex;align-items:center;gap:.35rem}
     .cart-icon{width:16px;height:14px;border:1.5px solid currentColor;border-radius:3px;position:relative;display:inline-block}
     .cart-icon::before{content:"";position:absolute;left:2px;top:-6px;width:12px;height:6px;border:1.5px solid currentColor;border-bottom:none;border-radius:3px 3px 0 0}
@@ -297,14 +321,18 @@ if ($identity && $role === 'customer') {
     .theme-dark .cart-badge{background:#f87171;color:#111}
     .page.hc .cart-badge{background:#fca5a5;color:#111}
 
+    /* ---- Fix AI/copilot overlay eating taps ---- */
+    #copilot, .copilot, .ai-live-popup, .copilot-mask, [data-ai-overlay], .grammarly-desktop-integration{
+        pointer-events:none !important;
+    }
+    #copilot button, #copilot .copilot-fab, .copilot button, .copilot .copilot-fab, .copilot [role="button"]{
+        pointer-events:auto !important;
+    }
+    /* mobile: hide copilot completely */
+    @media (max-width:900px){
+        #copilot, .copilot{ display:none !important; }
+    }
 
-    .copilot { position: fixed; bottom: 16px; right: 16px; z-index: 998; pointer-events: none; }
-    .copilot .copilot-fab,
-    .copilot button,
-    .copilot [role="button"] { pointer-events: auto; }
-
-
-    .copilot.is-open { pointer-events: auto; }
 </style>
 
 <script>
@@ -314,11 +342,11 @@ if ($identity && $role === 'customer') {
         const minus = document.getElementById('font-minus');
         const contrast = document.getElementById('contrast-toggle');
 
-        // Restore high contrast
+        // restore high contrast
         const isHighContrast = localStorage.getItem('highContrast') === 'true';
         if (isHighContrast) root.classList.add('hc');
 
-        // Font size controls
+        // font scaling (rem)
         let scale = parseFloat(localStorage.getItem('fontSize')) || 1;
         if (scale !== 1) document.documentElement.style.fontSize = (16 * scale) + 'px';
 
@@ -333,7 +361,6 @@ if ($identity && $role === 'customer') {
             localStorage.setItem('fontSize', scale);
         });
 
-        // Contrast toggle
         contrast && contrast.addEventListener('click', function(){
             root.classList.toggle('hc');
             localStorage.setItem('highContrast', root.classList.contains('hc'));
