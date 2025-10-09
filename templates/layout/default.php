@@ -1,6 +1,6 @@
 <?php
 /**
- * App default layout — visual style matched to auth pages
+ * App default layout
  */
 ?>
 <!DOCTYPE html>
@@ -40,9 +40,7 @@ if ($identity && $role === 'customer') {
             ->first();
 
         if ($cart) {
-            $cartQty = $CartItems->find()
-                ->where(['cart_id' => $cart->id])
-                ->count(); // row count
+            $cartQty = $CartItems->find()->where(['cart_id' => $cart->id])->count();
         }
     } catch (\Throwable $e) {
         $cartQty = 0;
@@ -55,10 +53,8 @@ if ($identity && $role === 'customer') {
     <div class="topbar__inner">
         <div class="brand">
             <?= $this->Html->link(
-                $this->Html->image('logo.png', [
-                    'alt' => 'Curd & Culture',
-                    'class' => 'brand-logo'
-                ]) . '<span class="brand-name">Curd &amp; Culture</span>',
+                $this->Html->image('logo.png', ['alt' => 'Curd & Culture','class' => 'brand-logo'])
+                . '<span class="brand-name">Curd &amp; Culture</span>',
                 ['prefix' => false, 'controller' => 'Pages', 'action' => 'display', 'home'],
                 ['escape' => false, 'class' => 'brand-link']
             ) ?>
@@ -68,9 +64,8 @@ if ($identity && $role === 'customer') {
             <?php
             $currentController = $this->request->getParam('controller');
             $currentPrefix     = $this->request->getParam('prefix');
-
-            $identity = $this->getRequest()->getAttribute('identity');
-            $isAdmin  = ($identity && strtolower((string)$identity->get('role')) === 'admin');
+            $identity          = $this->getRequest()->getAttribute('identity');
+            $isAdmin           = ($identity && strtolower((string)$identity->get('role')) === 'admin');
             ?>
 
             <?= $this->Html->link(
@@ -97,7 +92,7 @@ if ($identity && $role === 'customer') {
             <?php endif; ?>
 
             <?php
-            if ($isAdmin):
+            if ($isAdmin) {
                 echo $this->Html->link(
                     'Admin',
                     ['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index'],
@@ -108,33 +103,32 @@ if ($identity && $role === 'customer') {
                     ['prefix' => false, 'controller' => 'Users', 'action' => 'logout'],
                     ['class' => 'btn', 'aria-label' => 'Admin logout']
                 );
-            endif;
+            }
 
             $role = $identity ? strtolower((string)$identity->get('role')) : '';
-            if ($identity && $role === 'customer'):
+            if ($identity && $role === 'customer') {
                 echo $this->Html->link(
                     'My Account',
                     ['prefix' => false, 'controller' => 'Customer', 'action' => 'index'],
                     ['class' => 'btn' . ($currentController === 'Customer' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Go to customer dashboard']
                 );
-            elseif (!$isAdmin):
+            } elseif (!$isAdmin) {
                 echo $this->Html->link(
                     'My Account',
                     ['prefix' => false, 'controller' => 'Users', 'action' => 'login'],
                     ['class' => 'btn' . ($currentController === 'Users' && !$currentPrefix ? ' btn-primary' : ''), 'aria-label' => 'Sign in to your account']
                 );
-            endif;
+            }
             ?>
 
-            <button id="btn-read" class="btn btn-subtle" type="button"
-                    aria-pressed="false" aria-label="Read page aloud">
+            <button id="btn-read" class="btn btn-subtle" type="button" aria-pressed="false" aria-label="Read page aloud">
                 <span class="glyph glyph--play" aria-hidden="true"></span>
                 <span class="glyph glyph--pause-square" aria-hidden="true"></span>
                 <span class="label">Read</span>
             </button>
 
             <div class="a11y-tools" aria-label="Accessibility tools">
-                <button class="btn small" id="font-plus" type="button" title="Increase font size">A+</button>
+                <button class="btn small" id="font-plus"  type="button" title="Increase font size">A+</button>
                 <button class="btn small" id="font-minus" type="button" title="Decrease font size">A−</button>
                 <button class="btn small" id="contrast-toggle" type="button" title="High contrast">High Contrast</button>
             </div>
@@ -210,62 +204,34 @@ if ($identity && $role === 'customer') {
 
 <style>
     :root{
+
         --nav-font-px:14px;
-        --nav-pad-x:12px;
-        --nav-pad-y:10px;
         --nav-radius:12px;
         --nav-h:40px;
         --nav-h-sm:32px;
+
+
         --z-modal:1070;
         --z-modal-backdrop:1060;
         --z-header:1030;
         --z-floating:1020;
     }
 
-
     #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
 
-
-    .topbar,.topbar *{
-        font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
-    }
-    .topbar{
-        position:sticky;top:0;background:#fff;border-bottom:1px solid #e5e7eb;
-        z-index:var(--z-header);
-        font-size:var(--nav-font-px)!important;line-height:1;
-    }
-    .topbar__inner{
-        max-width:1100px;margin:0 auto;padding:8px 16px;
-        display:flex;align-items:center;justify-content:space-between;gap:8px;
-    }
+    .topbar,.topbar *{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
+    .topbar{position:sticky;top:0;z-index:var(--z-header);background:#fff;border-bottom:1px solid #e5e7eb;font-size:var(--nav-font-px)!important;line-height:1}
+    .topbar__inner{max-width:1100px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
     .brand-link{display:flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap}
     .brand-logo{height:28px;width:auto;border-radius:4px}
     .brand-name{font-weight:800;color:#0f172a;font-size:var(--nav-font-px)}
-    .theme-dark .brand-name{color:#e5e7eb}
+    .nav-actions{flex:1 1 auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0}
 
-
-    .nav-actions{
-        flex:1 1 auto;display:flex;align-items:center;justify-content:flex-end;
-        gap:8px;flex-wrap:wrap;min-width:0;
-    }
-
-
-    .topbar .btn{
-        display:inline-flex;align-items:center;justify-content:center;
-        height:var(--nav-h);min-height:var(--nav-h);padding:0 14px;
-        border-radius:var(--nav-radius);border:1px solid #d1d5db;background:#fff;color:#111;
-        font-size:var(--nav-font-px)!important;white-space:nowrap;flex:0 0 auto;
-        line-height:1!important;text-decoration:none;box-shadow:none;transition:filter .15s;
-    }
+    .topbar .btn{display:inline-flex;align-items:center;justify-content:center;height:var(--nav-h);min-height:var(--nav-h);padding:0 14px;border-radius:var(--nav-radius);border:1px solid #d1d5db;background:#fff;color:#111;font-size:var(--nav-font-px)!important;white-space:nowrap;flex:0 0 auto;line-height:1!important;text-decoration:none;box-shadow:none;transition:filter .15s}
     .topbar .btn:hover{filter:brightness(.98)}
     .topbar .btn-subtle{background:transparent}
     .topbar .btn-primary{background:#2563eb;border-color:#2563eb;color:#fff}
-
-
-    .topbar .btn.small,.a11y-tools .btn{
-        height:var(--nav-h-sm);min-height:var(--nav-h-sm);padding:0 10px
-    }
-
+    .topbar .btn.small,.a11y-tools .btn{height:var(--nav-h-sm);min-height:var(--nav-h-sm);padding:0 10px}
 
     @media (max-width:600px){
         .topbar__inner{flex-wrap:wrap;align-items:flex-start;gap:6px 8px}
@@ -273,29 +239,16 @@ if ($identity && $role === 'customer') {
         .nav-actions{flex:1 0 100%;justify-content:flex-start}
     }
 
-
     .glyph{display:inline-block;width:12px;height:12px;margin-right:.35rem;vertical-align:-1px}
     .glyph--play{clip-path:polygon(0 0,100% 50%,0 100%);background:currentColor}
     .glyph--pause-square{display:none;position:relative;width:12px;height:12px;border-radius:2px;border:1.5px solid currentColor}
     .glyph--pause-square::before,.glyph--pause-square::after{content:"";position:absolute;top:2px;bottom:2px;width:2px;background:currentColor}
     .glyph--pause-square::before{left:3px}.glyph--pause-square::after{right:3px}
 
-
-    .modal{z-index:var(--z-modal) !important}
-    .modal-backdrop{z-index:var(--z-modal-backdrop) !important}
-
-
-    #copilot,.copilot,.ai-live-popup,.copilot-mask,
-    .grammarly-desktop-integration,#immersive-translate-popup,.immersive-translate-browser-popup{
-        z-index:var(--z-floating) !important;
-    }
-
-
     .cart-link{position:relative;display:inline-flex;align-items:center;gap:.35rem}
     .cart-icon{width:16px;height:14px;border:1.5px solid currentColor;border-radius:3px;position:relative;display:inline-block}
     .cart-icon::before{content:"";position:absolute;left:2px;top:-6px;width:12px;height:6px;border:1.5px solid currentColor;border-bottom:none;border-radius:3px 3px 0 0}
     .cart-badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;line-height:18px;padding:0 6px;border-radius:9px;background:#ef4444;color:#fff;font-size:12px;font-weight:700;text-align:center}
-
 
     .theme-dark .topbar{background:#111827;border-color:#1f2937}
     .theme-dark .topbar .btn{background:#374151;color:#f9fafb;border-color:#475569}
@@ -305,7 +258,11 @@ if ($identity && $role === 'customer') {
     .page.hc .topbar .btn{background:#1f2937;color:#fff;border-color:#475569}
     .page.hc .topbar .btn-primary{background:#60a5fa;color:#111}
 
-    /* ----- Footer (restored) ----- */
+    .modal{z-index:var(--z-modal)!important}
+    .modal-backdrop{z-index:var(--z-modal-backdrop)!important;background:rgba(0,0,0,.45)!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important}
+    html.modal-open, body.modal-open, html.modal-open .page, html.modal-open #content{filter:none!important;-webkit-filter:none!important}
+
+    /* ------- Footer ------- */
     .site-footer{background:#1f2937;color:#e5e7eb;margin-top:auto}
     .footer-content{max-width:1200px;margin:0 auto;padding:3rem 2rem 1.5rem}
     .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
@@ -332,8 +289,29 @@ if ($identity && $role === 'customer') {
         .footer-bottom-content{flex-direction:column;align-items:flex-start}
     }
 
-</style>
+    body .modal {
+        position: fixed;
+        z-index: 3000 !important;
+    }
+    body .modal-dialog {
+        z-index: 3001 !important;
+    }
+    body .modal-backdrop {
+        z-index: 2990 !important;
+        backdrop-filter: none !important;
+        -webkit-backdrop-filter: none !important;
 
+        background: rgba(0,0,0,.45) !important;
+        opacity: .45 !important;
+    }
+
+    #content, .page {
+        filter: none !important;
+        -webkit-filter: none !important;
+
+    }
+
+</style>
 
 <script>
     (function(){
@@ -342,11 +320,8 @@ if ($identity && $role === 'customer') {
         const minus = document.getElementById('font-minus');
         const contrast = document.getElementById('contrast-toggle');
 
-        // restore high contrast
-        const isHighContrast = localStorage.getItem('highContrast') === 'true';
-        if (isHighContrast) root.classList.add('hc');
+        if (localStorage.getItem('highContrast') === 'true') root.classList.add('hc');
 
-        // font scaling (rem)
         let scale = parseFloat(localStorage.getItem('fontSize')) || 1;
         if (scale !== 1) document.documentElement.style.fontSize = (16 * scale) + 'px';
 
@@ -360,7 +335,6 @@ if ($identity && $role === 'customer') {
             document.documentElement.style.fontSize = (16 * scale) + 'px';
             localStorage.setItem('fontSize', scale);
         });
-
         contrast && contrast.addEventListener('click', function(){
             root.classList.toggle('hc');
             localStorage.setItem('highContrast', root.classList.contains('hc'));
@@ -376,7 +350,7 @@ if ($identity && $role === 'customer') {
 
         function updateUI(){
             btn.setAttribute('aria-pressed', speaking ? 'true' : 'false');
-            playIcon.style.display = speaking ? 'none' : 'inline-block';
+            playIcon.style.display  = speaking ? 'none'  : 'inline-block';
             pauseIcon.style.display = speaking ? 'inline-block' : 'none';
         }
         updateUI();
