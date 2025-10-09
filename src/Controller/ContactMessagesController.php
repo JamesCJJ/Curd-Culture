@@ -34,7 +34,7 @@ class ContactMessagesController extends AppController
                 $this->Flash->success(__('Thanks! Your message was sent.'));
                 return $this->redirect(['action' => 'add']);
             }
-            
+
             $this->Flash->error(__('Please correct the errors and try again.'));
         }
 

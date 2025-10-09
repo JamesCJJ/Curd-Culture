@@ -1,24 +1,25 @@
 <?php
+// File: templates/Admin/Dashboard/index.php
 /**
  * Enhanced Admin Dashboard
- * 
+ *
  * @var \App\View\AppView $this
- * @var array $contactStats
- * @var array $productStats
- * @var array $orderStats
- * @var array $userStats
- * @var array $recentActivity
+ * @var array   $contactStats
+ * @var array   $productStats
+ * @var array   $orderStats
+ * @var array   $userStats
+ * @var array   $recentActivity
  * @var iterable $latestMessages
  * @var iterable $latestOrders
  */
 $this->assign('title', 'Dashboard');
 
-$total      = $total      ?? 0;
-$unreadCount= $unreadCount?? 0;
-$readCount  = $readCount  ?? 0;
-$todayCount = $todayCount ?? 0;
+$total       = $total       ?? 0;
+$unreadCount = $unreadCount ?? 0;
+$readCount   = $readCount   ?? 0;
+$todayCount  = $todayCount  ?? 0;
 
-// Status badge function
+// Small helper to render a status badge for contact messages
 $badge = function (?string $state): string {
     $state = strtolower((string)$state);
     $map = [
@@ -26,8 +27,8 @@ $badge = function (?string $state): string {
         'read'        => ['Read',         '#dcfce7', '#166534'], // Green
         'in_progress' => ['In Progress',  '#fef3c7', '#92400e'], // Orange
         'closed'      => ['Closed',       '#fee2e2', '#dc2626'], // Red
-        'new'         => ['Unread',       '#dbeafe', '#1d4ed8'], // Blue (for backward compatibility)
-        ''            => ['Unread',       '#dbeafe', '#1d4ed8'], // Default to Unread for empty status
+        'new'         => ['Unread',       '#dbeafe', '#1d4ed8'], // Back-compat alias
+        ''            => ['Unread',       '#dbeafe', '#1d4ed8'], // Default
     ];
     [$label, $bg, $fg] = $map[$state] ?? $map['unread'];
     return sprintf(
@@ -40,10 +41,10 @@ $badge = function (?string $state): string {
 ?>
 
 <div class="dash">
-
     <!-- Flash messages -->
     <div class="flash-wrap">
         <?= $this->Flash->render() ?>
+
         <?php if ($this->request->getQuery('export')): ?>
             <div class="alert alert-success">
                 <div class="alert__title">CSV is ready</div>
@@ -56,6 +57,7 @@ $badge = function (?string $state): string {
                     ) ?>
                 </div>
             </div>
+
             <script>
                 (function(){
                     var token = <?= json_encode((string)$this->request->getQuery('export')) ?>;
@@ -101,7 +103,6 @@ $badge = function (?string $state): string {
     </section>
 
     <section class="grid">
-
         <div class="card">
             <div class="card__head">
                 <h3 class="card__title">Latest 10</h3>
@@ -141,15 +142,15 @@ $badge = function (?string $state): string {
                                 <td class="muted">
                                     <?= $m->created ? $m->created->format('M j, Y · g:i A') : '' ?>
                                 </td>
-                                <td>
-                                    <?= $badge($m->status ?? '') ?>
-                                </td>
+                                <td><?= $badge($m->status ?? '') ?></td>
                                 <td class="actions">
-                                    <?= $this->Html->link('View',
+                                    <?= $this->Html->link(
+                                        'View',
                                         ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'view', $m->id],
                                         ['class'=>'btn tiny', 'title'=>'View message details']
                                     ) ?>
-                                    <?= $this->Html->link('Reply',
+                                    <?= $this->Html->link(
+                                        'Reply',
                                         ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'reply', $m->id],
                                         ['class'=>'btn tiny btn-primary', 'title'=>'Reply to message']
                                     ) ?>
@@ -193,14 +194,11 @@ $badge = function (?string $state): string {
                 <h3 class="card__title">Bulk tools</h3>
                 <ul class="tools">
                     <li>
-                    <li>
                         <?= $this->Html->link(
                             'Export CSV',
                             ['prefix'=>'Admin','controller'=>'ContactMessages','action'=>'export'],
                             ['class'=>'tool', 'target'=>'_blank', 'rel'=>'noopener']
                         ) ?>
-                    </li>
-
                     </li>
                     <li>
                         <?= $this->Form->postLink(
@@ -226,6 +224,7 @@ $badge = function (?string $state): string {
     .alert-success{border-color:#bbf7d0;background:#ecfdf5}
     .alert-error{border-color:#fecaca;background:#fef2f2}
     .alert-info{border-color:#bfdbfe;background:#eff6ff}
+
     .page.hc .alert{background:#0f172a;border-color:#334155;color:#e5e7eb;box-shadow:none}
     .page.hc .alert-success{background:#0f3a2a;border-color:#14532d}
     .page.hc .alert-error{background:#3b0f17;border-color:#7f1d1d}

@@ -3,7 +3,9 @@ declare(strict_types=1);
 
 namespace App\Controller\Admin;
 
+use App\Controller\Admin\AppController;
 use Cake\I18n\DateTime;
+use Cake\I18n\FrozenTime;
 
 /**
  * Admin Orders Controller
@@ -27,14 +29,32 @@ class OrdersController extends AppController
 
     /**
      * Index method - List all orders
+     * - Safe date parsing: only parse YYYY-MM-DD; ignore invalid strings.
      */
     public function index()
     {
-        $query         = trim((string)$this->request->getQuery('q'));
-        $status        = (string)$this->request->getQuery('status');          // may be 'completed' (derived)
-        $paymentStatus = (string)$this->request->getQuery('payment_status');
-        $from          = $this->request->getQuery('from');
-        $to            = $this->request->getQuery('to');
+        // Listing must be GET-only
+        $this->request->allowMethod(['get']);
+
+        $query         = trim((string)$this->request->getQuery('q', ''));
+        $status        = (string)$this->request->getQuery('status', '');          // may be 'completed' (derived)
+        $paymentStatus = (string)$this->request->getQuery('payment_status', '');
+
+        // Raw strings for the form; will be echoed back unchanged
+        $fromRaw       = trim((string)$this->request->getQuery('from', ''));
+        $toRaw         = trim((string)$this->request->getQuery('to', ''));
+
+        // Validate date inputs strictly as YYYY-MM-DD before parsing
+        $dateRe = '/^\d{4}-\d{2}-\d{2}$/';
+        $from = null;
+        $to   = null;
+
+        if ($fromRaw !== '' && preg_match($dateRe, $fromRaw)) {
+            $from = FrozenTime::createFromFormat('Y-m-d H:i:s', $fromRaw . ' 00:00:00', 'Australia/Melbourne');
+        }
+        if ($toRaw !== '' && preg_match($dateRe, $toRaw)) {
+            $to = FrozenTime::createFromFormat('Y-m-d H:i:s', $toRaw . ' 23:59:59', 'Australia/Melbourne');
+        }
 
         $table = $this->fetchTable('Orders');
 
@@ -48,7 +68,7 @@ class OrdersController extends AppController
                 'OR' => [
                     'Orders.email LIKE'     => '%' . $query . '%',
                     'Orders.full_name LIKE' => '%' . $query . '%',
-                    'Orders.id'             => is_numeric($query) ? (int)$query : 0,
+                    'Orders.id'             => is_numeric($query) ? (int)$query : null,
                 ]
             ]);
         }
@@ -67,12 +87,15 @@ class OrdersController extends AppController
             $ordersQuery->where(['Orders.payment_status' => $paymentStatus]);
         }
 
-        // Date range
-        if (!empty($from)) {
-            $ordersQuery->where(['Orders.created >=' => new DateTime($from . ' 00:00:00')]);
-        }
-        if (!empty($to)) {
-            $ordersQuery->where(['Orders.created <=' => new DateTime($to . ' 23:59:59')]);
+        // Safe date range (apply only when parsed successfully)
+        if ($from && $to) {
+            $ordersQuery->where(function ($exp) use ($from, $to) {
+                return $exp->between('Orders.created', $from, $to);
+            });
+        } elseif ($from) {
+            $ordersQuery->where(['Orders.created >=' => $from]);
+        } elseif ($to) {
+            $ordersQuery->where(['Orders.created <=' => $to]);
         }
 
         // Pagination (manual)
@@ -112,7 +135,10 @@ class OrdersController extends AppController
             'hasPrev'    => $page > 1,
         ];
 
-        $this->set(compact('orders', 'pagination', 'stats', 'query', 'status', 'paymentStatus', 'from', 'to'));
+        // Note: pass raw strings back to the view for form re-population
+        $this->set(compact(
+            'orders', 'pagination', 'stats', 'query', 'status', 'paymentStatus', 'fromRaw', 'toRaw'
+        ));
     }
 
     /**
@@ -322,7 +348,6 @@ class OrdersController extends AppController
         }
 
         // Top selling products: only lines from delivered+paid orders
-        // Order by total_revenue (qty * price) first, then by total_qty as tiebreaker
         $orderItems  = $this->fetchTable('OrderItems');
         $topProducts = $orderItems->find()
             ->contain(['Products'])
