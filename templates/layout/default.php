@@ -15,6 +15,7 @@
 
     <?= $this->Html->css('home') ?>
     <?= $this->Html->css('app') ?>
+    <?= $this->Html->css('overlay-guard') ?>
     <?= $this->fetch('css') ?>
     <script>window.CakeWebroot = <?= json_encode($this->Url->webroot) ?>;</script>
     <?= $this->fetch('script') ?>

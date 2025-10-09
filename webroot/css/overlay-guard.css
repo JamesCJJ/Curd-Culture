@@ -1,0 +1,23 @@
+.modal{ z-index: 3000 !important; position: fixed; }
+.modal-dialog{ z-index: 3001 !important; }
+.modal-backdrop{ z-index: 2990 !important; background: rgba(0,0,0,.45) !important; opacity:.45 !important; }
+
+#copilot, .copilot, .ai-live-popup, .copilot-mask,
+#immersive-translate-popup, .immersive-translate-browser-popup,
+.grammarly-desktop-integration, .grammarly-desktop-integration *,
+[data-ai-overlay] {
+    pointer-events: none !important;
+    z-index: 10 !important;
+}
+
+
+#copilot button, .copilot button, .copilot [role="button"],
+.grammarly-desktop-integration [role="button"]{
+    pointer-events: auto !important;
+}
+
+
+#content, .page{
+    filter:none !important;
+    -webkit-filter:none !important;
+}
