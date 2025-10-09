@@ -61,7 +61,7 @@ if ($identity && $role === 'customer') {
 <main id="content" class="page">
     <div class="container-fluid">
         <div class="row g-0">
-            <!-- Sidebar: 自适应内容宽度 -->
+
             <div class="col-auto dashboard-sidebar">
                 <div class="d-flex flex-column h-100">
                     <div class="p-3 border-bottom">
@@ -117,7 +117,7 @@ if ($identity && $role === 'customer') {
                 </div>
             </div>
 
-            <!-- Main content: 自动占据剩余空间 -->
+
             <div class="col">
                 <div class="dashboard-content">
                     <?= $this->Flash->render() ?>
@@ -129,31 +129,28 @@ if ($identity && $role === 'customer') {
 </main>
 
 <style>
-    /* default 部分 */
     #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
     .footer{text-align:center;color:#6b7280;padding:1.25rem 1rem}
 
-    /* ---- 自适应侧边栏 ----
-       col-auto 让列宽按内容自动；以下规则保证观感与安全范围 */
     .dashboard-sidebar{
         background:#f8f9fa;
         border-right:1px solid #dee2e6;
-        /* 内容决定宽度 + 安全护栏 */
-        flex:0 0 auto;            /* 不拉伸，不压缩，宽度由内容定 */
+
+        flex:0 0 auto;
         width:auto;
-        min-width: 220px;         /* 最小宽度 */
-        max-width: 360px;         /* 最大宽度，避免极长账号占太多 */
-        padding-right: 0;         /* g-0 已去掉列间距，这里避免视觉双边距 */
+        min-width: 220px;
+        max-width: 360px;
+        padding-right: 0;
     }
     .dashboard-sidebar .welcome{
-        white-space: nowrap;      /* 不换行，随内容横向扩展 */
+        white-space: nowrap;
         max-width: 100%;
     }
     .dashboard-sidebar .welcome-id{
         display:inline-block;
-        max-width: calc(100% - 60px); /* 预留“Welcome,”宽度 */
+        max-width: calc(100% - 60px);
         overflow: hidden;
-        text-overflow: ellipsis;  /* 超长时尾部省略号 */
+        text-overflow: ellipsis;
         vertical-align: bottom;
     }
 
@@ -181,7 +178,7 @@ if ($identity && $role === 'customer') {
     .page.hc .topbar .btn-primary{background:#60a5fa;color:#111}
 
     @media (max-width:680px){
-        .dashboard-sidebar{max-width: 85vw;} /* 小屏时放宽上限，但仍保留余量 */
+        .dashboard-sidebar{max-width: 85vw;}
     }
 </style>
 
