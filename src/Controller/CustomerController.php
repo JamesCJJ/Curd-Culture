@@ -20,6 +20,7 @@ class CustomerController extends AppController
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
         $this->loadComponent('Flash');
+
     }
 
     /**

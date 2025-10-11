@@ -180,21 +180,39 @@ class UsersController extends AppController
 
         if ($result && $result->isValid()) {
             $identity = $result->getData();
-            $redirect = $this->request->getQuery('redirect');
-            if (!empty($redirect)) {
+
+            $this->loadComponent('AppPrefs');
+
+
+            $this->response = $this->AppPrefs->clearPrefCookies($this->response);
+
+
+            $Users = $this->fetchTable('Users');
+            $user  = $Users->get((int)$identity->get('id'));
+            $this->response = $this->AppPrefs->withPrefCookies($this->response, $user);
+
+
+            $redirect = (string)$this->request->getQuery('redirect', '');
+            if ($redirect !== '') {
                 return $this->redirect($redirect);
             }
-            if (strtolower((string)($identity->role ?? '')) === 'admin') {
+
+            $role = strtolower((string)($identity->get('role') ?? ''));
+            if ($role === 'admin') {
                 return $this->redirect(['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index']);
             }
-
-            return $this->redirect(['controller' => 'Customer', 'action' => 'index']);
+            if ($role === 'customer') {
+                return $this->redirect(['controller' => 'Customer', 'action' => 'index']);
+            }
+            return $this->redirect(['controller' => 'Pages', 'action' => 'display', 'home']);
         }
 
         if ($this->request->is('post') && (!$result || !$result->isValid())) {
             $this->Flash->error('Invalid email or password, please try again.');
         }
     }
+
+
 
     public function register()
     {
@@ -232,8 +250,13 @@ class UsersController extends AppController
     public function logout()
     {
         $this->Authentication->logout();
-        $this->Flash->success('Signed out successfully.');
 
+        $this->loadComponent('AppPrefs');
+        // 立即下发“过期” Set-Cookie 响应头
+        $this->response = $this->AppPrefs->clearPrefCookies($this->response);
+
+        $this->Flash->success('Signed out.');
         return $this->redirect(['action' => 'login']);
     }
+
 }

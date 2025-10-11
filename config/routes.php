@@ -51,6 +51,11 @@ return static function (RouteBuilder $routes): void {
     $routes->connect('/dashboard/settings',     ['controller' => 'Customer', 'action' => 'settings']);
     $routes->connect('/dashboard/buy-again/:id',['controller' => 'Customer', 'action' => 'buyAgain'], ['pass' => ['id'], 'id' => '[0-9]+']);
 
+    $routes->connect('/prefs/update', [
+        'controller' => 'Preferences',
+        'action' => 'update'
+    ], ['_method' => 'POST']);
+
     // Address management routes.
     // IMPORTANT: delete/default are restricted to POST/DELETE to prevent CSRF via GET.
     $routes->connect('/dashboard/address/add',      ['controller' => 'Customer', 'action' => 'addAddress']);

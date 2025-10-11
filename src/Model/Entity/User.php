@@ -22,6 +22,12 @@ class User extends Entity
         'notify_push'  => true,
         'created'  => true,
         'modified' => true,
+        'pref_theme' => true,
+        'pref_contrast' => true,
+        'pref_font_scale' => true,
+        'pref_lang' => true,
+        'email_optin' => true,
+        'cookie_consent' => true,
     ];
 
 

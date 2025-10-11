@@ -27,7 +27,7 @@
     <script>
         (function () {
             try {
-                // Parse cookies into a map
+
                 const C = document.cookie.split(';').reduce((m, c) => {
                     const s = c.trim(); if (!s) return m;
                     const i = s.indexOf('=');
@@ -36,19 +36,19 @@
                     m[k] = v; return m;
                 }, {});
 
-                // 1) Font scale via <html> root size (affects rem)
-                const fs = parseFloat(C.pref_font_scale || '1.0');
-                if (!isNaN(fs) && fs !== 1.0) {
-                    document.documentElement.style.fontSize = (16 * fs) + 'px';
-                }
 
-                // 2) Contrast (we toggle .hc on the main region later too)
+                const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
+                const applyContentFontScale = (s) => {
+                    const sc = clamp(parseFloat(s || '1') || 1, 0.9, 1.25);
+                    document.querySelectorAll('.page, .dashboard-content, .admin-content')
+                        .forEach(el => el.style.fontSize = (16 * sc) + 'px');
+                };
+
                 const contrast = (C.pref_contrast || 'normal');
+                const theme    =  C.pref_theme || 'auto';
+                const fs       =  parseFloat(C.pref_font_scale || '1.0');
 
-                // 3) Theme
-                const theme = C.pref_theme || 'auto';
                 const applyTheme = (t) => {
-                    // Body classes might already be set by server; only toggle if missing
                     if (!document.body) return;
                     if (t === 'dark') {
                         document.body.classList.add('theme-dark');
@@ -57,24 +57,24 @@
                         document.body.classList.add('theme-light');
                         document.body.classList.remove('theme-dark');
                     } else {
-                        // Auto: follow OS (fallback if server didn't set)
                         const prefersDark = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
                         document.body.classList.toggle('theme-dark', !!prefersDark);
                         document.body.classList.toggle('theme-light', !prefersDark);
                     }
                 };
 
-                // Wait for body then apply theme + contrast class on page container
+
                 document.addEventListener('DOMContentLoaded', function(){
                     try {
                         applyTheme(theme);
+
                         const page = document.querySelector('.page') || document.body;
                         if (contrast === 'high') page.classList.add('hc');
+
+                        if (!isNaN(fs) && fs !== 1.0) applyContentFontScale(fs);
                     } catch (_) {}
                 });
-            } catch (_) {
-                // Swallow errors so the page never blanks due to a small script issue
-            }
+            } catch (_) {}
         })();
     </script>
 
@@ -84,7 +84,7 @@
 </head>
 <?php
 $cookies   = $this->getRequest()->getCookieParams();
-$theme     = $cookies['pref_theme'] ?? 'auto';
+$theme = $cookies['pref_theme'] ?? 'auto';
 $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-light' : '');
 
 $identity  = $this->getRequest()->getAttribute('identity');
@@ -591,15 +591,15 @@ if ($identity && $role === 'customer') {
         };
         const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
 
-        // 只对内容区缩放（不影响导航），不同页面容器都加上了这些类
+
         const contentEls = Array.from(document.querySelectorAll('.page, .dashboard-content, .admin-content'));
 
-        // 顶栏按钮
+
         const btnContrast = document.getElementById('contrast-toggle');
         const btnPlus     = document.getElementById('font-plus');
         const btnMinus    = document.getElementById('font-minus');
 
-        // Settings 页面控件（若存在则同步）
+
         const selContrast = document.querySelector('select[name="contrast"]');
         const rngFont     = document.querySelector('input[name="font_scale"]');
         const fontValLab  = document.getElementById('font-val');
@@ -610,17 +610,17 @@ if ($identity && $role === 'customer') {
             document.body.classList.toggle('hc', on);
             setCookie('pref_contrast', on ? 'high' : 'normal');
 
-            // 让 Settings 里的下拉框立即反映
+
             if (selContrast) selContrast.value = on ? 'high' : 'normal';
             if (btnContrast) btnContrast.setAttribute('aria-pressed', on ? 'true' : 'false');
         }
 
         function applyFontScale(scale){
             const s = clamp(parseFloat(scale || 1) || 1, 0.9, 1.25);
-            contentEls.forEach(el => el.style.fontSize = (16 * s) + 'px');  // 只改内容区
+            contentEls.forEach(el => el.style.fontSize = (16 * s) + 'px');
             setCookie('pref_font_scale', String(s));
 
-            // 让 Settings 的滑杆和数值标签即时反映
+
             if (rngFont) rngFont.value = s.toFixed(2);
             if (fontValLab) fontValLab.textContent = '(' + s.toFixed(2) + '×)';
         }
@@ -649,7 +649,6 @@ if ($identity && $role === 'customer') {
             });
         }
 
-        // -------- wire Settings controls (若当前页是 Settings) --------
         if (selContrast) selContrast.addEventListener('change', e => applyContrast(e.target.value));
         if (rngFont)     rngFont.addEventListener('input',  e => applyFontScale(e.target.value));
     })();
