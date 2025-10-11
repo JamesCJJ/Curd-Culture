@@ -34,10 +34,11 @@ $this->assign('title', 'Sign in');
             <div class="field-block">
                 <div class="auth-row">
                     <?= $this->Form->label('password', 'Password', ['class' => 'auth-label']) ?>
-                    <?= $this->Html->link('Forgot password?', '#', [
-                        'class' => 'auth-link-small',
-                        'data-no-transition' => true
-                    ]) ?>
+                    <?= $this->Html->link(
+                        'Forgot password?',
+                        ['controller' => 'Users', 'action' => 'forgotPassword'],
+                        ['class' => 'auth-link-small', 'data-no-transition' => true]
+                    ) ?>
                 </div>
                 <?= $this->Form->control('password', [
                     'label' => false,

@@ -3,8 +3,12 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
-use Cake\Core\Configure;           // ← read keys from app_local.php (Security.recaptcha)
+use Authentication\PasswordHasher\DefaultPasswordHasher;
+use Cake\Core\Configure;
 use Cake\Event\EventInterface;
+use Cake\I18n\FrozenTime;
+use Cake\Mailer\Mailer;
+use Throwable;
 
 class UsersController extends AppController
 {
@@ -17,77 +21,173 @@ class UsersController extends AppController
     public function beforeFilter(EventInterface $event): void
     {
         parent::beforeFilter($event);
-        // Allow unauthenticated access
-        $this->Authentication->addUnauthenticatedActions(['login', 'register']);
-    }
-
-    /**
-     * Verify Google reCAPTCHA v2 (checkbox) using the same approach as ContactMessagesController.
-     */
-    private function verifyRecaptcha(?string $token): bool
-    {
-        $secret = (string)(Configure::read('Security.recaptcha.secret_key') ?? '');
-        if ($secret === '' || empty($token)) {
-            return false;
-        }
-
-        $ch = curl_init('https://www.google.com/recaptcha/api/siteverify');
-        curl_setopt_array($ch, [
-            CURLOPT_POST           => true,
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_TIMEOUT        => 8,
-            CURLOPT_POSTFIELDS     => http_build_query([
-                'secret'   => $secret,
-                'response' => $token,
-                'remoteip' => $this->request->clientIp(),
-            ]),
+        $this->Authentication->addUnauthenticatedActions([
+            'login', 'register', 'forgotPassword', 'resetPassword',
         ]);
-        $raw = curl_exec($ch);
-        curl_close($ch);
+    }
 
-        if (!$raw) {
-            return false;
-        }
-        $json = json_decode($raw, true);
-        return !empty($json['success']);
+    /** Send the one-time code via email */
+    private function sendResetCodeEmail(object $user, string $code, int $ttlMinutes): void
+    {
+        $mailer = new Mailer('default');
+        $mailer
+            ->setTo($user->email)
+            ->setEmailFormat('both')
+            ->setSubject('Your password reset code')
+            ->viewBuilder()
+            ->setTemplate('password_reset')
+            ->setVars([
+                'user'       => $user,
+                'code'       => $code,
+                'ttlMinutes' => $ttlMinutes,
+                'appName'    => 'Curd & Culture',
+            ]);
+        $mailer->deliver();
+    }
+
+    /** Create & persist the reset code (hashed), expiry, attempts */
+    private function issueResetCode(object $user): void
+    {
+        $ttl    = (int)(Configure::read('PasswordReset.code_ttl_minutes') ?? 10);
+        $code   = (string)random_int(100000, 999999);
+        $hasher = new DefaultPasswordHasher();
+
+        $user->reset_code_hash = $hasher->hash($code);
+        $user->reset_expires   = FrozenTime::now()->addMinutes($ttl);
+        $user->reset_attempts  = 0;
+
+        $Users = $this->fetchTable('Users');
+        $Users->saveOrFail($user);
+
+        $this->sendResetCodeEmail($user, $code, $ttl);
     }
 
     /**
-     * GET/POST /users/login
+     * GET/POST /users/forgot-password
+     * Direct-render: after POST, immediately show reset form (no redirect).
      */
-    public function login()
+    public function forgotPassword()
     {
         $this->request->allowMethod(['get', 'post']);
 
-        // Pass site key to the view
-        $this->set('siteKey', (string)Configure::read('Security.recaptcha.site_key'));
-
-        // On POST, require captcha before Authentication
         if ($this->request->is('post')) {
-            $token = (string)($this->request->getData('g-recaptcha-response') ?? '');
-            if (!$this->verifyRecaptcha($token)) {
-                $this->Authentication->logout(); // make sure no identity sticks
-                $this->Flash->error('Captcha validation failed. Please check the box and try again.');
-                return $this->render('login');
-            }
-        }
+            $email = trim((string)$this->request->getData('email'));
 
+            $Users = $this->fetchTable('Users');
+            $user  = $Users->find()->where(['email' => $email])->first();
+
+            if ($user) {
+                try {
+                    $this->issueResetCode($user);
+                } catch (Throwable $e) {
+                    $this->log('Password reset issue for ' . $email . ': ' . $e->getMessage(), 'error');
+                }
+            }
+
+            $this->Flash->success('If the email exists, a verification code has been sent.');
+
+            // Show reset page right away
+            $this->set('email', $email);
+            $this->request = $this->request->withMethod('get')->withQueryParams(['email' => $email]);
+
+            return $this->render('reset_password');
+        }
+    }
+
+    /**
+     * GET/POST /users/reset-password
+     * Verify code and set the new password.
+     */
+    public function resetPassword()
+    {
+        $this->request->allowMethod(['get', 'post']);
+
+        $email = (string)($this->request->getQuery('email') ?? $this->request->getData('email') ?? '');
+        $this->set('email', $email);
+
+        if ($this->request->is('post')) {
+            $Users = $this->fetchTable('Users');
+            $user  = $Users->find()->where(['email' => $email])->first();
+
+            if (!$user) {
+                $this->Flash->error('Invalid code or code expired. Please request a new one.');
+
+                return $this->redirect(['action' => 'forgotPassword']);
+            }
+
+            // ---- SAFE expiry check (no gt()) ----
+            $now     = FrozenTime::now();
+            $expires = $user->reset_expires;
+            // Normalize to FrozenTime if needed
+            if ($expires !== null && !($expires instanceof FrozenTime)) {
+                $expires = new FrozenTime($expires);
+            }
+
+            $maxAttempts = (int)(Configure::read('PasswordReset.max_attempts') ?? 5);
+
+            if (
+                (int)$user->reset_attempts >= $maxAttempts ||
+                !$expires ||
+                $now->getTimestamp() > $expires->getTimestamp()   // ← compare timestamps
+            ) {
+                $this->Flash->error('Invalid code or code expired. Please request a new one.');
+
+                return $this->redirect(['action' => 'forgotPassword']);
+            }
+            // -------------------------------------
+
+            $code     = (string)($this->request->getData('code') ?? '');
+            $password = (string)($this->request->getData('password') ?? '');
+            $confirm  = (string)($this->request->getData('confirm_password') ?? '');
+
+            if ($password === '' || $password !== $confirm) {
+                $this->Flash->error('Passwords do not match.');
+
+                return;
+            }
+
+            $hasher  = new DefaultPasswordHasher();
+            $isValid = $user->reset_code_hash && $hasher->check($code, $user->reset_code_hash);
+
+            if (!$isValid) {
+                $user->reset_attempts = (int)$user->reset_attempts + 1;
+                $Users->save($user);
+                $this->Flash->error('Invalid code. Please try again.');
+
+                return;
+            }
+
+            // Update password & clear reset fields
+            $user->password        = $password;   // hashed by ORM
+            $user->reset_code_hash = null;
+            $user->reset_expires   = null;
+            $user->reset_attempts  = 0;
+
+            if ($Users->save($user)) {
+                $this->Flash->success('Your password has been reset. You can now sign in.');
+
+                return $this->redirect(['action' => 'login']);
+            }
+
+            $this->Flash->error('Failed to reset password. Please try again.');
+        }
+    }
+
+    public function login()
+    {
+        $this->request->allowMethod(['get', 'post']);
         $result = $this->Authentication->getResult();
 
         if ($result && $result->isValid()) {
-            $this->Authentication->setIdentity($result->getData());
-
-            $identity = $this->request->getAttribute('identity');
-            $role     = strtolower((string)($identity?->get('role') ?? $result->getData()?->get('role') ?? ''));
-
+            $identity = $result->getData();
             $redirect = $this->request->getQuery('redirect');
             if (!empty($redirect)) {
                 return $this->redirect($redirect);
             }
-
-            if ($role === 'admin') {
+            if (strtolower((string)($identity->role ?? '')) === 'admin') {
                 return $this->redirect(['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index']);
             }
+
             return $this->redirect(['controller' => 'Customer', 'action' => 'index']);
         }
 
@@ -96,9 +196,6 @@ class UsersController extends AppController
         }
     }
 
-    /**
-     * GET/POST /users/register
-     */
     public function register()
     {
         $this->request->allowMethod(['get', 'post']);
@@ -111,10 +208,10 @@ class UsersController extends AppController
             $data['status'] = $data['status'] ?? 'active';
 
             $user = $Users->patchEntity($user, $data);
-
             if ($Users->save($user)) {
                 $this->Authentication->setIdentity($user);
                 $this->Flash->success('Account created successfully. Welcome!');
+
                 return $this->redirect(['controller' => 'Customer', 'action' => 'index']);
             }
 
@@ -125,20 +222,10 @@ class UsersController extends AppController
                     $flat[] = sprintf('%s: %s', ucfirst($field), $msg);
                 }
             }
-            if ($flat) {
-                $this->Flash->error('Failed to create account: ' . implode(' | ', $flat));
-            } else {
-                $this->Flash->error('Failed to create account. Please check the form.');
-            }
+            $this->Flash->error($flat ? 'Failed to create account: ' . implode(' | ', $flat)
+                : 'Failed to create account. Please check the form.');
         }
 
-        $this->set(compact('user'));
-    }
-
-    public function dashboard()
-    {
-        $this->request->allowMethod(['get']);
-        $user = $this->request->getAttribute('identity');
         $this->set(compact('user'));
     }
 
@@ -146,6 +233,7 @@ class UsersController extends AppController
     {
         $this->Authentication->logout();
         $this->Flash->success('Signed out successfully.');
+
         return $this->redirect(['action' => 'login']);
     }
 }

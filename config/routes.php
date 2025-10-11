@@ -14,6 +14,8 @@ return static function (RouteBuilder $routes): void {
     // Auth shortcuts
     $routes->connect('/login',    ['controller' => 'Users', 'action' => 'login']);
     $routes->connect('/register', ['controller' => 'Users', 'action' => 'register']);
+    $routes->connect('/forgot-password', ['controller' => 'Users', 'action' => 'forgotPassword']);
+    $routes->connect('/reset-password',  ['controller' => 'Users', 'action' => 'resetPassword']);
     $routes->connect('/settings', ['controller' => 'Settings', 'action' => 'index']);
 
     // Products

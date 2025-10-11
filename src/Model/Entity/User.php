@@ -25,8 +25,12 @@ class User extends Entity
     ];
 
 
-    protected array $_hidden = ['password'];
-
+    protected array $_hidden = [
+        'password',
+        'reset_code_hash',
+        'reset_expires',
+        'reset_attempts',
+    ];
     /**
      * Hash password on assignment.
      * - null: keep as-is
