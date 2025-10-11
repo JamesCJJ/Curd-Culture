@@ -107,7 +107,6 @@ $this->assign('title', 'Profile');
                                             <li>
                                                 <?= $this->Form->postLink(
                                                     '<i class="bi bi-trash me-2"></i>Delete',
-                                                    // Use the named route defined in routes.php for stability
                                                     ['_name' => 'dashboard:address_delete', 'id' => (int)$address->id],
                                                     [
                                                         'class'   => 'dropdown-item text-danger',
@@ -187,9 +186,27 @@ $this->assign('title', 'Profile');
                 <h6 class="mb-0">Security</h6>
             </div>
             <div class="card-body">
-                <button type="button" class="btn btn-outline-secondary w-100 mb-2">
-                    <i class="bi bi-key me-2"></i>Change Password
+                <!-- 隐藏表单：提交到 /users/forgot-password 发送验证码 -->
+                <?= $this->Form->create(null, [
+                    'url' => ['prefix'=>false,'controller'=>'Users','action'=>'forgotPassword'],
+                    'id'  => 'custSendResetForm'
+                ]) ?>
+                <?= $this->Form->hidden('email', ['value' => (string)$user->email]) ?>
+                <?= $this->Form->end() ?>
+
+                <p class="text-muted small mb-3">
+                    We'll send a 6-digit code to <strong><?= h($user->email) ?></strong>. Use it to reset your password.
+                </p>
+
+                <button type="submit" class="btn btn-outline-secondary w-100 mb-2" form="custSendResetForm">
+                    <i class="bi bi-shield-lock me-2"></i>Send reset code
                 </button>
+
+                <?= $this->Html->link(
+                    '<i class="bi bi-key me-2"></i>Open reset page',
+                    ['prefix'=>false,'controller'=>'Users','action'=>'resetPassword','?' => ['email' => (string)$user->email]],
+                    ['class' => 'btn btn-dark w-100', 'escape' => false]
+                ) ?>
             </div>
         </div>
     </div>
