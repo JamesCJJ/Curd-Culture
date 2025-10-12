@@ -11,6 +11,9 @@ class PreferencesController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
+        $this->loadComponent('AppPrefs');
+
+        // Allow JSON + form POST
         $this->request->allowMethod(['post']);
         $this->viewBuilder()->setClassName('Json');
     }
@@ -23,46 +26,33 @@ class PreferencesController extends AppController
         }
 
         $data = (array)$this->request->getData();
-
-        $map = [
-            'theme'            => 'pref_theme',
-            'contrast'         => 'pref_contrast',
-            'font_scale'       => 'pref_font_scale',
-            'language'         => 'pref_lang',
-            'email_optin'      => 'email_optin',
-            'cookie_consent'   => 'cookie_consent',
-
-            'pref_theme'       => 'pref_theme',
-            'pref_contrast'    => 'pref_contrast',
-            'pref_font_scale'  => 'pref_font_scale',
-            'pref_lang'        => 'pref_lang',
-        ];
-
-        $payload = [];
-        foreach ($map as $in => $col) {
-            if (array_key_exists($in, $data)) {
-                $payload[$col] = $data[$in];
+        if ($this->request->is('json')) {
+            // If you send raw JSON fetch
+            $raw = (string)$this->request->getBody();
+            if ($raw) {
+                $json = json_decode($raw, true);
+                if (is_array($json)) $data = $json + $data;
             }
         }
-        if (isset($payload['pref_font_scale'])) {
-            $payload['pref_font_scale'] = max(0.9, min(1.25, (float)$payload['pref_font_scale']));
+
+        // Only accept known keys
+        $payload = [];
+        foreach (['theme','contrast','font_scale','language','email_optin','cookie_consent'] as $k) {
+            if (array_key_exists($k, $data)) $payload[$k] = $data[$k];
         }
         if (!$payload) {
-            $this->set(['ok' => false, 'updated' => []]);
-            $this->viewBuilder()->setOption('serialize', ['ok','updated']);
+            $this->set(['ok'=>false,'error'=>'Nothing to update']);
+            $this->viewBuilder()->setOption('serialize',['ok','error']);
             return;
         }
 
-        $Users = $this->fetchTable('Users');
-        /** @var \App\Model\Entity\User $user */
-        $user = $Users->get((int)$identity->get('id'));
-        $user = $Users->patchEntity($user, $payload, ['accessibleFields' => ['*' => true]]);
-        $Users->saveOrFail($user);
+        try {
+            $prefs = $this->AppPrefs->updateDbAndSession($payload);
+            $this->set(['ok'=>true, 'prefs'=>$prefs]);
+        } catch (\Throwable $e) {
+            $this->set(['ok'=>false,'error'=>$e->getMessage()]);
+        }
 
-        $this->loadComponent('AppPrefs');
-        $this->response = $this->AppPrefs->withPrefCookies($this->response, $user);
-
-        $this->set(['ok' => true, 'updated' => $payload]);
-        $this->viewBuilder()->setOption('serialize', ['ok','updated']);
+        $this->viewBuilder()->setOption('serialize',['ok','prefs','error']);
     }
 }

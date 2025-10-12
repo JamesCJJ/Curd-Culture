@@ -1,91 +1,22 @@
 <?php
 /**
  * App default layout (global, safer)
+ * Uses DB/Session-based preferences (no cookies).
  */
-?>
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <?= $this->Html->charset() ?>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title><?= h($this->fetch('title') ?: 'Curd & Culture') ?></title>
 
-    <?= $this->Html->meta('csrfToken', $this->getRequest()->getAttribute('csrfToken')) ?>
-    <?= $this->fetch('meta') ?>
+$session = $this->getRequest()->getSession();
+$prefs = $session->read('Prefs') ?: [
+    'theme'       => 'auto',   // auto|light|dark
+    'contrast'    => 'normal', // normal|high
+    'font_scale'  => 1.0,
+    'language'    => 'en',
+];
 
-    <?= $this->Html->css('home') ?>
-    <?= $this->Html->css('app') ?>
-    <?= $this->Html->css('overlay-guard') ?>
-
-    <!-- Failsafe: make content visible no matter what -->
-    <script>
-        // If your CSS used `html.is-ready .page{opacity:1}`, set it right away.
-        document.documentElement.classList.add('is-ready');
-    </script>
-
-    <!-- Apply user preferences from cookies (guarded) -->
-    <script>
-        (function () {
-            try {
-
-                const C = document.cookie.split(';').reduce((m, c) => {
-                    const s = c.trim(); if (!s) return m;
-                    const i = s.indexOf('=');
-                    const k = decodeURIComponent(i >= 0 ? s.slice(0, i) : s);
-                    const v = decodeURIComponent(i >= 0 ? s.slice(i + 1) : '');
-                    m[k] = v; return m;
-                }, {});
-
-
-                const clamp = (n, lo, hi) => Math.min(hi, Math.max(lo, n));
-                const applyContentFontScale = (s) => {
-                    const sc = clamp(parseFloat(s || '1') || 1, 0.9, 1.25);
-                    document.querySelectorAll('.page, .dashboard-content, .admin-content')
-                        .forEach(el => el.style.fontSize = (16 * sc) + 'px');
-                };
-
-                const contrast = (C.pref_contrast || 'normal');
-                const theme    =  C.pref_theme || 'auto';
-                const fs       =  parseFloat(C.pref_font_scale || '1.0');
-
-                const applyTheme = (t) => {
-                    if (!document.body) return;
-                    if (t === 'dark') {
-                        document.body.classList.add('theme-dark');
-                        document.body.classList.remove('theme-light');
-                    } else if (t === 'light') {
-                        document.body.classList.add('theme-light');
-                        document.body.classList.remove('theme-dark');
-                    } else {
-                        const prefersDark = (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches);
-                        document.body.classList.toggle('theme-dark', !!prefersDark);
-                        document.body.classList.toggle('theme-light', !prefersDark);
-                    }
-                };
-
-
-                document.addEventListener('DOMContentLoaded', function(){
-                    try {
-                        applyTheme(theme);
-
-                        const page = document.querySelector('.page') || document.body;
-                        if (contrast === 'high') page.classList.add('hc');
-
-                        if (!isNaN(fs) && fs !== 1.0) applyContentFontScale(fs);
-                    } catch (_) {}
-                });
-            } catch (_) {}
-        })();
-    </script>
-
-    <?= $this->fetch('css') ?>
-    <script>window.CakeWebroot = <?= json_encode($this->Url->webroot) ?>;</script>
-    <?= $this->fetch('script') ?>
-</head>
-<?php
-$cookies   = $this->getRequest()->getCookieParams();
-$theme = $cookies['pref_theme'] ?? 'auto';
-$bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-light' : '');
+$bodyThemeClass = ($prefs['theme'] === 'dark') ? 'theme-dark'
+    : (($prefs['theme'] === 'light') ? 'theme-light' : '');
+$pageContrastClass = ($prefs['contrast'] === 'high') ? 'hc' : '';
+$inlineFontSize = (float)($prefs['font_scale'] ?? 1.0);
+$inlineFontStyle = ($inlineFontSize != 1.0) ? 'font-size:' . (16 * $inlineFontSize) . 'px' : '';
 
 $identity  = $this->getRequest()->getAttribute('identity');
 $role      = $identity ? strtolower((string)$identity->get('role')) : '';
@@ -110,7 +41,29 @@ if ($identity && $role === 'customer') {
     }
 }
 ?>
-<body class="<?= h($bodyClass) ?>">
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <?= $this->Html->charset() ?>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title><?= h($this->fetch('title') ?: 'Curd & Culture') ?></title>
+
+    <?= $this->Html->meta('csrfToken', $this->getRequest()->getAttribute('csrfToken')) ?>
+    <?= $this->fetch('meta') ?>
+
+    <?= $this->Html->css('home') ?>
+    <?= $this->Html->css('app') ?>
+    <?= $this->Html->css('overlay-guard') ?>
+
+    <!-- Failsafe: always show content -->
+    <script>document.documentElement.classList.add('is-ready');</script>
+
+    <?= $this->fetch('css') ?>
+    <script>window.CakeWebroot = <?= json_encode($this->Url->webroot) ?>;</script>
+    <?= $this->fetch('script') ?>
+</head>
+
+<body class="<?= h($bodyThemeClass) ?>">
 
 <header class="topbar" role="navigation" aria-label="Global">
     <div class="topbar__inner">
@@ -155,6 +108,7 @@ if ($identity && $role === 'customer') {
             <?php endif; ?>
 
             <?php
+            $role = $identity ? strtolower((string)$identity->get('role')) : '';
             if ($isAdmin) {
                 echo $this->Html->link(
                     'Admin',
@@ -167,8 +121,6 @@ if ($identity && $role === 'customer') {
                     ['class' => 'btn', 'aria-label' => 'Admin logout']
                 );
             }
-
-            $role = $identity ? strtolower((string)$identity->get('role')) : '';
             if ($identity && $role === 'customer') {
                 echo $this->Html->link(
                     'My Account',
@@ -199,7 +151,7 @@ if ($identity && $role === 'customer') {
     </div>
 </header>
 
-<main id="content" class="page">
+<main id="content" class="page <?= h($pageContrastClass) ?>" style="<?= h($inlineFontStyle) ?>">
     <?= $this->Flash->render() ?>
     <?= $this->fetch('content') ?>
 </main>
@@ -221,7 +173,7 @@ if ($identity && $role === 'customer') {
                         <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0 3.675c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162z"/></svg>
                     </a>
                     <a href="#" class="social-link" aria-label="Twitter" title="Follow us on Twitter">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.951.555-2.005.959-3.127 1.184a4.92 4.92 0 00-8.384 4.482C7.69 8.095 4.067 6.13 1.64 3.162a4.822 4.822 0 00-.666 2.475c0 1.71.87 3.213 2.188 4.096a4.904 4.904 0 01-2.228-.616v.06a4.923 4.923 0 003.946 4.827 4.996 4.996 0 01-2.212.085 4.936 4.936 0 004.604 3.417 9.867 9.867 0 01-6.102 2.105c-.39 0-.779-.023-1.17-.067a13.995 13.995 0 007.557 2.209c9.053 0 13.998-7.496 13.998-13.985 0-.21 0-.42-.015-.63A9.935 9.935 0 0024 4.59z"/></svg>
                     </a>
                 </div>
             </div>
@@ -265,6 +217,7 @@ if ($identity && $role === 'customer') {
     </div>
 </footer>
 
+
 <style>
     :root{
         --nav-radius:12px;
@@ -274,28 +227,44 @@ if ($identity && $role === 'customer') {
         --z-modal-backdrop:1060;
         --z-header:1030;
         --z-floating:1020;
+
+        /* body text */
+        --text-body:#111827; --text-muted:#6b7280;
+
+        /* chrome (topbar/buttons) */
+        --chrome-bg:#ffffff; --chrome-fg:#0f172a; --chrome-border:#e5e7eb;
+        --chrome-btn-bg:#ffffff; --chrome-btn-fg:#111; --chrome-btn-border:#d1d5db;
+        --chrome-btn-primary-bg:#2563eb; --chrome-btn-primary-fg:#fff; --chrome-btn-primary-border:#2563eb;
+
+        --logo-bg:transparent; --logo-outline:transparent;
     }
+    .theme-dark{
+        --chrome-bg:#0f172a; --chrome-fg:#e5e7eb; --chrome-border:#334155;
+        --chrome-btn-bg:#1f2937; --chrome-btn-fg:#f9fafb; --chrome-btn-border:#475569;
+        --chrome-btn-primary-bg:#60a5fa; --chrome-btn-primary-fg:#111827; --chrome-btn-primary-border:#60a5fa;
+        --logo-bg:#ffffff; --logo-outline:rgba(255,255,255,.25);
+    }
+    body, .page{ color:var(--text-body); }
 
     #content{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
 
-    /* Topbar uses rem so root font-size scaling takes effect */
-    .topbar,.topbar *{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
-    .topbar{position:sticky;top:0;z-index:var(--z-header);background:#fff;border-bottom:1px solid #e5e7eb;font-size:.875rem;line-height:1}
+    /* Topbar */
+    .topbar{position:sticky;top:0;z-index:var(--z-header);background:var(--chrome-bg);border-bottom:1px solid var(--chrome-border);font-size:.875rem;line-height:1;color:var(--chrome-fg)}
     .topbar__inner{max-width:1100px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
-    .brand-link{display:flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap}
-    .brand-logo{height:28px;width:auto;border-radius:4px}
-    .brand-name{font-weight:800;color:#0f172a;font-size:.875rem}
+    .brand-link{display:flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap;color:inherit}
+    .brand-logo{height:28px;width:auto;border-radius:8px;background:var(--logo-bg);box-shadow:0 0 0 2px var(--logo-outline);padding:2px}
+    .brand-name{font-weight:800;color:currentColor;font-size:.875rem}
     .nav-actions{flex:1 1 auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0}
 
     .topbar .btn{
         display:inline-flex;align-items:center;justify-content:center;
         height:var(--nav-h);min-height:var(--nav-h);padding:0 14px;border-radius:var(--nav-radius);
-        border:1px solid #d1d5db;background:#fff;color:#111;font-size:.875rem;
+        border:1px solid var(--chrome-btn-border);background:var(--chrome-btn-bg);color:var(--chrome-btn-fg);font-size:.875rem;
         white-space:nowrap;flex:0 0 auto;line-height:1;text-decoration:none;box-shadow:none;transition:filter .15s
     }
     .topbar .btn:hover{filter:brightness(.98)}
     .topbar .btn-subtle{background:transparent}
-    .topbar .btn-primary{background:#2563eb;border-color:#2563eb;color:#fff}
+    .topbar .btn-primary{background:var(--chrome-btn-primary-bg);border-color:var(--chrome-btn-primary-border);color:var(--chrome-btn-primary-fg)}
     .topbar .btn.small,.a11y-tools .btn{height:var(--nav-h-sm);min-height:var(--nav-h-sm);padding:0 10px;font-size:.8125rem}
 
     @media (max-width:600px){
@@ -315,16 +284,7 @@ if ($identity && $role === 'customer') {
     .cart-icon::before{content:"";position:absolute;left:2px;top:-6px;width:12px;height:6px;border:1.5px solid currentColor;border-bottom:none;border-radius:3px 3px 0 0}
     .cart-badge{position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;line-height:18px;padding:0 6px;border-radius:9px;background:#ef4444;color:#fff;font-size:.75rem;font-weight:700;text-align:center}
 
-    /* Theme / high-contrast (existing) */
-    .theme-dark .topbar{background:#111827;border-color:#1f2937}
-    .theme-dark .topbar .btn{background:#374151;color:#f9fafb;border-color:#475569}
-    .theme-dark .topbar .btn-primary{background:#60a5fa;color:#111;border-color:#60a5fa}
-    .page.hc .topbar{background:#0f172a;border-color:#334155}
-    .page.hc .brand-name{color:#e5e7eb}
-    .page.hc .topbar .btn{background:#1f2937;color:#fff;border-color:#475569}
-    .page.hc .topbar .btn-primary{background:#60a5fa;color:#111}
-
-    /* Footer */
+    /* Footer (restored dark style) */
     .site-footer{background:#1f2937;color:#e5e7eb;margin-top:auto}
     .footer-content{max-width:1200px;margin:0 auto;padding:3rem 2rem 1.5rem}
     .footer-grid{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:3rem;margin-bottom:3rem}
@@ -362,178 +322,153 @@ if ($identity && $role === 'customer') {
         opacity: .45 !important;
     }
 
-    /* Safety: content must never be hidden by default */
+    /* Safety */
     .page { opacity: 1 !important; filter: none !important; -webkit-filter:none !important; }
-    /* ============================
-   High Contrast – global tokens
-   Scope: .hc on <body> or .page
-   ============================ */
+
+    /* ================= High Contrast ================= */
     .hc {
-        /* dark surfaces + bright text with AAA-ish contrast on common UIs */
-        --hc-bg:        #0b111b;    /* page background */
-        --hc-surface:   #0f172a;    /* cards / panels / inputs */
-        --hc-border:    #3b455a;    /* neutral borders */
-        --hc-text:      #f5f7fa;    /* body text */
-        --hc-muted:     #cdd6e1;    /* secondary text */
-        --hc-link:      #9dd1ff;    /* links (always underlined) */
-        --hc-primary:   #5fb0ff;    /* primary button/brand */
-        --hc-primary-t: #08101b;    /* primary text on button */
-        --hc-accent:    #ffd166;    /* focus ring/alerts accent */
-        --hc-danger:    #ff6b6b;
-        --hc-success:   #22d3a6;
+        --hc-bg:#0b111b; --hc-surface:#0f172a; --hc-border:#3b455a; --hc-text:#f5f7fa; --hc-muted:#cdd6e1;
+        --hc-link:#9dd1ff; --hc-primary:#5fb0ff; --hc-primary-t:#08101b; --hc-accent:#ffd166;
+        --hc-danger:#ff6b6b; --hc-success:#22d3a6;
         color-scheme: dark;
     }
+    .hc, .hc .page, .hc body { background:var(--hc-bg) !important; color:var(--hc-text) !important; -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+    .hc * { text-shadow:none !important; }
+    .hc h1, .hc h2, .hc h3, .hc .page-title { color:var(--hc-text); font-weight:750; }
+    .hc .text-muted, .hc .hint, .hc .form-text, .hc .small { color:var(--hc-muted) !important; }
+    .hc a { color:var(--hc-link) !important; text-decoration:underline; text-underline-offset:2px; }
+    .hc a:hover { filter:brightness(1.08); }
 
-    /* Base & typography */
-    .hc,
-    .hc .page,
-    .hc body {
-        background: var(--hc-bg) !important;
-        color: var(--hc-text) !important;
-        -webkit-font-smoothing: antialiased;
-        text-rendering: optimizeLegibility;
+    .hc .card, .hc .group, .hc .settings-card, .hc .auth-card, .hc .sec-box, .hc .admin-content .card, .hc .dashboard-content .card {
+        background:var(--hc-surface) !important; border:1px solid var(--hc-border) !important; color:var(--hc-text) !important;
     }
-    .hc * { text-shadow: none !important; }
+    .hc .card-header, .hc .group__title { background:transparent; color:var(--hc-text); border-bottom:1px solid var(--hc-border); }
 
-    /* Headings slightly heavier for legibility */
-    .hc h1, .hc h2, .hc h3, .hc .page-title { color: var(--hc-text); font-weight: 750; }
-    .hc .text-muted, .hc .hint, .hc .form-text, .hc .small { color: var(--hc-muted) !important; }
-
-    /* Links: brighter + underline with offset for clarity */
-    .hc a { color: var(--hc-link) !important; text-decoration: underline; text-underline-offset: 2px; }
-    .hc a:hover { filter: brightness(1.08); }
-
-    /* Cards / panels (Customer/Admin/Settings/Auth shared) */
-    .hc .card,
-    .hc .group,
-    .hc .settings-card,
-    .hc .auth-card,
-    .hc .sec-box,
-    .hc .admin-content .card,
-    .hc .dashboard-content .card {
-        background: var(--hc-surface) !important;
-        border: 1px solid var(--hc-border) !important;
-        color: var(--hc-text) !important;
+    .hc .form-control, .hc .form-select, .hc select.input, .hc .auth-input,
+    .hc input[type="text"], .hc input[type="email"], .hc input[type="password"], .hc input[type="tel"], .hc textarea {
+        background:var(--hc-surface) !important; color:var(--hc-text) !important; border:1px solid var(--hc-border) !important;
     }
-    .hc .card-header,
-    .hc .group__title { background: transparent; color: var(--hc-text); border-bottom: 1px solid var(--hc-border); }
+    .hc .form-control::placeholder, .hc .auth-input::placeholder { color:#a7b1c0 !important; }
 
-    /* Inputs / selects / textareas (Bootstrap + custom) */
-    .hc .form-control,
-    .hc .form-select,
-    .hc select.input,
-    .hc .auth-input,
-    .hc input[type="text"],
-    .hc input[type="email"],
-    .hc input[type="password"],
-    .hc input[type="tel"],
-    .hc textarea {
-        background: var(--hc-surface) !important;
-        color: var(--hc-text) !important;
-        border: 1px solid var(--hc-border) !important;
-    }
-    .hc .form-control::placeholder,
-    .hc .auth-input::placeholder { color: #a7b1c0 !important; }
+    .hc .form-check-input { background-color:#0b1220; border-color:var(--hc-border); }
+    .hc .form-check-input:checked { background-color:var(--hc-primary); border-color:var(--hc-primary); }
 
-    /* Toggles / switches (Bootstrap & custom) */
-    .hc .form-check-input { background-color: #0b1220; border-color: var(--hc-border); }
-    .hc .form-check-input:checked { background-color: var(--hc-primary); border-color: var(--hc-primary); }
+    .hc .btn { background:#141c2b; color:var(--hc-text); border:1px solid var(--hc-border); }
+    .hc .btn:hover { filter:brightness(1.08); }
+    .hc .btn.btn-primary, .hc .btn-primary { background:var(--hc-primary) !important; border-color:var(--hc-primary) !important; color:var(--hc-primary-t) !important; font-weight:700; }
+    .hc .btn.btn-outline, .hc .btn-outline-secondary, .hc .btn-ghost { background:transparent !important; color:var(--hc-text) !important; border-color:var(--hc-border) !important; }
 
-    /* Buttons */
-    .hc .btn {
-        background: #141c2b;
-        color: var(--hc-text);
-        border: 1px solid var(--hc-border);
-    }
-    .hc .btn:hover { filter: brightness(1.08); }
-    .hc .btn.btn-primary,
-    .hc .btn-primary {
-        background: var(--hc-primary) !important;
-        border-color: var(--hc-primary) !important;
-        color: var(--hc-primary-t) !important;
-        font-weight: 700;
-    }
-    .hc .btn.btn-outline,
-    .hc .btn-outline-secondary,
-    .hc .btn-ghost {
-        background: transparent !important;
-        color: var(--hc-text) !important;
-        border-color: var(--hc-border) !important;
+    .hc a:focus-visible, .hc button:focus-visible, .hc .btn:focus-visible,
+    .hc .form-control:focus, .hc .form-select:focus, .hc select.input:focus, .hc .auth-input:focus {
+        outline:3px solid var(--hc-accent) !important; outline-offset:2px !important; box-shadow:none !important;
     }
 
-    /* Focus visibility – keyboard friendly, thick & offset ring */
-    .hc a:focus-visible,
-    .hc button:focus-visible,
-    .hc .btn:focus-visible,
-    .hc .form-control:focus,
-    .hc .form-select:focus,
-    .hc select.input:focus,
-    .hc .auth-input:focus {
-        outline: 3px solid var(--hc-accent) !important;
-        outline-offset: 2px !important;
-        box-shadow: none !important;
-    }
+    .hc .dashboard-sidebar, .hc .admin-sidebar { background:#060a12 !important; border-right:1px solid var(--hc-border); }
+    .hc .dashboard-nav .nav-link, .hc .admin-sidebar .nav-link { color:var(--hc-muted) !important; border-left:3px solid transparent; }
+    .hc .dashboard-nav .nav-link:hover, .hc .admin-sidebar .nav-link:hover { background:#0f172a !important; color:var(--hc-text) !important; border-left-color:var(--hc-border); }
+    .hc .dashboard-nav .nav-link.active, .hc .admin-sidebar .nav-link.active { background:#132033 !important; color:var(--hc-text) !important; border-left-color:var(--hc-primary); font-weight:700; }
 
-    /* Sidebar (Customer/Admin) */
-    .hc .dashboard-sidebar,
-    .hc .admin-sidebar {
-        background: #060a12 !important;
-        border-right: 1px solid var(--hc-border);
-    }
-    .hc .dashboard-nav .nav-link,
-    .hc .admin-sidebar .nav-link {
-        color: var(--hc-muted) !important;
-        border-left: 3px solid transparent;
-    }
-    .hc .dashboard-nav .nav-link:hover,
-    .hc .admin-sidebar .nav-link:hover {
-        background: #0f172a !important;
-        color: var(--hc-text) !important;
-        border-left-color: var(--hc-border);
-    }
-    .hc .dashboard-nav .nav-link.active,
-    .hc .admin-sidebar .nav-link.active {
-        background: #132033 !important;
-        color: var(--hc-text) !important;
-        border-left-color: var(--hc-primary);
-        font-weight: 700;
-    }
+    .hc .topbar { background:var(--hc-surface) !important; border-color:var(--hc-border) !important; color:var(--hc-text) !important; }
+    .hc .topbar .btn { background:#131c2c; color:var(--hc-text); border-color:var(--hc-border); }
+    .hc .topbar .btn.btn-primary { background:var(--hc-primary); color:var(--hc-primary-t); border-color:var(--hc-primary); }
 
-    /* Top bar buttons in default layout */
-    .hc .topbar { background: #0f172a !important; border-color: var(--hc-border) !important; }
-    .hc .topbar .btn { background: #131c2c; color: var(--hc-text); border-color: var(--hc-border); }
-    .hc .topbar .btn.btn-primary { background: var(--hc-primary); color: var(--hc-primary-t); border-color: var(--hc-primary); }
+    .hc .site-footer { background:var(--hc-surface) !important; color:var(--hc-text) !important; border-top:1px solid var(--hc-border) !important; }
+    .hc .footer-links a { color:var(--hc-link) !important; }
 
-    /* Range slider knob is clearly visible */
-    .hc input[type="range"]::-webkit-slider-thumb { background: var(--hc-primary); }
-    .hc input[type="range"]::-moz-range-thumb { background: var(--hc-primary); }
-    .hc input[type="range"]::-webkit-slider-runnable-track,
-    .hc input[type="range"]::-moz-range-track { background: #22304a; }
+    .hc input[type="range"]::-webkit-slider-thumb { background:var(--hc-primary); }
+    .hc input[type="range"]::-moz-range-thumb { background:var(--hc-primary); }
+    .hc input[type="range"]::-webkit-slider-runnable-track, .hc input[type="range"]::-moz-range-track { background:#22304a; }
 
-    /* Alerts/badges */
     .hc .alert-info    { background:#0f2236; border-color:#284b72; color:#cfe8ff; }
     .hc .alert-success { background:#072b27; border-color:#116f62; color:#bef5ea; }
     .hc .alert-danger  { background:#3a0b13; border-color:#7a1b2b; color:#ffdfe3; }
-    .hc .badge.bg-primary { background: var(--hc-primary) !important; color: var(--hc-primary-t) !important; }
 
-    /* Tables (if any) */
-    .hc .table { color: var(--hc-text); }
-    .hc .table thead { color: var(--hc-text); border-bottom: 1px solid var(--hc-border); }
-    .hc .table tbody tr { border-color: var(--hc-border); }
-    .hc .table tbody tr:hover { background: #132033; }
+    .hc .table { color:var(--hc-text); }
+    .hc .table thead { color:var(--hc-text); border-bottom:1px solid var(--hc-border); }
+    .hc .table tbody tr { border-color:var(--hc-border); }
+    .hc .table tbody tr:hover { background:#132033; }
 
-    /* Small separators/HR */
-    .hc hr { border-color: var(--hc-border); }
+    .hc hr { border-color:var(--hc-border); }
+    .hc .brand-logo{ --logo-bg:#ffffff; --logo-outline: var(--hc-border); }
 
-    /* Make tiny helper text a hair larger for legibility */
-    @media (min-width: 0) {
-        .hc .form-text, .hc .hint, .hc .small { font-size: 0.95em; }
+    /* ===== Homepage visibility & contrast (dark/hc + light) ===== */
+    .home .hero,
+    .theme-dark .home .hero { position: relative; }
+    .home .hero h1, .home .hero .title { color:#0f172a; text-shadow:none; opacity:1 !important; }
+    .theme-dark .home .hero h1, .theme-dark .home .hero .title,
+    .hc .home .hero h1,        .hc .home .hero .title,
+    .home.hc .hero h1,         .home.hc .hero .title { color:#f7fafc !important; text-shadow:0 1px 0 rgba(0,0,0,.35); }
+    .home .hero .lead { color:#334155; }
+    .theme-dark .home .hero .lead, .hc .home .hero .lead, .home.hc .hero .lead { color:#e6edf5 !important; }
+    .home .hero .badge, .home .hero .stat-card {
+        background:rgba(255,255,255,.9); border:1px solid rgba(15,23,42,.08); box-shadow:0 6px 24px rgba(2,6,23,.08); color:#0f172a;
+    }
+    .theme-dark .home .hero .badge, .theme-dark .home .hero .stat-card,
+    .hc .home .hero .badge,        .hc .home .hero .stat-card,
+    .home.hc .hero .badge,         .home.hc .hero .stat-card {
+        background:#131c2c !important; border:1px solid #243047 !important; color:#f5f7fa !important; box-shadow:0 10px 40px rgba(8,15,27,.35);
     }
 
+    .home .section--value, .home .benefits, .home .features-band{
+        background:#f8fbff; border:1px solid #e6eef6; border-radius:18px; box-shadow:0 20px 60px rgba(2,6,23,.06);
+        padding:clamp(16px, 3vw, 28px);
+    }
+    .theme-dark .home .section--value, .hc .home .section--value, .home.hc .section--value{
+        background:#0f172a !important; border:1px solid #243047 !important; box-shadow:0 18px 60px rgba(8,15,27,.35);
+    }
+    .home .section--value .card, .home .benefits .card, .home .features-band .card{
+        background:#ffffff; border:1px solid #e6eef6; border-radius:16px; box-shadow:0 10px 30px rgba(2,6,23,.06);
+    }
+    .theme-dark .home .section--value .card, .hc .home .section--value .card, .home.hc .section--value .card,
+    .theme-dark .home .benefits .card,     .hc .home .benefits .card,
+    .theme-dark .home .features-band .card,.hc .home .features-band .card{
+        background:#0b1220 !important; border:1px solid #243047 !important;
+    }
+    .home .section--value .card h4, .home .benefits .card h4 { color:#0f172a; font-weight:700; }
+    .theme-dark .home .section--value .card h4, .hc .home .section--value .card h4, .home.hc .section--value .card h4,
+    .theme-dark .home .benefits .card h4,     .hc .home .benefits .card h4 { color:#eef3fb !important; }
+    .home .section--value .card p, .home .benefits .card p { color:#334155; }
+    .theme-dark .home .section--value .card p, .hc .home .section--value .card p,
+    .theme-dark .home .benefits .card p,     .hc .home .benefits .card p { color:#cdd6e1 !important; }
+
+    .home .section--process{
+        background:#f8fbff; border:1px solid #e6eef6; border-radius:18px; padding:clamp(16px, 3vw, 28px); box-shadow:0 20px 60px rgba(2,6,23,.06);
+    }
+    .theme-dark .home .section--process, .hc .home .section--process, .home.hc .section--process{
+        background:#0f172a !important; border:1px solid #243047 !important; box-shadow:0 18px 60px rgba(8,15,27,.35);
+    }
+    .home .section--process h3{ color:#0b1220; font-weight:800; }
+    .theme-dark .home .section--process h3, .hc .home .section--process h3, .home.hc .section--process h3{ color:#f5f7fa !important; }
+    .home .section--process .card{ background:#ffffff; border:1px solid #e6eef6; border-radius:16px; box-shadow:0 10px 30px rgba(2,6,23,.06); }
+    .theme-dark .home .section--process .card, .hc .home .section--process .card, .home.hc .section--process .card{
+        background:#0b1220 !important; border:1px solid #243047 !important;
+    }
+    .home .section--process .step-chip{
+        background:#ffd166; color:#0b1220; border-radius:999px; font-weight:800; box-shadow:0 4px 16px rgba(255,209,102,.35);
+    }
+
+    .home .section--testimonials h2{ color:#0b1220; font-weight:800; }
+    .theme-dark .home .section--testimonials h2, .hc .home .section--testimonials h2, .home.hc .section--testimonials h2{ color:#eef3fb !important; }
+    .home .section--testimonials .card{ background:#ffffff; border:1px solid #e6eef6; border-radius:16px; box-shadow:0 10px 30px rgba(2,6,23,.06); }
+    .theme-dark .home .section--testimonials .card, .hc .home .section--testimonials .card, .home.hc .section--testimonials .card{
+        background:#0b1220 !important; border:1px solid #243047 !important;
+    }
+    .home .section--testimonials .quote{ color:#334155; }
+    .theme-dark .home .section--testimonials .quote, .hc .home .section--testimonials .quote, .home.hc .section--testimonials .quote{ color:#cdd6e1 !important; }
+
+    .theme-dark .home .btn.btn-primary, .hc .home .btn.btn-primary, .home.hc .btn.btn-primary{
+        background:#5fb0ff !important; border-color:#5fb0ff !important; color:#08101b !important; font-weight:700;
+    }
+
+    .home h1, .home h2, .home h3, .home h4 { opacity:1 !important; }
+
+    /* keep nav size stable when A+/A- scales content */
+    .topbar, .brand-name, .topbar .btn { font-size:14px !important; }
+    .topbar .btn.small { font-size:13px !important; }
 </style>
 
 <script>
-    /* Read-aloud button */
+    /* Read-aloud */
     (function(){
         const btn = document.getElementById('btn-read');
         if (!btn) return;
@@ -543,8 +478,8 @@ if ($identity && $role === 'customer') {
 
         function updateUI(){
             btn.setAttribute('aria-pressed', speaking ? 'true' : 'false');
-            playIcon.style.display  = speaking ? 'none'  : 'inline-block';
-            pauseIcon.style.display = speaking ? 'inline-block' : 'none';
+            if (playIcon)  playIcon.style.display  = speaking ? 'none'  : 'inline-block';
+            if (pauseIcon) pauseIcon.style.display = speaking ? 'inline-block' : 'none';
         }
         updateUI();
 
@@ -574,86 +509,49 @@ if ($identity && $role === 'customer') {
     })();
 </script>
 
-<!-- Accessibility tools write cookies → global effect -->
 <script>
+    /* Live apply + persist to DB (A+/A-/High Contrast buttons) */
     (function(){
-        // -------- helpers: cookie --------
-        const setCookie = (k, v) => {
-            document.cookie = `${k}=${encodeURIComponent(v)}; Max-Age=${180*24*60*60}; Path=/`;
-        };
-        const getCookie = (k) => {
-            const map = document.cookie.split(';').reduce((a, c) => {
-                const [K,V] = c.trim().split('=');
-                a[K] = decodeURIComponent(V || '');
-                return a;
-            }, {});
-            return map[k];
-        };
-        const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
-
-
+        const PREFS = JSON.parse(document.getElementById('PREFS_BOOTSTRAP')?.textContent || '{}');
+        const csrf = document.querySelector('meta[name="csrfToken"]')?.getAttribute('content') || '';
         const contentEls = Array.from(document.querySelectorAll('.page, .dashboard-content, .admin-content'));
 
-
-        const btnContrast = document.getElementById('contrast-toggle');
-        const btnPlus     = document.getElementById('font-plus');
-        const btnMinus    = document.getElementById('font-minus');
-
-
-        const selContrast = document.querySelector('select[name="contrast"]');
-        const rngFont     = document.querySelector('input[name="font_scale"]');
-        const fontValLab  = document.getElementById('font-val');
-
-        // -------- apply functions --------
-        function applyContrast(mode){
-            const on = (mode === 'high');
-            document.body.classList.toggle('hc', on);
-            setCookie('pref_contrast', on ? 'high' : 'normal');
-
-
-            if (selContrast) selContrast.value = on ? 'high' : 'normal';
-            if (btnContrast) btnContrast.setAttribute('aria-pressed', on ? 'true' : 'false');
-        }
-
-        function applyFontScale(scale){
-            const s = clamp(parseFloat(scale || 1) || 1, 0.9, 1.25);
+        function apply(p){
+            const page = document.querySelector('.page') || document.body;
+            page.classList.toggle('hc', p.contrast === 'high');
+            const s = Math.min(1.25, Math.max(0.9, parseFloat(p.font_scale || 1) || 1));
             contentEls.forEach(el => el.style.fontSize = (16 * s) + 'px');
-            setCookie('pref_font_scale', String(s));
-
-
-            if (rngFont) rngFont.value = s.toFixed(2);
-            if (fontValLab) fontValLab.textContent = '(' + s.toFixed(2) + '×)';
         }
+        apply(PREFS);
 
-        // -------- init from cookies --------
-        applyContrast(getCookie('pref_contrast') === 'high' ? 'high' : 'normal');
-        applyFontScale(parseFloat(getCookie('pref_font_scale') || '1') || 1);
-
-        // -------- wire topbar buttons --------
-        if (btnContrast) {
-            btnContrast.addEventListener('click', () => {
-                const turnOn = !document.body.classList.contains('hc');
-                applyContrast(turnOn ? 'high' : 'normal');
+        async function savePrefs(patch){
+            const res = await fetch('<?= $this->Url->build(['controller'=>'Preferences','action'=>'update']) ?>', {
+                method:'POST',
+                headers:{'Content-Type':'application/json','X-CSRF-Token': csrf},
+                body: JSON.stringify(patch)
             });
-        }
-        if (btnPlus) {
-            btnPlus.addEventListener('click', () => {
-                const curr = parseFloat(getCookie('pref_font_scale') || '1') || 1;
-                applyFontScale(curr + 0.05);
-            });
-        }
-        if (btnMinus) {
-            btnMinus.addEventListener('click', () => {
-                const curr = parseFloat(getCookie('pref_font_scale') || '1') || 1;
-                applyFontScale(curr - 0.05);
-            });
+            const data = await res.json().catch(()=>({ok:false}));
+            if (data && data.ok && data.prefs) { Object.assign(PREFS, data.prefs); apply(PREFS); }
         }
 
-        if (selContrast) selContrast.addEventListener('change', e => applyContrast(e.target.value));
-        if (rngFont)     rngFont.addEventListener('input',  e => applyFontScale(e.target.value));
+        document.getElementById('contrast-toggle')?.addEventListener('click', ()=>{
+            const next = (PREFS.contrast === 'high') ? 'normal' : 'high';
+            savePrefs({contrast: next});
+        });
+        document.getElementById('font-plus')?.addEventListener('click', ()=>{
+            const s = Math.min(1.25, (parseFloat(PREFS.font_scale||1) || 1) + 0.05);
+            savePrefs({font_scale: s});
+        });
+        document.getElementById('font-minus')?.addEventListener('click', ()=>{
+            const s = Math.max(0.9, (parseFloat(PREFS.font_scale||1) || 1) - 0.05);
+            savePrefs({font_scale: s});
+        });
+
+        // If Settings form exists:
+        document.querySelector('select[name="contrast"]')?.addEventListener('change', e=> savePrefs({contrast: e.target.value}));
+        document.querySelector('input[name="font_scale"]')?.addEventListener('input',  e=> savePrefs({font_scale: e.target.value}));
     })();
 </script>
-
 
 <?= $this->Html->script('accessibility.js') ?>
 <?= $this->Html->script('copilot.js') ?>

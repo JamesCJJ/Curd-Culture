@@ -4,77 +4,150 @@ declare(strict_types=1);
 namespace App\Controller\Component;
 
 use Cake\Controller\Component;
-use Cake\Core\Configure;
-use Cake\Http\Cookie\Cookie;
-use Cake\Http\Response;
-use DateTimeImmutable;
+use Cake\Controller\Controller;
+use Cake\Datasource\FactoryLocator;
+use Cake\ORM\Locator\LocatorInterface;
 
 class AppPrefsComponent extends Component
 {
+    /** @var Controller */
+    protected $controller;
 
-    private function cookiePath(): string
+    /** @var LocatorInterface */
+    protected $locator;
+
+    public function initialize(array $config): void
     {
-        $base = (string)(Configure::read('App.base') ?? '/');
-        return $base === '' ? '/' : $base;
+        parent::initialize($config);
+        $this->controller = $this->getController();
+        $this->locator    = FactoryLocator::get('Table');
     }
 
-
-    public function withPrefCookies(Response $response, $user): Response
+    public function defaults(): array
     {
-        $exp  = new DateTimeImmutable('+180 days');
-        $path = $this->cookiePath();
-
-
-        $prefTheme = (string)(
-            $user->pref_theme
-            ?? $user->theme
-            ?? 'auto'
-        );
-        $prefLang = (string)(
-            $user->pref_lang
-            ?? $user->language
-            ?? 'en'
-        );
-        $prefContrast  = (string)($user->pref_contrast   ?? 'normal');
-        $prefFontScale = (string)((float)($user->pref_font_scale ?? 1.0));
-        $emailOptin    = (string)((int)($user->email_optin      ?? 1));
-        $cookieConsent = (string)((int)($user->cookie_consent   ?? 0));
-
-        $pairs = [
-            'pref_theme'          => $prefTheme,
-            'pref_contrast'       => $prefContrast,
-            'pref_font_scale'     => $prefFontScale,
-            'pref_lang'           => $prefLang,
-            'pref_email_optin'    => $emailOptin,
-            'pref_cookie_consent' => $cookieConsent,
+        return [
+            'theme'       => 'auto',      // auto|light|dark
+            'contrast'    => 'normal',    // normal|high
+            'font_scale'  => 1.00,        // 0.9 ~ 1.25
+            'language'    => 'en',
+            'email_optin' => 1,
+            'cookie_consent' => 0,
         ];
-
-        foreach ($pairs as $k => $v) {
-            $cookie   = new Cookie($k, $v, $exp, $path, null, false, false, 'Lax');
-            $response = $response->withCookie($cookie);
-        }
-
-        return $response;
     }
 
-
-    public function clearPrefCookies(Response $response): Response
+    /** Normalize and extract prefs from a User entity/array/identity */
+    public function fromUser($user): array
     {
-        $names = [
-            'pref_theme','pref_contrast','pref_font_scale','pref_lang',
-            'pref_email_optin','pref_cookie_consent'
-        ];
+        $get = static function($k) use ($user) {
+            if (is_array($user))   return $user[$k] ?? null;
+            if (is_object($user))  return $user->{$k} ?? (method_exists($user, 'get') ? $user->get($k) : null);
+            return null;
+        };
 
-        $paths = array_unique(['/', $this->cookiePath()]);
-        foreach ($names as $k) {
-            foreach ($paths as $p) {
-                $cookie   = new Cookie($k, '', null, $p, null, false, false, 'Lax');
-                $response = $response->withExpiredCookie($cookie);
-            }
+        $theme   = (string)($get('pref_theme') ?? 'auto');
+        $contrast= (string)($get('pref_contrast') ?? 'normal');
+        $fs      = (float) ($get('pref_font_scale') ?? 1.0);
+        $lang    = (string)($get('pref_lang') ?? 'en');
+
+        // Clamp/whitelist
+        if (!in_array($theme, ['auto','light','dark'], true))   $theme='auto';
+        if (!in_array($contrast, ['normal','high'], true))      $contrast='normal';
+        $fs = max(0.9, min(1.25, round($fs, 2)));
+
+        return [
+            'theme'       => $theme,
+            'contrast'    => $contrast,
+            'font_scale'  => $fs,
+            'language'    => $lang,
+            'email_optin' => (int)($get('email_optin') ?? 1),
+            'cookie_consent' => (int)($get('cookie_consent') ?? 0),
+        ];
+    }
+
+    /** Read prefs from session or build from identity/defaults */
+    public function read(): array
+    {
+        $s = $this->controller->getRequest()->getSession();
+        $prefs = $s->read('Prefs');
+        if ($prefs) return $prefs;
+
+        $identity = $this->controller->getRequest()->getAttribute('identity');
+        if ($identity) {
+            $prefs = $this->fromUser($identity);
+        } else {
+            $prefs = $this->defaults();
+        }
+        $s->write('Prefs', $prefs);
+        return $prefs;
+    }
+
+    /** Write prefs to session */
+    public function write(array $prefs): void
+    {
+        $this->controller->getRequest()->getSession()->write('Prefs', $prefs);
+    }
+
+    /** Update DB with $payload (already validated), refresh identity + session */
+    public function updateDbAndSession(array $payload): array
+    {
+        $identity = $this->controller->getRequest()->getAttribute('identity');
+        if (!$identity) {
+            throw new \RuntimeException('Auth required');
+        }
+        $Users = $this->locator->get('Users');
+        $user  = $Users->get((int)$identity->get('id'));
+
+        // Map fields
+        $map = [
+            'theme'       => 'pref_theme',
+            'contrast'    => 'pref_contrast',
+            'font_scale'  => 'pref_font_scale',
+            'language'    => 'pref_lang',
+            'email_optin' => 'email_optin',
+            'cookie_consent' => 'cookie_consent',
+        ];
+        $patch = [];
+        foreach ($map as $in => $col) {
+            if (array_key_exists($in, $payload)) $patch[$col] = $payload[$in];
         }
 
+        // Clamp
+        if (isset($patch['pref_font_scale'])) {
+            $patch['pref_font_scale'] = max(0.9, min(1.25, (float)$patch['pref_font_scale']));
+        }
+        if (isset($patch['pref_theme']) && !in_array($patch['pref_theme'], ['auto','light','dark'], true)) {
+            unset($patch['pref_theme']);
+        }
+        if (isset($patch['pref_contrast']) && !in_array($patch['pref_contrast'], ['normal','high'], true)) {
+            unset($patch['pref_contrast']);
+        }
 
-        $flag = new Cookie('prefs_cleared', '1', new DateTimeImmutable('+2 minutes'), '/', null, false, false, 'Lax');
-        return $response->withCookie($flag);
+        $user = $Users->patchEntity($user, $patch, ['accessibleFields' => ['*'=>true]]);
+        $Users->saveOrFail($user);
+
+        // Refresh identity so $this->request->getAttribute('identity') has fresh values
+        if ($this->controller->components()->has('Authentication')) {
+            $this->controller->Authentication->setIdentity($user);
+        }
+
+        // Update session snapshot
+        $prefs = $this->fromUser($user);
+        $this->write($prefs);
+
+        return $prefs;
+    }
+
+    /** Call this right after successful login */
+    public function onLogin(): void
+    {
+        $identity = $this->controller->getRequest()->getAttribute('identity');
+        $prefs = $identity ? $this->fromUser($identity) : $this->defaults();
+        $this->write($prefs);
+    }
+
+    /** Call this on logout if you want to be explicit (session will be destroyed anyway) */
+    public function onLogout(): void
+    {
+        $this->controller->getRequest()->getSession()->delete('Prefs');
     }
 }

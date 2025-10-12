@@ -4,17 +4,21 @@
  * Professional admin interface layout
  */
 
-// 从 Cookie 读取偏好（服务器端直接作用，避免 FOUC）
-$cookies   = $this->request->getCookieParams();
-$theme     = $cookies['pref_theme']      ?? 'auto';     // auto | light | dark
-$contrast  = $cookies['pref_contrast']   ?? 'normal';   // normal | high
-$fontScale = (float)($cookies['pref_font_scale'] ?? 1.0);
+
+$session = $this->getRequest()->getSession();
+$prefs = $session->read('Prefs') ?: [
+    'theme'       => 'auto',
+    'contrast'    => 'normal',
+    'font_scale'  => 1.0,
+];
 
 $bodyClasses = [];
-if ($theme === 'dark')  $bodyClasses[] = 'theme-dark';
-if ($theme === 'light') $bodyClasses[] = 'theme-light';
-if ($contrast === 'high') $bodyClasses[] = 'hc'; // 高对比
+if ($prefs['theme'] === 'dark')  $bodyClasses[] = 'theme-dark';
+if ($prefs['theme'] === 'light') $bodyClasses[] = 'theme-light';
+if ($prefs['contrast'] === 'high') $bodyClasses[] = 'hc';
 $bodyClass = implode(' ', $bodyClasses);
+$inlineFontSize = (float)($prefs['font_scale'] ?? 1.0);
+$inlineFontStyle = ($inlineFontSize != 1.0) ? 'font-size: calc(16px * ' . $inlineFontSize . ');' : '';
 ?>
 <!DOCTYPE html>
 <html lang="en">

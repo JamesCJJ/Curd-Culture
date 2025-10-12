@@ -115,7 +115,7 @@ class SettingsController extends AppController
         // Prefs → view
         $c = $this->request->getCookieParams();
         $prefs = [
-            'theme'          => $c['pref_theme']        ?? 'auto',
+            'theme'          => $c['pref_theme']        ?? 'light',
             'contrast'       => $c['pref_contrast']     ?? 'normal',
             'font_scale'     => $c['pref_font_scale']   ?? '1.0',
             'language'       => $c['pref_lang']         ?? 'en',

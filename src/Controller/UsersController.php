@@ -16,6 +16,7 @@ class UsersController extends AppController
     {
         parent::initialize();
         $this->loadComponent('Authentication.Authentication');
+        $this->loadComponent('AppPrefs');
     }
 
     public function beforeFilter(EventInterface $event): void
@@ -175,43 +176,28 @@ class UsersController extends AppController
 
     public function login()
     {
-        $this->request->allowMethod(['get', 'post']);
+        $this->request->allowMethod(['get','post']);
         $result = $this->Authentication->getResult();
 
         if ($result && $result->isValid()) {
-            $identity = $result->getData();
-
-            $this->loadComponent('AppPrefs');
-
-
-            $this->response = $this->AppPrefs->clearPrefCookies($this->response);
-
-
-            $Users = $this->fetchTable('Users');
-            $user  = $Users->get((int)$identity->get('id'));
-            $this->response = $this->AppPrefs->withPrefCookies($this->response, $user);
-
+            // After Authentication sets identity
+            $this->AppPrefs->onLogin(); // snapshot prefs to session
 
             $redirect = (string)$this->request->getQuery('redirect', '');
-            if ($redirect !== '') {
-                return $this->redirect($redirect);
-            }
+            if ($redirect !== '') return $this->redirect($redirect);
 
-            $role = strtolower((string)($identity->get('role') ?? ''));
+            $identity = $this->request->getAttribute('identity');
+            $role = strtolower((string)($identity->role ?? ''));
             if ($role === 'admin') {
-                return $this->redirect(['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index']);
+                return $this->redirect(['prefix'=>'Admin','controller'=>'Dashboard','action'=>'index']);
             }
-            if ($role === 'customer') {
-                return $this->redirect(['controller' => 'Customer', 'action' => 'index']);
-            }
-            return $this->redirect(['controller' => 'Pages', 'action' => 'display', 'home']);
+            return $this->redirect(['controller'=>'Customer','action'=>'index']);
         }
 
         if ($this->request->is('post') && (!$result || !$result->isValid())) {
             $this->Flash->error('Invalid email or password, please try again.');
         }
     }
-
 
 
     public function register()
@@ -249,14 +235,12 @@ class UsersController extends AppController
 
     public function logout()
     {
-        $this->Authentication->logout();
-
-        $this->loadComponent('AppPrefs');
-        // 立即下发“过期” Set-Cookie 响应头
-        $this->response = $this->AppPrefs->clearPrefCookies($this->response);
-
-        $this->Flash->success('Signed out.');
-        return $this->redirect(['action' => 'login']);
+        $this->request->allowMethod(['post','get']);
+        if ($this->components()->has('AppPrefs')) {
+            $this->AppPrefs->onLogout();
+        }
+        $result = $this->Authentication->logout();
+        return $this->redirect($result ?? '/');
     }
 
 }
