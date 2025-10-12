@@ -49,7 +49,7 @@ if ($identity && $role === 'customer') {
 <html lang="en">
 <head>
     <?= $this->Html->charset() ?>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
     <title><?= h($this->fetch('title') ?: 'Curd & Culture') ?></title>
 
     <?= $this->Html->meta('csrfToken', $this->getRequest()->getAttribute('csrfToken')) ?>
@@ -143,6 +143,14 @@ $currentController = $this->request->getParam('controller');
 </footer>
 
 <style>
+    * {
+        box-sizing: border-box;
+    }
+
+    body {
+        overflow-x: hidden;
+    }
+
     :root{
         --nav-radius:12px;
         --nav-h:40px;
@@ -163,17 +171,78 @@ $currentController = $this->request->getParam('controller');
         --logo-bg:#ffffff; --logo-outline:rgba(255,255,255,.25);
     }
     body{ color:var(--text-body); }
+
+    .container-fluid {
+        width: 100%;
+        max-width: 100%;
+    }
+
+    .row {
+        width: 100%;
+    }
+
     .dashboard-sidebar{
         background:var(--chrome-bg-2);
         border-right:1px solid var(--chrome-border);
         color:var(--chrome-fg);
-        min-width:220px; max-width:360px;
+        flex: 0 0 auto;
+        width: auto;
+        min-width:220px;
+        max-width:280px;
+        padding-right: 0;
+        position: sticky;
+        top: 0;
+        height: 100vh;
+        overflow-y: auto;
     }
-    .dashboard-nav .nav-link{color: color-mix(in oklab, var(--chrome-fg) 75%, #9ca3af); padding:1rem 1.5rem; border-radius:0; margin-bottom:.25rem}
-    .dashboard-nav .nav-link:hover{background: color-mix(in oklab, var(--chrome-bg-2) 70%, #000 8%); color: var(--chrome-fg)}
-    .dashboard-nav .nav-link.active{background: color-mix(in oklab, var(--chrome-bg-2) 60%, #000 12%); color: var(--chrome-fg)}
-    .dashboard-content{padding:2rem}
-    .footer{ background:var(--chrome-bg); color: color-mix(in oklab, var(--chrome-fg) 70%, #9ca3af); border-top:1px solid var(--chrome-border); }
+
+    .dashboard-sidebar .welcome{
+        white-space: nowrap;
+        max-width: 100%;
+    }
+
+    .dashboard-sidebar .welcome-id{
+        display:inline-block;
+        max-width: calc(100% - 60px);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        vertical-align: bottom;
+    }
+
+    .dashboard-nav .nav-link{
+        color: color-mix(in oklab, var(--chrome-fg) 75%, #9ca3af);
+        padding:1rem 1.5rem;
+        border-radius:0;
+        margin-bottom:.25rem;
+        white-space: nowrap;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+    }
+    .dashboard-nav .nav-link:hover{
+        background: color-mix(in oklab, var(--chrome-bg-2) 70%, #000 8%);
+        color: var(--chrome-fg);
+    }
+    .dashboard-nav .nav-link.active{
+        background: color-mix(in oklab, var(--chrome-bg-2) 60%, #000 12%);
+        color: var(--chrome-fg);
+    }
+    .dashboard-nav .nav-link i{margin-right:.5rem;width:1.25rem;flex-shrink: 0;}
+
+    .dashboard-content{
+        padding:2rem;
+        min-width: 0;
+        flex: 1;
+        overflow-x: hidden;
+    }
+
+    .footer{
+        background:var(--chrome-bg);
+        color: color-mix(in oklab, var(--chrome-fg) 70%, #9ca3af);
+        border-top:1px solid var(--chrome-border);
+        text-align:center;
+        padding:1.25rem 1rem;
+    }
 
     /* High Contrast overlays dashboard too */
     .page.hc, body.hc { background:#0b1220; color:#e5e7eb }
@@ -181,6 +250,51 @@ $currentController = $this->request->getParam('controller');
     .page.hc .dashboard-sidebar{ background:#0f172a; border-color:#334155; color:#f5f7fa }
     .page.hc .dashboard-nav .nav-link:hover,
     .page.hc .dashboard-nav .nav-link.active{ background:#1f2937; color:#fff }
+
+    @media (max-width: 1024px) {
+        .dashboard-sidebar {
+            min-width: 200px;
+            max-width: 250px;
+        }
+
+        .dashboard-nav .nav-link {
+            padding: 0.875rem 1.25rem;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-sidebar {
+            position: relative;
+            height: auto;
+            max-width: 100%;
+            width: 100%;
+        }
+
+        .row {
+            flex-direction: column;
+        }
+
+        .dashboard-content {
+            padding: 1rem;
+        }
+
+        .dashboard-nav {
+            display: flex;
+            overflow-x: auto;
+            flex-direction: row;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .dashboard-nav .nav-link {
+            flex-shrink: 0;
+        }
+    }
+
+    @media (max-width: 680px) {
+        .dashboard-sidebar {
+            max-width: 100%;
+        }
+    }
 </style>
 
 <!-- Bootstrap prefs to JS -->

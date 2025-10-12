@@ -171,8 +171,32 @@ class CopilotController extends AppController
         $reply = null;
         $payload = [];
 
-        // General inventory question e.g., "what do you have" / "what do you sell"
-        if (preg_match('/what[^\n\r]*\b(have|sell|offer|carry)\b/i', $message)) {
+        // Delivery, Shipping, Pickup questions
+        if (preg_match('/(deliver|delivery|shipping|ship|arrive|arrival|pickup|pick.?up|how long)/i', $message)) {
+            $reply = 'We offer scheduled delivery slots and in-store pickup. You can choose your preferred option and see the final cost during checkout. For details on an existing order, please check your customer dashboard.';
+            return $this->json(['ok' => true, 'reply' => $reply]);
+        }
+
+        // Product ingredients, dietary, or allergy questions
+        if (preg_match('/(gluten|ingredient|pasteuri|vegan|vegetarian|allergy|allergic|dietary|lactose)/i', $message)) {
+            $reply = "We list all ingredients and dietary information on each product's page. Please search for the cheese you're interested in to see its full details. For severe allergy concerns, we recommend contacting us directly.";
+            return $this->json(['ok' => true, 'reply' => $reply]);
+        }
+        
+        // Payment methods
+        if (preg_match('/(pay|payment|card|credit|debit|amex|visa|mastercard|accept.*card)/i', $message)) {
+            $reply = 'We accept all major credit cards (Visa, Mastercard, Amex) through our secure checkout via Stripe.';
+            return $this->json(['ok' => true, 'reply' => $reply]);
+        }
+
+        // Contact or support questions
+        if (preg_match('/(contact|support|help|email|phone|reach|cancel|change.*order|modify.*order)/i', $message)) {
+            $reply = "For any help with your order or other questions, please use the form on our 'Contact Us' page, and our team will be happy to assist you.";
+            return $this->json(['ok' => true, 'reply' => $reply]);
+        }
+
+        // General inventory question - expanded to catch more variations
+        if (preg_match('/(cheese|cheeses|dairy|product|products|what.*(have|sell|offer|carry|stock))/i', $message)) {
             $names = [];
             try {
                 $rows = $this->Products->find()->select(['name','slug'])->orderAsc('name')->limit(6)->all();
@@ -183,9 +207,9 @@ class CopilotController extends AppController
                 // ignore and fall back
             }
             if (!empty($names)) {
-                $reply = 'We have: ' . implode(', ', $names) . '. You can ask me to search a specific name (e.g., "search cheddar").';
+                $reply = 'We offer a selection of artisan cheeses including: ' . implode(', ', $names) . ', and more. Would you like to know more about any specific cheese? Just type the name or ask me to search for it.';
             } else {
-                $reply = 'We carry artisan cheeses like cheddar, brie, gouda and blue. Ask me to search a specific name!';
+                $reply = 'We carry premium artisan cheeses including cheddar, brie, gouda, and blue varieties. Please ask me about a specific cheese to learn more!';
             }
             return $this->json(['ok' => true, 'reply' => $reply]);
         }
@@ -217,6 +241,11 @@ class CopilotController extends AppController
 
         // My recent orders
         if (preg_match('/\b(my )?orders?\b|where is my order|order status/i', $message)) {
+            if (!$identity) {
+                $reply = 'Due to privacy, I cannot show order details in this chat. Please log in and visit your customer dashboard to see your full order history.';
+                return $this->json(['ok' => true, 'reply' => $reply]);
+            }
+            
             $ordersList = [];
             try {
                 $ordersList = $this->recentOrders($identity, 3);
@@ -250,30 +279,88 @@ class CopilotController extends AppController
             }
             if (!empty($results)) {
                 $payload['products'] = $results;
-                $names = array_map(fn($p) => $p['name'], $results);
-                $reply = 'I found: ' . implode(', ', $names) . '. Say "view ' . $results[0]['slug'] . '" to open.';
+                if (count($results) === 1) {
+                    // Single product - provide link immediately
+                    $webroot = (string)($this->request->getAttribute('webroot') ?? '/');
+                    $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($results[0]['slug']);
+                    $reply = 'I found ' . $results[0]['name'] . ' priced at ' . $results[0]['price_fmt'] . '. Opening the product details page for you now...';
+                } else {
+                    // Multiple products - list them
+                    $names = array_map(fn($p) => $p['name'], $results);
+                    $reply = 'I found ' . count($results) . ' products: ' . implode(', ', $names) . '. Which one would you like to learn more about? Type the product name to see its details.';
+                }
             } else {
-                $reply = 'No products matched that search. Try a different name (e.g., cheddar, brie, blue).';
+                $reply = 'I couldn\'t find any products matching "' . htmlspecialchars($term) . '". Please try a different search term, or ask "what cheeses do you have?" to see our full range.';
             }
             return $this->json(['ok' => true, 'reply' => $reply, 'data' => $payload]);
         }
 
-        // Open product by slug e.g., view aged-gouda-18m
-        if (preg_match('/\b(view|open)\s+([a-z0-9\-]{3,})/i', $message, $m)) {
-            $slug = strtolower($m[2]);
-            $product = null;
-            try {
-                $product = $this->Products->find()->select(['id', 'name', 'slug'])
-                    ->where(['slug' => $slug])->first();
-            } catch (\Throwable $e) {
+        // Open product by name/slug when user asks specifically
+        if (preg_match('/\b(view|open|show me)\s+([a-z0-9\-]+)/i', $message, $m)) {
+            $slug = strtolower(trim($m[2] ?? ''));
+            
+            if ($slug !== '') {
                 $product = null;
+                try {
+                    $product = $this->Products->find()->select(['id', 'name', 'slug', 'price', 'currency'])
+                        ->where(['slug' => $slug])->first();
+                } catch (\Throwable $e) {
+                    $product = null;
+                }
+                if ($product) {
+                    $webroot = (string)($this->request->getAttribute('webroot') ?? '/');
+                    $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($slug);
+                    $reply = 'Here\'s the link to ' . (string)$product->get('name') . '. Opening the product details page for you now...';
+                } else {
+                    $reply = 'I couldn\'t find a product with that name. Please check the spelling or ask "what cheeses do you have?" to see available options.';
+                }
+                return $this->json(['ok' => true, 'reply' => $reply, 'data' => $payload]);
             }
-            if ($product) {
-                $webroot = (string)($this->request->getAttribute('webroot') ?? '/');
-                $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($slug);
-                $reply = 'Opening ' . (string)$product->get('name') . '…';
+        }
+
+        // Catch standalone cheese/product queries (e.g., "cheddar", "aged-gouda-18m", "brie")
+        // This catches common cheese names or short product-like queries
+        // Matches if message contains cheese keywords and is relatively short (under 50 chars)
+        $lowerMsg = strtolower($message);
+        $cheeseKeywords = ['cheddar', 'brie', 'gouda', 'mozzarella', 'feta', 'blue', 'camembert', 
+                          'parmesan', 'aged', 'swiss', 'gruyere', 'provolone', 'ricotta', 'halloumi', 
+                          'manchego', 'edam', 'colby', 'fontina', 'asiago', 'pecorino', 'gorgonzola', 
+                          'stilton', 'roquefort', 'monterey', 'jack', 'havarti', 'muenster', 'taleggio', 
+                          'raclette', 'emmental', 'jarlsberg', 'comte', 'mimolette', 'reblochon', 
+                          'beaufort', 'boursin', 'chevre', 'cottage', 'cream', 'rustic', 'classic',
+                          'vein', 'buffalo'];
+        
+        $containsCheeseKeyword = false;
+        foreach ($cheeseKeywords as $keyword) {
+            if (strpos($lowerMsg, $keyword) !== false) {
+                $containsCheeseKeyword = true;
+                break;
+            }
+        }
+        
+        // If it's a short message containing a cheese keyword, treat it as a product search
+        if ($containsCheeseKeyword && strlen($message) < 50 && !preg_match('/(what|how|when|where|why|can|do|does|is|are)\b/i', $message)) {
+            $term = trim($message);
+            $results = [];
+            try {
+                $results = $this->searchProducts($term, 6);
+            } catch (\Throwable $e) {
+                $results = [];
+            }
+            if (!empty($results)) {
+                $payload['products'] = $results;
+                if (count($results) === 1) {
+                    // Single product - provide link immediately
+                    $webroot = (string)($this->request->getAttribute('webroot') ?? '/');
+                    $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($results[0]['slug']);
+                    $reply = 'I found ' . $results[0]['name'] . ' priced at ' . $results[0]['price_fmt'] . '. Opening the product details page for you now...';
+                } else {
+                    // Multiple products - list them
+                    $names = array_map(fn($p) => $p['name'], $results);
+                    $reply = 'I found ' . count($results) . ' matching products: ' . implode(', ', $names) . '. Which one would you like to learn more about? Type the specific product name to see its details.';
+                }
             } else {
-                $reply = 'I could not find that item.';
+                $reply = "I couldn't find any products matching '" . htmlspecialchars($term) . "'. Please try a different search, or ask 'what cheeses do you have?' to see our complete selection.";
             }
             return $this->json(['ok' => true, 'reply' => $reply, 'data' => $payload]);
         }
@@ -281,7 +368,7 @@ class CopilotController extends AppController
         // Fallback
         return $this->json([
             'ok' => true,
-            'reply' => "I can help with orders and products. Examples: 'Order 101', 'Search cheddar', 'My orders'.",
+            'reply' => "I'm not sure how to help with that. I can answer questions about products, delivery, payments, and orders. Try asking 'what cheeses do you have?' or 'how does delivery work?'.",
         ]);
     }
 
@@ -361,7 +448,12 @@ class CopilotController extends AppController
         }
         $q = $this->Products->find()
             ->select(['id', 'name', 'slug', 'price', 'currency', 'image_url'])
-            ->where(['name LIKE' => '%' . $term . '%'])
+            ->where([
+                'OR' => [
+                    'name LIKE' => '%' . $term . '%',
+                    'slug LIKE' => '%' . $term . '%'
+                ]
+            ])
             ->limit($limit)
             ->all();
         $out = [];
