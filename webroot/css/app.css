@@ -369,6 +369,13 @@ html, body, button, input, select, textarea {
 /* Small separators/HR */
 .hc hr { border-color: var(--hc-border); }
 
+.address-card .card-header { padding: .5rem .75rem; }
+.address-card .card-body { padding: .75rem; }
+.address-card__actions { opacity: .35; transition: opacity .15s ease-in-out; }
+.address-card:hover .address-card__actions { opacity: 1; }
+
+
+.address-card .dropdown-menu { z-index: 1055; }
 /* Make tiny helper text a hair larger for legibility */
 @media (min-width: 0) {
     .hc .form-text, .hc .hint, .hc .small { font-size: 0.95em; }

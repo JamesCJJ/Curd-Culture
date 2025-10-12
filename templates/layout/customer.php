@@ -117,13 +117,25 @@ $currentController = $this->request->getParam('controller');
                             ['class' => 'nav-link' . ($this->request->getParam('action') === 'settings' ? ' active' : ''), 'escape' => false]
                         ) ?>
 
-                        <div class="mt-auto p-3">
-                            <?= $this->Html->link(
-                                '<i class="bi bi-box-arrow-right"></i>Logout',
-                                ['controller' => 'Customer', 'action' => 'logout'],
-                                ['class' => 'nav-link text-danger', 'escape' => false, 'confirm' => 'Are you sure you want to logout?']
-                            ) ?>
-                        </div>
+                        <?= $this->Html->link(
+                            '<i class="bi bi-box-arrow-right"></i>Logout',
+                            '#',
+                            [
+                                'class'   => 'nav-link text-danger',  // same look as others
+                                'escape'  => false,
+                                // click -> submit hidden POST form (keeps it secure)
+                                'onclick' => "if(confirm('Are you sure you want to logout?')){document.getElementById('logoutFormSidebar').submit();} return false;"
+                            ]
+                        ) ?>
+
+                        <!-- hidden POST form (CSRF-safe) -->
+                        <form id="logoutFormSidebar"
+                              method="post"
+                              action="<?= $this->Url->build(['controller' => 'Customer', 'action' => 'logout']) ?>"
+                              style="display:none">
+                            <input type="hidden" name="_csrfToken" value="<?= h($this->getRequest()->getAttribute('csrfToken')) ?>">
+                        </form>
+
                     </nav>
                 </div>
             </div>
