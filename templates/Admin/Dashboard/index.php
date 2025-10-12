@@ -214,7 +214,7 @@ $badge = function (?string $state): string {
 </div>
 
 <style>
-    .dash{max-width:1100px;margin:0 auto;padding:1.25rem 1rem}
+    .dash{max-width:1100px;margin:0 auto;padding:1.25rem 1rem;width:100%}
 
     /* Flash / alert */
     .flash-wrap{margin:0 0 .8rem}
@@ -231,18 +231,18 @@ $badge = function (?string $state): string {
     .page.hc .alert-info{background:#0d1b34;border-color:#1d4ed8}
 
     .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:.8rem;margin-bottom:1rem}
-    .stat{background:#fff;border:1px solid #eef0f3;border-radius:.9rem;padding:.9rem .9rem;box-shadow:0 6px 24px rgba(0,0,0,.06)}
-    .stat__label{font-size:.9rem;color:#6b7280}
+    .stat{background:#fff;border:1px solid #eef0f3;border-radius:.9rem;padding:.9rem .9rem;box-shadow:0 6px 24px rgba(0,0,0,.06);min-width:0}
+    .stat__label{font-size:.9rem;color:#6b7280;white-space:nowrap}
     .stat__value{font-size:1.6rem;font-weight:700;margin:.15rem 0 .1rem}
     .stat__hint{color:#9aa3af;font-size:.85rem}
 
     .grid{display:grid;grid-template-columns:2fr 1fr;gap:1rem}
-    .card{background:#fff;border:1px solid #eef0f3;border-radius:1rem;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:1rem}
-    .card__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem}
+    .card{background:#fff;border:1px solid #eef0f3;border-radius:1rem;box-shadow:0 10px 30px rgba(0,0,0,.06);padding:1rem;min-width:0}
+    .card__head{display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem;flex-wrap:wrap;gap:.5rem}
     .card__title{margin:0;font-size:1.05rem}
 
-    .table-wrap{overflow:auto}
-    .table{width:100%;border-collapse:separate;border-spacing:0}
+    .table-wrap{overflow:auto;width:100%}
+    .table{width:100%;border-collapse:separate;border-spacing:0;min-width:600px}
     .table thead th{font-weight:600;color:#6b7280;text-align:left;border-bottom:1px solid #eef0f3;padding:.55rem}
     .table tbody td{padding:.6rem .55rem;border-bottom:1px solid #f2f4f6;vertical-align:top}
     .table tbody tr:last-child td{border-bottom:0}
@@ -273,6 +273,23 @@ $badge = function (?string $state): string {
     .page.hc .btn-primary{background:#60a5fa;color:#111}
     .page.hc .muted{color:#cbd5e1}
 
+    .actions{display:flex;gap:.35rem;flex-wrap:wrap}
+
+    @media (max-width: 1024px){
+        .stats{grid-template-columns:repeat(2,1fr)}
+        .grid{grid-template-columns:1fr}
+        .table{min-width:500px}
+    }
     @media (max-width: 960px){ .grid{grid-template-columns:1fr} .ellipsis{max-width:unset} }
-    @media (max-width: 720px){ .stats{grid-template-columns:repeat(2,1fr)} }
+    @media (max-width: 720px){
+        .stats{grid-template-columns:repeat(2,1fr)}
+        .dash{padding:.75rem .5rem}
+        .table{font-size:.9rem;min-width:400px}
+        .table thead th{padding:.4rem}
+        .table tbody td{padding:.5rem .4rem}
+    }
+    @media (max-width: 480px){
+        .stats{grid-template-columns:1fr}
+        .table{min-width:300px}
+    }
 </style>

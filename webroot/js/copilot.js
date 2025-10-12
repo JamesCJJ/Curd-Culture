@@ -144,7 +144,7 @@
     // Load existing history or show welcome message
     loadHistory();
     if (feed.children.length === 0) {
-      addMsg("Hi! I can help with orders and products.", 'bot');
+      addMsg("Welcome to Curd & Culture! I'm here to assist you with information about our artisan cheeses, delivery options, payment methods, and order tracking. How may I help you today?", 'bot');
     }
 
     form.addEventListener('submit', async (e)=>{
@@ -179,6 +179,13 @@
         
         const data = await res.json();
         addMsg(data.reply || 'No response received.', 'bot');
+        
+        // If there's a product link, open it automatically
+        if (data.data && data.data.open_url) {
+          setTimeout(() => {
+            window.open(data.data.open_url, '_blank');
+          }, 500);
+        }
       }catch(err){ 
         console.error('Copilot error:', err);
         addMsg('Sorry, I had trouble reaching the server. Please try again.', 'bot'); 

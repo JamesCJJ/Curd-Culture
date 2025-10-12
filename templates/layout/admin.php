@@ -17,14 +17,13 @@ if ($prefs['theme'] === 'dark')  $bodyClasses[] = 'theme-dark';
 if ($prefs['theme'] === 'light') $bodyClasses[] = 'theme-light';
 if ($prefs['contrast'] === 'high') $bodyClasses[] = 'hc';
 $bodyClass = implode(' ', $bodyClasses);
-$inlineFontSize = (float)($prefs['font_scale'] ?? 1.0);
-$inlineFontStyle = ($inlineFontSize != 1.0) ? 'font-size: calc(16px * ' . $inlineFontSize . ');' : '';
+$fontScale = (float)($prefs['font_scale'] ?? 1.0);
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">
     <title><?= $this->fetch('title') ? $this->fetch('title') . ' - ' : '' ?>Admin - Curd & Culture</title>
 
     <!-- Favicon -->
@@ -35,45 +34,159 @@ $inlineFontStyle = ($inlineFontSize != 1.0) ? 'font-size: calc(16px * ' . $inlin
 
     <!-- Custom Admin Styles -->
     <style>
+        * {
+            box-sizing: border-box;
+        }
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #f8fafc;
             margin: 0;
+            overflow-x: hidden;
         }
 
-        .admin-layout { display: flex; min-height: 100vh; }
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+            position: relative;
+        }
+
         .admin-sidebar {
-            width: 280px; background: #1f2937; color: white;
-            flex-shrink: 0; display: flex; flex-direction: column;
+            width: 280px;
+            min-width: 280px;
+            max-width: 280px;
+            background: #1f2937;
+            color: white;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
         }
-        .admin-main   { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+
+        .admin-main {
+            flex: 1;
+            min-width: 0;
+            display: flex;
+            flex-direction: column;
+            width: calc(100% - 280px);
+        }
+
         .admin-header {
-            background: white; border-bottom: 1px solid #e5e7eb;
-            padding: 1rem 2rem; display: flex; align-items: center; justify-content: space-between;
+            background: white;
+            border-bottom: 1px solid #e5e7eb;
+            padding: 1rem 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 1rem;
+            min-height: 70px;
         }
-        .admin-content { flex: 1; overflow-y: auto; background: #f8fafc; }
 
-        /* Sidebar */
-        .sidebar-brand { padding: 2rem 1.5rem; border-bottom: 1px solid #374151; }
-        .brand-text    { font-size: 1.25rem; font-weight: 700; color: white; text-decoration: none; }
-        .sidebar-nav   { flex: 1; padding: 1rem 0; }
-        .nav-section   { margin-bottom: 2rem; }
-        .nav-title     {
-            padding: 0 1.5rem; font-size: 0.75rem; font-weight: 600; color: #9ca3af;
-            text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.5rem;
+        .admin-content {
+            flex: 1;
+            overflow-y: auto;
+            overflow-x: hidden;
+            background: #f8fafc;
+            padding: 1rem;
+            width: 100%;
         }
+
+        /* Sidebar Styles */
+        .sidebar-brand {
+            padding: 2rem 1.5rem;
+            border-bottom: 1px solid #374151;
+            flex-shrink: 0;
+        }
+
+        .brand-text {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: white;
+            text-decoration: none;
+            display: block;
+            word-wrap: break-word;
+        }
+
+        .sidebar-nav {
+            flex: 1;
+            padding: 1rem 0;
+            overflow-y: auto;
+        }
+
+        .nav-section {
+            margin-bottom: 2rem;
+            flex-shrink: 0;
+        }
+
+        .nav-title {
+            padding: 0 1.5rem;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #9ca3af;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.5rem;
+            white-space: nowrap;
+        }
+
         .nav-link {
-            display: flex; align-items: center; padding: 0.75rem 1.5rem;
-            color: #d1d5db; text-decoration: none; transition: all 0.2s; border-left: 3px solid transparent;
+            display: flex;
+            align-items: center;
+            padding: 0.75rem 1.5rem;
+            color: #d1d5db;
+            text-decoration: none;
+            transition: all 0.2s;
+            border-left: 3px solid transparent;
+            white-space: nowrap;
+            min-height: 44px;
         }
-        .nav-link i { margin-right: 0.75rem; width: 1.25rem; text-align: center; }
-        .nav-link:hover { background: #374151; color: white; border-left-color: #6b7280; }
-        .nav-link.active { background: #374151; color: white; border-left-color: #3b82f6; }
 
-        /* Header */
-        .header-title   { font-size: 1.5rem; font-weight: 600; color: #111827; margin: 0; }
-        .header-actions { display: flex; align-items: center; gap: 1rem; }
-        .header-user    { display: flex; align-items: center; gap: 0.5rem; color: #6b7280; }
+        .nav-link i {
+            margin-right: 0.75rem;
+            width: 1.25rem;
+            text-align: center;
+        }
+
+        .nav-link:hover {
+            background: #374151;
+            color: white;
+            border-left-color: #6b7280;
+        }
+
+        .nav-link.active {
+            background: #374151;
+            color: white;
+            border-left-color: #3b82f6;
+        }
+
+        /* Header Styles */
+        .header-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #111827;
+            margin: 0;
+            word-wrap: break-word;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .header-user {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #6b7280;
+            white-space: nowrap;
+        }
 
         /* Buttons */
         .btn {
@@ -96,33 +209,127 @@ $inlineFontStyle = ($inlineFontSize != 1.0) ? 'font-size: calc(16px * ' . $inlin
         .icon-settings::before { content: '⚙️'; }
         .icon-log-out::before { content: '🚪'; }
 
-        /* ========== High Contrast（更强对比） ========== */
-        .hc { filter: none; } /* 移除滤镜，改用明确的颜色与边框保证可读性 */
-        .hc, .hc * { text-shadow: none !important; }
-        .hc .admin-sidebar { background: #000 !important; color: #fff !important; }
-        .hc .admin-header  { background: #fff !important; border-bottom: 2px solid #000 !important; }
-        .hc .nav-link      { color: #fff !important; border-left: 3px solid transparent !important; }
-        .hc .nav-link:hover, .hc .nav-link.active { background: #333 !important; border-left-color: #fff !important; }
-        .hc .header-title, .hc .header-user { color: #000 !important; }
-        .hc .btn-primary { background: #000 !important; border-color: #000 !important; color: #fff !important; }
-        .hc a { color: #000 !important; text-decoration: underline; }
-
         /* ========== Theme: Dark ========== */
         .theme-dark { background: #1a1a1a; color: #e5e5e5; }
         .theme-dark .admin-header { background: #2d2d2d; border-bottom-color: #404040; }
         .theme-dark .admin-content { background: #1a1a1a; }
 
         /* Responsive */
-        @media (max-width: 1024px) { .admin-sidebar { width: 250px; } }
-        @media (max-width: 768px) {
-            .admin-layout { flex-direction: column; }
-            .admin-sidebar { width: 100%; height: auto; order: 2; }
-            .sidebar-nav { display: flex; overflow-x: auto; padding: 0.5rem; }
-            .nav-section { display: flex; margin: 0; gap: 0.5rem; }
-            .nav-title { display: none; }
-            .nav-link { white-space: nowrap; border-left: none; border-bottom: 3px solid transparent; }
-            .nav-link:hover, .nav-link.active { border-left: none; border-bottom-color: #3b82f6; }
+        @media (max-width: 1200px) {
+            .admin-sidebar {
+                width: 250px;
+                min-width: 250px;
+                max-width: 250px;
+            }
+
+            .admin-main {
+                width: calc(100% - 250px);
+            }
+
+            .sidebar-brand {
+                padding: 1.5rem 1rem;
+            }
+
+            .nav-link {
+                padding: 0.75rem 1rem;
+            }
+
+            .nav-title {
+                padding: 0 1rem;
+            }
         }
+
+        @media (max-width: 900px) {
+            .admin-sidebar {
+                width: 220px;
+                min-width: 220px;
+                max-width: 220px;
+            }
+
+            .admin-main {
+                width: calc(100% - 220px);
+            }
+
+            .admin-header {
+                padding: 0.75rem 1rem;
+            }
+
+            .header-title {
+                font-size: 1.25rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .admin-layout {
+                flex-direction: column;
+            }
+
+            .admin-sidebar {
+                width: 100%;
+                min-width: 100%;
+                max-width: 100%;
+                height: auto;
+                position: relative;
+                order: 2;
+            }
+
+            .admin-main {
+                width: 100%;
+            }
+
+            .sidebar-nav {
+                display: flex;
+                overflow-x: auto;
+                padding: 0.5rem;
+                -webkit-overflow-scrolling: touch;
+            }
+
+            .nav-section {
+                display: flex;
+                margin: 0;
+                gap: 0.5rem;
+            }
+
+            .nav-title {
+                display: none;
+            }
+
+            .nav-link {
+                white-space: nowrap;
+                border-left: none;
+                border-bottom: 3px solid transparent;
+            }
+
+            .nav-link:hover,
+            .nav-link.active {
+                border-left: none;
+                border-bottom-color: #3b82f6;
+            }
+
+            .admin-header {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+        }
+
+        /* Handle browser zoom levels */
+        @media (min-resolution: 1.5dppx) {
+            .admin-sidebar {
+                font-size: 14px;
+            }
+        }
+
+        @media (min-resolution: 2dppx) {
+            .admin-sidebar {
+                font-size: 13px;
+            }
+        }
+
         /* ============================
    High Contrast – global tokens
    Scope: .hc on <body> or .page
