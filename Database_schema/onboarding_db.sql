@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- 主机： 127.0.0.1
--- 生成日期： 2025-10-06 22:22:30
+-- 生成日期： 2025-10-12 02:29:34
 -- 服务器版本： 10.4.32-MariaDB
 -- PHP 版本： 8.2.12
 
@@ -51,8 +51,7 @@ CREATE TABLE `addresses` (
 --
 
 INSERT INTO `addresses` (`id`, `user_id`, `type`, `first_name`, `last_name`, `company`, `address_line_1`, `address_line_2`, `suburb`, `state`, `postcode`, `country`, `phone`, `is_default`, `created`, `modified`) VALUES
-                                                                                                                                                                                                                        (6, 5, 'billing', 'Junjue', 'Chang', 'HutaTai Securities', 'U2  1 Browns Rd', 'U 2  15 BROWNS RD', 'CLAYTON', 'VIC', '3168', 'Australia', '0451823464', 0, '2025-10-06 18:08:16', '2025-10-06 19:03:51'),
-                                                                                                                                                                                                                        (7, 5, 'billing', 'Junjue', 'Chang', 'HutaTai Securities', 'U1  1 Browns Rd', 'U 4  15 BROWNS RD', 'CLAYTON', 'VIC', '3168', 'Australia', '0451823464', 1, '2025-10-06 18:08:32', '2025-10-06 19:03:55');
+    (11, 5, 'shipping', 'Junjue', 'Chang', 'HutaTai Securities', 'U1  1 Browns Rd', 'U 4  15 BROWNS RD', 'CLAYTON', 'VIC', '3168', 'Australia', '0451823464', 0, '2025-10-08 09:01:20', '2025-10-08 12:38:11');
 
 -- --------------------------------------------------------
 
@@ -129,7 +128,12 @@ INSERT INTO `carts` (`id`, `user_id`, `status`, `currency`, `created`, `modified
                                                                                        (18, 5, 'ordered', 'AUD', '2025-10-06 19:20:36', '2025-10-06 19:20:36'),
                                                                                        (19, 5, 'ordered', 'AUD', '2025-10-06 19:28:36', '2025-10-06 19:28:36'),
                                                                                        (20, 5, 'ordered', 'AUD', '2025-10-06 19:37:31', '2025-10-06 19:37:31'),
-                                                                                       (21, 5, 'ordered', 'AUD', '2025-10-06 19:50:55', '2025-10-06 19:50:55');
+                                                                                       (21, 5, 'ordered', 'AUD', '2025-10-06 19:50:55', '2025-10-06 19:50:55'),
+                                                                                       (22, 5, 'ordered', 'AUD', '2025-10-06 20:30:04', '2025-10-06 20:30:04'),
+                                                                                       (23, 5, 'ordered', 'AUD', '2025-10-06 20:31:33', '2025-10-06 20:31:33'),
+                                                                                       (24, 5, 'open', 'AUD', '2025-10-08 08:42:18', '2025-10-08 08:42:18'),
+                                                                                       (25, 4, 'ordered', 'AUD', '2025-10-12 00:20:45', '2025-10-12 00:20:45'),
+                                                                                       (26, 4, 'ordered', 'AUD', '2025-10-12 00:27:47', '2025-10-12 00:27:47');
 
 -- --------------------------------------------------------
 
@@ -220,7 +224,8 @@ INSERT INTO `contact_messages` (`id`, `name`, `email`, `message`, `status`, `rep
                                                                                                                                                             (20, 'Aakhenteros', 'TestCustomer@gmail.com', 'New order #18 (PICKUP) Total: AUD 8.90', 'unread', NULL, NULL, NULL, 0, '2025-10-06 19:10:28', '2025-10-06 19:10:28'),
                                                                                                                                                             (21, 'Aakhenteros', 'TestCustomer@gmail.com', 'New order #19 (PICKUP) Total: AUD 11.20', 'unread', NULL, NULL, NULL, 0, '2025-10-06 19:20:45', '2025-10-06 19:20:45'),
                                                                                                                                                             (22, 'Aakhenteros', 'TestCustomer@gmail.com', 'New order #20 (PICKUP) Total: AUD 10.50', 'unread', NULL, NULL, NULL, 0, '2025-10-06 19:28:43', '2025-10-06 19:28:43'),
-                                                                                                                                                            (23, 'Junjue Chang', 'TestCustomer@gmail.com', 'New order #21 (DELIVERY) Total: AUD 21.80', 'unread', NULL, NULL, NULL, 0, '2025-10-06 19:50:15', '2025-10-06 19:50:15');
+                                                                                                                                                            (23, 'Junjue Chang', 'TestCustomer@gmail.com', 'New order #21 (DELIVERY) Total: AUD 21.80', 'read', '2025-10-08 12:13:27', 'hi', NULL, 0, '2025-10-06 19:50:15', '2025-10-08 12:13:27'),
+                                                                                                                                                            (24, 'Junjue Chang', 'Carl@curdandculture.com', 'New order #30 (PICKUP) Total: AUD 7.40', 'unread', NULL, NULL, NULL, 0, '2025-10-12 00:27:55', '2025-10-12 00:27:55');
 
 -- --------------------------------------------------------
 
@@ -312,7 +317,11 @@ INSERT INTO `orders` (`id`, `user_id`, `email`, `full_name`, `address`, `city`, 
                                                                                                                                                                                                                                                                                                                                                                                                                                  (19, 5, 'TestCustomer@gmail.com', 'Aakhenteros', 'Unit 2304 551 Swanston Street', 'CARLTON', '3053', 'Australia', 'AUD', 11.20, 0.00, 0.00, 11.20, 'pending', 'unpaid', 'delivery', NULL, NULL, NULL, NULL, 'bank_transfer', 0, NULL, NULL, NULL, NULL, '2025-10-06 19:20:45', '2025-10-06 19:20:45'),
                                                                                                                                                                                                                                                                                                                                                                                                                                  (20, 5, 'TestCustomer@gmail.com', 'Aakhenteros', 'Unit 2304 551 Swanston Street', 'CARLTON', '3053', 'Australia', 'AUD', 10.50, 0.00, 0.00, 10.50, 'pending', 'unpaid', 'pickup', NULL, NULL, 3, NULL, 'bank_transfer', 0, NULL, NULL, NULL, NULL, '2025-10-06 19:28:43', '2025-10-06 19:28:43'),
                                                                                                                                                                                                                                                                                                                                                                                                                                  (21, 5, 'TestCustomer@gmail.com', 'Junjue Chang', 'U1  1 Browns Rd, U 4  15 BROWNS RD', 'CLAYTON', '3168', 'Australia', 'AUD', 8.90, 12.90, 0.00, 21.80, 'pending', 'unpaid', 'delivery', '2025-10-13', 3, NULL, 'gate 1', 'bank_transfer', 0, NULL, NULL, NULL, NULL, '2025-10-06 19:50:15', '2025-10-06 19:50:15'),
-                                                                                                                                                                                                                                                                                                                                                                                                                                 (26, 5, 'TestCustomer@gmail.com', 'Junjue Chang', 'U1  1 Browns Rd, U 4  15 BROWNS RD', 'CLAYTON', '3168', 'Australia', 'AUD', 8.90, 0.00, 0.00, 8.90, 'pending', 'paid', 'pickup', NULL, NULL, 3, NULL, 'card', 0, NULL, 'cs_test_a1FPdNclImfpShQ6pxJ68E21QXZ4ZyniOHv7YfzW92ORImfwyzPmKUxVVN', '2025-10-06 20:14:14', NULL, '2025-10-06 20:14:14', '2025-10-06 20:14:14');
+                                                                                                                                                                                                                                                                                                                                                                                                                                 (26, 5, 'TestCustomer@gmail.com', 'Junjue Chang', 'U1  1 Browns Rd, U 4  15 BROWNS RD', 'CLAYTON', '3168', 'Australia', 'AUD', 8.90, 0.00, 0.00, 8.90, 'pending', 'paid', 'pickup', NULL, NULL, 3, NULL, 'card', 0, NULL, 'cs_test_a1FPdNclImfpShQ6pxJ68E21QXZ4ZyniOHv7YfzW92ORImfwyzPmKUxVVN', '2025-10-06 20:14:14', NULL, '2025-10-06 20:14:14', '2025-10-06 20:14:14'),
+                                                                                                                                                                                                                                                                                                                                                                                                                                 (27, 5, 'TestCustomer@gmail.com', 'Junjue Chang', 'U1  1 Browns Rd, U 4  15 BROWNS RD', 'CLAYTON', '3168', 'Australia', 'AUD', 10.50, 0.00, 0.00, 10.50, 'pending', 'paid', 'pickup', NULL, NULL, 3, NULL, 'card', 0, NULL, 'cs_test_a1HA8RXxtKz6jbYajvnmWAL2b4zcGNFw5EWBi4DIOpvmJcMmMnBYuB5wx7', '2025-10-06 20:30:41', NULL, '2025-10-06 20:30:41', '2025-10-06 20:30:41'),
+                                                                                                                                                                                                                                                                                                                                                                                                                                 (28, 5, 'TestCustomer@gmail.com', 'Junjue Chang', 'U1  1 Browns Rd, U 4  15 BROWNS RD', 'CLAYTON', '3168', 'Australia', 'AUD', 8.90, 12.90, 0.00, 21.80, 'pending', 'paid', 'delivery', '2025-10-08', 3, NULL, 'AAA', 'card', 0, NULL, 'cs_test_b19esPSj4MFJHHaZOYA24jT23Uk5xw7jKK8bDrRrId72YULKdiyy1acsoB', '2025-10-06 20:32:30', NULL, '2025-10-06 20:32:30', '2025-10-06 20:39:49'),
+                                                                                                                                                                                                                                                                                                                                                                                                                                 (29, 4, 'Carl@curdandculture.com', 'Junjue Chang', 'U1  1 Browns Rd', 'CLAYTON', '3168', 'Australia', 'AUD', 10.50, 12.90, 0.00, 23.40, 'pending', 'paid', 'delivery', '2025-10-14', 2, NULL, NULL, 'card', 0, NULL, 'cs_test_b1PRwtexw9QRgyprNxpNhjJJY7Tr19TRYk0vKMsXDPqTm0Cj4kyxUZ07g6', '2025-10-12 00:27:31', NULL, '2025-10-12 00:27:31', '2025-10-12 00:27:31'),
+                                                                                                                                                                                                                                                                                                                                                                                                                                 (30, 4, 'Carl@curdandculture.com', 'Junjue Chang', 'U1  1 Browns Rd', 'CLAYTON', '3168', 'Australia', 'AUD', 7.40, 0.00, 0.00, 7.40, 'pending', 'unpaid', 'pickup', NULL, NULL, 3, NULL, 'bank_transfer', 0, NULL, NULL, NULL, NULL, '2025-10-12 00:27:55', '2025-10-12 00:27:55');
 
 -- --------------------------------------------------------
 
@@ -362,7 +371,11 @@ INSERT INTO `order_items` (`id`, `order_id`, `product_id`, `name`, `slug`, `pric
                                                                                                                                                             (20, 19, 5, 'Blue Vein Classic', 'blue-vein-classic', 11.20, 'AUD', 1, 11.20, NULL, '2025-10-06 19:20:45', '2025-10-06 19:20:45'),
                                                                                                                                                             (21, 20, 2, 'Brie de Maison', 'brie-de-maison', 10.50, 'AUD', 1, 10.50, NULL, '2025-10-06 19:28:43', '2025-10-06 19:28:43'),
                                                                                                                                                             (22, 21, 1, 'Mature Cheddar', 'mature-cheddar', 8.90, 'AUD', 1, 8.90, NULL, '2025-10-06 19:50:15', '2025-10-06 19:50:15'),
-                                                                                                                                                            (23, 26, 1, 'Mature Cheddar', 'mature-cheddar', 8.90, 'AUD', 1, 8.90, NULL, '2025-10-06 20:14:14', '2025-10-06 20:14:14');
+                                                                                                                                                            (23, 26, 1, 'Mature Cheddar', 'mature-cheddar', 8.90, 'AUD', 1, 8.90, NULL, '2025-10-06 20:14:14', '2025-10-06 20:14:14'),
+                                                                                                                                                            (24, 27, 2, 'Brie de Maison', 'brie-de-maison', 10.50, 'AUD', 1, 10.50, NULL, '2025-10-06 20:30:41', '2025-10-06 20:30:41'),
+                                                                                                                                                            (25, 28, 1, 'Mature Cheddar', 'mature-cheddar', 8.90, 'AUD', 1, 8.90, NULL, '2025-10-06 20:32:30', '2025-10-06 20:32:30'),
+                                                                                                                                                            (26, 29, 2, 'Brie de Maison', 'brie-de-maison', 10.50, 'AUD', 1, 10.50, NULL, '2025-10-12 00:27:31', '2025-10-12 00:27:31'),
+                                                                                                                                                            (27, 30, 3, 'Goat Feta', 'goat-feta', 7.40, 'AUD', 1, 7.40, NULL, '2025-10-12 00:27:55', '2025-10-12 00:27:55');
 
 -- --------------------------------------------------------
 
@@ -453,9 +466,9 @@ CREATE TABLE `products` (
 --
 
 INSERT INTO `products` (`id`, `name`, `slug`, `price`, `currency`, `summary`, `description`, `image_url`, `gallery`, `rating`, `stock`, `created`, `modified`, `origin_country`, `milk_type`, `age`, `style`, `rennet`, `pasteurised`, `fat_content`, `allergens`, `vegetarian`, `gluten_free`, `lactose_free`, `pairing_notes`, `awards`) VALUES
-                                                                                                                                                                                                                                                                                                                                               (1, 'Mature Cheddar', 'mature-cheddar', 8.90, 'AUD', 'Sharp, crumbly English classic.', 'Traditional farmhouse cheddar with a long lingering finish.', NULL, NULL, 4.40, 113, '2025-09-10 01:51:06', '2025-10-06 20:14:14', 'United Kingdom', 'Cow', '12 months', 'Hard', 'Animal', 'no', '34%', 'Milk', 0, 1, 0, 'Cider, crusty bread', NULL),
-                                                                                                                                                                                                                                                                                                                                               (2, 'Brie de Maison', 'brie-de-maison', 10.50, 'AUD', 'Rich and buttery soft cheese.', 'Creamy paste with a delicate bloomy rind and mushroomy aroma.', NULL, NULL, 4.60, 93, '2025-09-10 01:51:06', '2025-10-06 19:28:43', 'France', 'Cow', '4 weeks', 'Soft-ripened', 'Animal', 'yes', '28%', 'Milk', 0, 1, 0, 'Sparkling wine, strawberries', NULL),
-                                                                                                                                                                                                                                                                                                                                               (3, 'Goat Feta', 'goat-feta', 7.40, 'AUD', 'Salty and tangy, perfect for salads.', 'Traditional brined feta made from 100% goat\'s milk.', NULL, NULL, 4.20, 140, '2025-09-10 01:51:06', '2025-09-10 01:51:06', 'Greece', 'Goat', '8 weeks', 'Fresh', 'Vegetarian', 'yes', '23%', 'Milk', 1, 1, 0, 'Watermelon, olives', NULL),
+                                                                                                                                                                                                                                                                                                                                               (1, 'Mature Cheddar', 'mature-cheddar', 8.90, 'AUD', 'Sharp, crumbly English classic.', 'Traditional farmhouse cheddar with a long lingering finish.', NULL, NULL, 4.40, 112, '2025-09-10 01:51:06', '2025-10-08 12:13:38', 'United Kingdom', 'Cow', '12 months', 'Hard', 'Animal', 'no', '34%', 'Milk', 0, 1, 0, 'Cider, crusty bread', ''),
+                                                                                                                                                                                                                                                                                                                                               (2, 'Brie de Maison', 'brie-de-maison', 10.50, 'AUD', 'Rich and buttery soft cheese.', 'Creamy paste with a delicate bloomy rind and mushroomy aroma.', NULL, NULL, 4.60, 91, '2025-09-10 01:51:06', '2025-10-12 00:27:31', 'France', 'Cow', '4 weeks', 'Soft-ripened', 'Animal', 'yes', '28%', 'Milk', 0, 1, 0, 'Sparkling wine, strawberries', NULL),
+                                                                                                                                                                                                                                                                                                                                               (3, 'Goat Feta', 'goat-feta', 7.40, 'AUD', 'Salty and tangy, perfect for salads.', 'Traditional brined feta made from 100% goat\'s milk.', NULL, NULL, 4.20, 139, '2025-09-10 01:51:06', '2025-10-12 00:27:55', 'Greece', 'Goat', '8 weeks', 'Fresh', 'Vegetarian', 'yes', '23%', 'Milk', 1, 1, 0, 'Watermelon, olives', NULL),
 (4, 'Aged Gouda 18M', 'aged-gouda-18m', 14.90, 'AUD', 'Caramel notes and crunchy crystals.', 'Dutch gouda matured for 18 months, deep butterscotch flavor.', NULL, NULL, 4.80, 60, '2025-09-10 01:51:06', '2025-09-10 01:51:06', 'Netherlands', 'Cow', '18 months', 'Hard', 'Animal', 'no', '32%', 'Milk', 0, 1, 0, 'Brown ale, toasted nuts', 'World Cheese Awards – Gold'),
 (5, 'Blue Vein Classic', 'blue-vein-classic', 11.20, 'AUD', 'Bold and spicy blue.', 'Creamy body streaked with blue veins; assertive and savory.', NULL, NULL, 4.10, 69, '2025-09-10 01:51:06', '2025-10-06 19:20:45', 'Denmark', 'Cow', '3 months', 'Blue', 'Animal', 'yes', '30%', 'Milk', 0, 1, 0, 'Port wine, pears', NULL),
 (6, 'Manchego Curado', 'manchego-curado', 13.50, 'AUD', 'Nutty sheep’s milk from La Mancha.', 'Pressed cheese with firm texture and sweet grassy aroma.', NULL, NULL, 4.50, 55, '2025-09-10 01:51:06', '2025-09-10 01:51:06', 'Spain', 'Sheep', '9 months', 'Semi-hard', 'Animal', 'no', '27%', 'Milk', 0, 1, 0, 'Quince paste, almonds', NULL),
@@ -464,8 +477,7 @@ INSERT INTO `products` (`id`, `name`, `slug`, `price`, `currency`, `summary`, `d
 (9, 'Buffalo Mozzarella', 'buffalo-mozzarella', 6.90, 'AUD', 'Delicate and milky.', 'Fresh stretched-curd cheese made from buffalo milk.', NULL, NULL, 4.00, 160, '2025-09-10 01:51:06', '2025-09-10 01:51:06', 'Italy', 'Buffalo', 'Fresh', 'Fresh', 'Vegetarian', 'yes', '20%', 'Milk', 1, 1, 0, 'Tomatoes, basil, olive oil', NULL),
 (10, 'Taleggio Washed Rind', 'taleggio-washed-rind', 12.30, 'AUD', 'Fruity, tangy, aromatic.', 'Square washed-rind with soft interior and orange rind.', NULL, NULL, 4.20, 68, '2025-09-10 01:51:06', '2025-09-10 01:51:06', 'Italy', 'Cow', '2 months', 'Washed rind', 'Animal', 'yes', '28%', 'Milk', 0, 1, 0, 'Pilsner, roasted mushrooms', NULL),
 (11, 'Swiss Emmental', 'swiss-emmental', 12.00, 'AUD', 'Nutty with signature eyes.', 'Large-holed Swiss cheese with sweet buttery finish.', NULL, NULL, 4.10, 75, '2025-09-10 01:51:06', '2025-09-10 01:51:06', 'Switzerland', 'Cow', '4 months', 'Semi-hard', 'Animal', 'no', '28%', 'Milk', 0, 1, 0, 'Riesling, ham sandwiches', NULL),
-(12, 'Smoked Provolone', 'smoked-provolone', 9.40, 'AUD', 'Gentle smoke and stretch.', 'Southern Italian style, lightly smoked, great for melting.', NULL, NULL, 4.00, 110, '2025-09-10 01:51:06', '2025-09-10 01:51:06', 'Italy', 'Cow', '3 months', 'Semi-hard', 'Vegetarian', 'yes', '26%', 'Milk', 1, 1, 0, 'Grilled vegetables, lager', NULL),
-(15, 'test', 'test', 11.00, 'AUD', '111', '111', 'img/products/product_68cb9f57dd0b9.png', NULL, NULL, 1, '2025-09-11 05:27:15', '2025-09-18 05:57:43', '1', '', '1', '1', 'Animal', NULL, '1', 'xxx', 1, 1, 1, 'test', 'test');
+(12, 'Smoked Provolone', 'smoked-provolone', 9.40, 'AUD', 'Gentle smoke and stretch.', 'Southern Italian style, lightly smoked, great for melting.', NULL, NULL, 4.00, 110, '2025-09-10 01:51:06', '2025-09-10 01:51:06', 'Italy', 'Cow', '3 months', 'Semi-hard', 'Vegetarian', 'yes', '26%', 'Milk', 1, 1, 0, 'Grilled vegetables, lager', NULL);
 
 -- --------------------------------------------------------
 
@@ -490,6 +502,9 @@ CREATE TABLE `users` (
   `id` int(11) NOT NULL,
   `email` varchar(255) NOT NULL,
   `password` varchar(255) NOT NULL,
+  `reset_code_hash` varchar(255) DEFAULT NULL,
+  `reset_expires` datetime DEFAULT NULL,
+  `reset_attempts` int(11) NOT NULL DEFAULT 0,
   `created` datetime DEFAULT NULL,
   `modified` datetime DEFAULT NULL,
   `role` varchar(20) NOT NULL DEFAULT 'user',
@@ -498,18 +513,24 @@ CREATE TABLE `users` (
   `language` varchar(8) DEFAULT 'en',
   `theme` varchar(20) DEFAULT 'auto',
   `notify_email` tinyint(1) DEFAULT 1,
-  `notify_push` tinyint(1) DEFAULT 0
+  `notify_push` tinyint(1) DEFAULT 0,
+  `pref_theme` varchar(10) DEFAULT 'auto',
+  `pref_contrast` varchar(10) DEFAULT 'normal',
+  `pref_font_scale` decimal(3,2) DEFAULT 1.00,
+  `pref_lang` varchar(8) DEFAULT 'en',
+  `email_optin` tinyint(1) DEFAULT 1,
+  `cookie_consent` tinyint(1) DEFAULT 0
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
 --
 -- 转存表中的数据 `users`
 --
 
-INSERT INTO `users` (`id`, `email`, `password`, `created`, `modified`, `role`, `status`, `timezone`, `language`, `theme`, `notify_email`, `notify_push`) VALUES
-(1, 'cakephp@example.com', '$2y$10$zRylcS5T3aPvsvdScsO5KOw5ndzDwbFF7qHhF1fuh.TFfWcBg8lKO', '2025-08-12 04:25:41', '2025-08-12 04:25:41', 'user', 'active', 'UTC', 'en', 'auto', 1, 0),
-(2, 'admin@curdandculture.com', '$2y$10$S2htStkFy/.33Lm848bSq.D7hUq02ngHfg5I0ycSh4XdAEN7IC7UG', '2025-08-19 00:22:26', '2025-08-19 00:22:26', 'admin', 'active', 'UTC', 'en', 'auto', 1, 0),
-(4, 'Carl@curdandculture.com', '$2y$10$YP1iwuR1AyQmpMJWbb1vwelDZCgYw8kQksrEgJNWvKp3DOOYg8DBC', '2025-09-07 01:02:57', '2025-09-07 01:02:57', 'customer', 'active', 'UTC', 'en', 'auto', 1, 0),
-(5, 'TestCustomer@gmail.com', '$2y$10$67uG.sOhtqe8PlsDXQcqeuLFXdjD4zuK1ySP8ynZf9eD6sxe5fFqG', '2025-09-09 17:11:37', '2025-09-10 07:03:20', 'customer', 'active', 'UTC', 'en', 'auto', 1, 0);
+INSERT INTO `users` (`id`, `email`, `password`, `reset_code_hash`, `reset_expires`, `reset_attempts`, `created`, `modified`, `role`, `status`, `timezone`, `language`, `theme`, `notify_email`, `notify_push`, `pref_theme`, `pref_contrast`, `pref_font_scale`, `pref_lang`, `email_optin`, `cookie_consent`) VALUES
+(1, 'cakephp@example.com', '$2y$10$zRylcS5T3aPvsvdScsO5KOw5ndzDwbFF7qHhF1fuh.TFfWcBg8lKO', NULL, NULL, 0, '2025-08-12 04:25:41', '2025-08-12 04:25:41', 'user', 'active', 'UTC', 'en', 'auto', 1, 0, 'auto', 'normal', 1.00, 'en', 1, 0),
+(2, 'admin@curdandculture.com', '$2y$10$S2htStkFy/.33Lm848bSq.D7hUq02ngHfg5I0ycSh4XdAEN7IC7UG', '$2y$10$Zo/7cI.iAyaCXHmMnma/r.VwXk2acwoySt4hbty/Jpew3oh39YVLC', '2025-10-11 20:24:06', 5, '2025-08-19 00:22:26', '2025-10-11 20:15:04', 'admin', 'active', 'UTC', 'en', 'auto', 1, 0, 'auto', 'normal', 1.00, 'en', 1, 0),
+(4, 'Carl@curdandculture.com', '$2y$10$YP1iwuR1AyQmpMJWbb1vwelDZCgYw8kQksrEgJNWvKp3DOOYg8DBC', NULL, NULL, 0, '2025-09-07 01:02:57', '2025-10-12 00:20:25', 'customer', 'active', 'UTC', 'en', 'auto', 1, 0, 'auto', 'normal', 1.00, 'en', 1, 0),
+(5, 'TestCustomer@gmail.com', '$2y$10$8TEIJnQQEIvXAqY.sF9DL.Bv.HSu4UtO7G13gfZPnazJ.RnQA9j9K', '$2y$10$q4dnx0S5VYApka9NRAZawuiMoqbYFDuZLbEY..Q3xNZYI02vyMBv6', '2025-10-11 20:51:20', 0, '2025-09-09 17:11:37', '2025-10-12 00:02:19', 'customer', 'active', 'UTC', 'en', 'auto', 1, 0, 'auto', 'normal', 1.00, 'en', 1, 0);
 
 --
 -- 转储表的索引
@@ -625,7 +646,8 @@ ALTER TABLE `tags`
 -- 表的索引 `users`
 --
 ALTER TABLE `users`
-  ADD PRIMARY KEY (`id`);
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_users_reset_expires` (`reset_expires`);
 
 --
 -- 在导出的表使用AUTO_INCREMENT
@@ -635,7 +657,7 @@ ALTER TABLE `users`
 -- 使用表AUTO_INCREMENT `addresses`
 --
 ALTER TABLE `addresses`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=13;
 
 --
 -- 使用表AUTO_INCREMENT `articles`
@@ -647,13 +669,13 @@ ALTER TABLE `articles`
 -- 使用表AUTO_INCREMENT `carts`
 --
 ALTER TABLE `carts`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
 
 --
 -- 使用表AUTO_INCREMENT `cart_items`
 --
 ALTER TABLE `cart_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=45;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=50;
 
 --
 -- 使用表AUTO_INCREMENT `contacts`
@@ -665,7 +687,7 @@ ALTER TABLE `contacts`
 -- 使用表AUTO_INCREMENT `contact_messages`
 --
 ALTER TABLE `contact_messages`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=25;
 
 --
 -- 使用表AUTO_INCREMENT `delivery_slots`
@@ -677,13 +699,13 @@ ALTER TABLE `delivery_slots`
 -- 使用表AUTO_INCREMENT `orders`
 --
 ALTER TABLE `orders`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=27;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=31;
 
 --
 -- 使用表AUTO_INCREMENT `order_items`
 --
 ALTER TABLE `order_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=24;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- 使用表AUTO_INCREMENT `pickup_locations`
