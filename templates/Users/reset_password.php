@@ -1,12 +1,13 @@
 <?php
 /**
  * View: Reset Password
- * - Shows 6-digit verification code (OTP) with auto-advance
+ * - 6-digit OTP with auto-advance
  * - New/Confirm password fields with show/hide
+ * - Password strength meter + HTML5 validation
  * - Posts to Users::resetPassword
  *
  * Required view vars:
- *   - string $email  (the target account)
+ *   - string $email
  */
 $this->assign('title', 'Reset password');
 
@@ -27,7 +28,7 @@ echo $this->Form->create(
             </p>
         </header>
 
-        <!-- Flash messages (success / error) -->
+        <!-- Flash messages -->
         <div class="auth-flash">
             <?= $this->Flash->render() ?>
         </div>
@@ -44,7 +45,6 @@ echo $this->Form->create(
 
             <div class="otp-wrap" id="otp-wrap" data-inputs="6">
                 <?php
-                // Prefill digits if a code was posted/redisplayed
                 $prefill = preg_replace('/\D+/', '', (string)($this->request->getData('code') ?? ''));
                 for ($i = 0; $i < 6; $i++):
                     $val = $prefill[$i] ?? '';
@@ -75,10 +75,21 @@ echo $this->Form->create(
                     'id' => 'password',
                     'autocomplete' => 'new-password',
                     'placeholder' => '••••••••',
-                    'class' => 'auth-input with-icon'
+                    'class' => 'auth-input with-icon',
+                    // HTML5 validation: ≥8, includes upper + lower + digit
+                    'minlength' => 8,
+                    'pattern' => '(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}',
+                    'required' => true,
+                    'title' => 'At least 8 characters with uppercase, lowercase and a number'
                 ]) ?>
                 <button type="button" class="show-toggle" data-target="#password" aria-label="Show password">👁</button>
             </div>
+
+            <!-- Strength meter -->
+            <div class="pw-meter" id="rpPwMeter" aria-hidden="true">
+                <div class="pw-meter-bar"></div>
+            </div>
+            <small class="pw-hint" id="rpPwHint"></small>
         </div>
 
         <!-- Confirm password -->
@@ -95,7 +106,11 @@ echo $this->Form->create(
                     'id' => 'confirm_password',
                     'autocomplete' => 'new-password',
                     'placeholder' => '••••••••',
-                    'class' => 'auth-input with-icon'
+                    'class' => 'auth-input with-icon',
+                    'minlength' => 8,
+                    'pattern' => '(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}',
+                    'required' => true,
+                    'title' => 'At least 8 characters with uppercase, lowercase and a number'
                 ]) ?>
                 <button type="button" class="show-toggle" data-target="#confirm_password" aria-label="Show password">👁</button>
             </div>
@@ -184,14 +199,13 @@ echo $this->Form->create(
     .theme-dark .auth-input{background:#0f172a;color:#e5e7eb;box-shadow: inset 0 1px 2px rgba(0,0,0,.2)}
     .theme-dark .auth-input:focus{background:#0b1220;box-shadow:0 0 0 3px rgba(96,165,250,.32)}
 
-    /* Show/hide toggles */
     .show-toggle{
         position:absolute;right:10px;top:50%;transform:translateY(-50%);
         border:0;background:transparent;cursor:pointer;font-size:15px;opacity:.65
     }
     .show-toggle:hover{opacity:.9}
 
-    /* ===== OTP six boxes ===== */
+    /* ===== OTP ===== */
     .otp-wrap{display:flex;gap:.5rem}
     .otp-box{
         width:46px;height:46px;border-radius:.7rem;border:1px solid #e5e7eb;
@@ -216,10 +230,21 @@ echo $this->Form->create(
     .auth-btn-primary:active{transform:translateY(1px)}
 
     .rp-back{margin-top:.95rem;text-align:center}
+
+    /* ===== Password strength meter ===== */
+    .pw-meter{height:8px;border-radius:8px;background:#eef2f7;margin:.5rem 0 .25rem;overflow:hidden}
+    .theme-dark .pw-meter{background:#1f2937}
+    .pw-meter-bar{height:100%;width:0%;transition:width .2s ease-in-out}
+    .pw-hint{display:block;margin-top:.15rem;font-size:.85rem;color:#6b7280}
+    .theme-dark .pw-hint{color:#94a3b8}
+    .pw-weak  {background:#ef4444}
+    .pw-fair  {background:#f59e0b}
+    .pw-good  {background:#10b981}
+    .pw-strong{background:#22c55e}
 </style>
 
 <script>
-    // ===== OTP logic: auto-advance, backspace, submit as "code" =====
+    // ===== OTP logic: auto-advance, backspace, paste, and submit as "code" =====
     (function () {
         const wrap = document.getElementById('otp-wrap');
         if (!wrap) return;
@@ -231,15 +256,13 @@ echo $this->Form->create(
         }
 
         boxes.forEach((box, idx) => {
-            box.addEventListener('input', (e) => {
+            box.addEventListener('input', () => {
                 box.value = box.value.replace(/\D/g,'').slice(0,1);
                 updateHidden();
                 if (box.value && idx < boxes.length - 1) boxes[idx + 1].focus();
             });
             box.addEventListener('keydown', (e) => {
-                if (e.key === 'Backspace' && !box.value && idx > 0) {
-                    boxes[idx - 1].focus();
-                }
+                if (e.key === 'Backspace' && !box.value && idx > 0) boxes[idx - 1].focus();
                 if (e.key === 'ArrowLeft' && idx > 0) boxes[idx - 1].focus();
                 if (e.key === 'ArrowRight' && idx < boxes.length - 1) boxes[idx + 1].focus();
             });
@@ -254,7 +277,6 @@ echo $this->Form->create(
             });
         });
 
-        // Initialize hidden with any prefilled box values
         updateHidden();
     })();
 
@@ -268,4 +290,59 @@ echo $this->Form->create(
             btn.textContent = isPwd ? '🙈' : '👁';
         });
     });
+
+    // ===== Password strength + confirm match (Reset page) =====
+    (function(){
+        const pwd   = document.getElementById('password');
+        const cpwd  = document.getElementById('confirm_password');
+        const meter = document.getElementById('rpPwMeter');
+        const bar   = meter?.querySelector('.pw-meter-bar');
+        const hint  = document.getElementById('rpPwHint');
+        const form  = document.querySelector('form.auth-form');
+
+        if (!pwd || !meter || !bar || !hint || !form) return;
+
+        function score(s){
+            let sc = 0;
+            if (s.length >= 8) sc++;
+            if (/[a-z]/.test(s)) sc++;
+            if (/[A-Z]/.test(s)) sc++;
+            if (/\d/.test(s))    sc++;
+            return sc; // 0..4
+        }
+
+        function render(){
+            const s = pwd.value || '';
+            const sc = score(s);
+            const pct = [0, 25, 50, 75, 100][sc];
+            bar.style.width = pct + '%';
+            bar.className = 'pw-meter-bar ' + (
+                sc <= 1 ? 'pw-weak' : sc === 2 ? 'pw-fair' : sc === 3 ? 'pw-good' : 'pw-strong'
+            );
+            const txt = sc<=1 ? 'Weak' : sc===2 ? 'Fair' : sc===3 ? 'Good' : 'Strong';
+            hint.textContent = 'Strength: ' + txt + ' — must include uppercase, lowercase and a number (min 8).';
+
+            const patternOk = /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}/.test(s);
+            pwd.setCustomValidity(patternOk ? '' : 'Password must be at least 8 characters and include uppercase, lowercase, and a number.');
+
+            if (cpwd.value) {
+                const match = s === cpwd.value;
+                cpwd.setCustomValidity(match ? '' : 'Passwords do not match.');
+            } else {
+                cpwd.setCustomValidity('');
+            }
+        }
+
+        pwd.addEventListener('input', render);
+        cpwd.addEventListener('input', render);
+        render();
+
+        form.addEventListener('submit', function(e){
+            render();
+            if (!form.checkValidity()) {
+                e.preventDefault();
+                form.reportValidity();
+            }
+        });
+    })();
 </script>
