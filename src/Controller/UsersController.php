@@ -39,10 +39,10 @@ class UsersController extends AppController
             ->viewBuilder()
             ->setTemplate('password_reset')
             ->setVars([
-                'user'       => $user,
-                'code'       => $code,
+                'user' => $user,
+                'code' => $code,
                 'ttlMinutes' => $ttlMinutes,
-                'appName'    => 'Curd & Culture',
+                'appName' => 'Curd & Culture',
             ]);
         $mailer->deliver();
     }
@@ -50,13 +50,13 @@ class UsersController extends AppController
 
     private function issueResetCode(object $user): void
     {
-        $ttl    = (int)(Configure::read('PasswordReset.code_ttl_minutes') ?? 10);
-        $code   = (string)random_int(100000, 999999);
+        $ttl = (int)(Configure::read('PasswordReset.code_ttl_minutes') ?? 10);
+        $code = (string)random_int(100000, 999999);
         $hasher = new DefaultPasswordHasher();
 
         $user->reset_code_hash = $hasher->hash($code);
-        $user->reset_expires   = FrozenTime::now()->addMinutes($ttl);
-        $user->reset_attempts  = 0;
+        $user->reset_expires = FrozenTime::now()->addMinutes($ttl);
+        $user->reset_attempts = 0;
 
         $Users = $this->fetchTable('Users');
         $Users->saveOrFail($user);
@@ -88,8 +88,8 @@ class UsersController extends AppController
 
         try {
             $http = new Client(['timeout' => 5]);
-            $res  = $http->post("https://{$domain}/recaptcha/api/siteverify", [
-                'secret'   => $secret,
+            $res = $http->post("https://{$domain}/recaptcha/api/siteverify", [
+                'secret' => $secret,
                 'response' => $token,
                 'remoteip' => $this->request->clientIp(),
             ]);
@@ -118,7 +118,7 @@ class UsersController extends AppController
             $email = trim((string)$this->request->getData('email'));
 
             $Users = $this->fetchTable('Users');
-            $user  = $Users->find()->where(['email' => $email])->first();
+            $user = $Users->find()->where(['email' => $email])->first();
 
             if ($user) {
                 try {
@@ -152,7 +152,7 @@ class UsersController extends AppController
 
         if ($this->request->is('post')) {
             $Users = $this->fetchTable('Users');
-            $user  = $Users->find()->where(['email' => $email])->first();
+            $user = $Users->find()->where(['email' => $email])->first();
 
             if (!$user) {
                 $this->Flash->error('Invalid code or code expired. Please request a new one.');
@@ -160,7 +160,7 @@ class UsersController extends AppController
             }
 
 
-            $now     = FrozenTime::now();
+            $now = FrozenTime::now();
             $expires = $user->reset_expires;
             if ($expires !== null && !($expires instanceof FrozenTime)) {
                 $expires = new FrozenTime($expires);
@@ -176,16 +176,16 @@ class UsersController extends AppController
                 return $this->redirect(['action' => 'forgotPassword']);
             }
 
-            $code     = (string)($this->request->getData('code') ?? '');
+            $code = (string)($this->request->getData('code') ?? '');
             $password = (string)($this->request->getData('password') ?? '');
-            $confirm  = (string)($this->request->getData('confirm_password') ?? '');
+            $confirm = (string)($this->request->getData('confirm_password') ?? '');
 
             if ($password === '' || $password !== $confirm) {
                 $this->Flash->error('Passwords do not match.');
                 return;
             }
 
-            $hasher  = new DefaultPasswordHasher();
+            $hasher = new DefaultPasswordHasher();
             $isValid = $user->reset_code_hash && $hasher->check($code, $user->reset_code_hash);
 
             if (!$isValid) {
@@ -196,10 +196,10 @@ class UsersController extends AppController
             }
 
 
-            $user->password        = $password;
+            $user->password = $password;
             $user->reset_code_hash = null;
-            $user->reset_expires   = null;
-            $user->reset_attempts  = 0;
+            $user->reset_expires = null;
+            $user->reset_attempts = 0;
 
             if ($Users->save($user)) {
                 $this->Flash->success('Your password has been reset. You can now sign in.');
@@ -212,7 +212,7 @@ class UsersController extends AppController
 
     public function login()
     {
-        $this->request->allowMethod(['get','post']);
+        $this->request->allowMethod(['get', 'post']);
 
 
         $this->set('siteKey', (string)(Configure::read('Security.recaptcha.site_key') ?? ''));
@@ -246,9 +246,9 @@ class UsersController extends AppController
             $identity = $this->request->getAttribute('identity');
             $role = strtolower((string)($identity->role ?? ''));
             if ($role === 'admin') {
-                return $this->redirect(['prefix'=>'Admin','controller'=>'Dashboard','action'=>'index']);
+                return $this->redirect(['prefix' => 'Admin', 'controller' => 'Dashboard', 'action' => 'index']);
             }
-            return $this->redirect(['controller'=>'Customer','action'=>'index']);
+            return $this->redirect(['controller' => 'Customer', 'action' => 'index']);
         }
 
         if ($this->request->is('post') && (!$result || !$result->isValid())) {
@@ -260,11 +260,11 @@ class UsersController extends AppController
     {
         $this->request->allowMethod(['get', 'post']);
         $Users = $this->fetchTable('Users');
-        $user  = $Users->newEmptyEntity();
+        $user = $Users->newEmptyEntity();
 
         if ($this->request->is('post')) {
             $data = (array)$this->request->getData();
-            $data['role']   = 'customer';
+            $data['role'] = 'customer';
             $data['status'] = $data['status'] ?? 'active';
 
             $user = $Users->patchEntity($user, $data);
@@ -275,7 +275,7 @@ class UsersController extends AppController
             }
 
             $errors = $user->getErrors();
-            $flat   = [];
+            $flat = [];
             foreach ($errors as $field => $msgs) {
                 foreach ((array)$msgs as $msg) {
                     $flat[] = sprintf('%s: %s', ucfirst($field), $msg);
@@ -291,12 +291,31 @@ class UsersController extends AppController
     public function logout()
     {
 
-        $this->request->allowMethod(['post']);
+        $this->request->allowMethod(['post', 'get']);
+
 
         if ($this->components()->has('AppPrefs')) {
             $this->AppPrefs->onLogout();
         }
-        $result = $this->Authentication->logout();
-        return $this->redirect($result ?? '/');
+
+
+        $authResult = $this->Authentication->getResult();
+        if ($authResult && $authResult->isValid()) {
+            $result = $this->Authentication->logout();
+        } else {
+            $result = null;
+        }
+
+
+        $currentPrefix = (string)($this->request->getParam('prefix') ?? '');
+        $fallback = [
+            'prefix' => $currentPrefix !== '' ? $currentPrefix : false,
+            'controller' => 'Users',
+            'action' => 'login',
+        ];
+
+        $this->Flash->success(__('You have been logged out.'));
+
+        return $this->redirect($result ?: $fallback);
     }
 }
