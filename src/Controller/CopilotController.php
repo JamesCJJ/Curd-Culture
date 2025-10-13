@@ -143,14 +143,27 @@ class CopilotController extends AppController
         }
 
         // Check if message is searching for products
+        $productSearchTerm = null;
+        
+        // Explicit search patterns
         if (preg_match('/(search|find|looking for|want|need)\s+(.+)/i', $message, $m)) {
-            $term = trim((string)($m[2] ?? ''));
-            $term = preg_replace('/\b(cheese|product|some|any|a)\b/i', '', $term);
-            $term = trim($term);
-            if ($term !== '') {
-                $results = $this->searchProducts($term, 6);
-                if (!empty($results)) {
-                    $payload['products'] = $results;
+            $productSearchTerm = trim((string)($m[2] ?? ''));
+            $productSearchTerm = preg_replace('/\b(cheese|product|some|any|a)\b/i', '', $productSearchTerm);
+            $productSearchTerm = trim($productSearchTerm);
+        }
+        // Or simple product name queries (short messages without question words)
+        elseif (strlen($message) < 50 && !preg_match('/\b(what|how|when|where|why|can|do|does|is|are|my|order)\b/i', $message)) {
+            $productSearchTerm = trim($message);
+        }
+        
+        if ($productSearchTerm && $productSearchTerm !== '') {
+            $results = $this->searchProducts($productSearchTerm, 6);
+            if (!empty($results)) {
+                $payload['products'] = $results;
+                // Auto-open single product
+                if (count($results) === 1) {
+                    $webroot = (string)($this->request->getAttribute('webroot') ?? '/');
+                    $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($results[0]['slug']);
                 }
             }
         }
