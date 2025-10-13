@@ -76,6 +76,10 @@
     .page.hc .copilot__feed{background:#0b1220}
     .page.hc .copilot__msg--bot .copilot__bubble{background:#1f2937;color:#e5e7eb;border-color:#475569}
     .page.hc .copilot__input{background:#0b1220;color:#e5e7eb;border-color:#475569}
+    .copilot__products{display:flex;flex-direction:column;gap:.4rem;padding:.2rem 0}
+    .copilot__product-btn{background:#1e3a8a;color:#fff;border:none;border-radius:8px;padding:.55rem .9rem;font-size:.85rem;cursor:pointer;transition:all .2s;text-align:left;width:100%;font-weight:500}
+    .copilot__product-btn:hover{background:#1e40af;transform:translateX(4px);box-shadow:0 2px 8px rgba(30,58,138,.3)}
+    .copilot__product-btn:active{transform:translateX(2px)}
     @media (max-width:480px){.copilot__panel{height:calc(100vh - 120px);width:calc(100vw - 40px)}}
   </style>`);
 
@@ -180,6 +184,26 @@
 
         const data = await res.json();
         addMsg(data.reply || 'No response received.', 'bot');
+        
+        // If there are products to display, show them as buttons
+        if (data.data && data.data.products && data.data.products.length > 0) {
+          const productsHtml = data.data.products.map(product => 
+            `<button class="copilot__product-btn" data-url="${product.url || (apiUrl('products/view/') + product.slug)}">${product.name}</button>`
+          ).join('');
+          
+          const productMsg = el(`<div class="copilot__msg copilot__msg--bot"><div class="copilot__bubble copilot__products">${productsHtml}</div></div>`);
+          feed.appendChild(productMsg);
+          feed.scrollTop = feed.scrollHeight;
+          saveHistory();
+          
+          // Add click handlers to product buttons
+          productMsg.querySelectorAll('.copilot__product-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+              const url = btn.getAttribute('data-url');
+              if (url) window.open(url, '_blank');
+            });
+          });
+        }
 
         // If there's a product link, open it automatically
         if (data.data && data.data.open_url) {
