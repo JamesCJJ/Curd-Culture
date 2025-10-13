@@ -4,101 +4,180 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Service\AIService;
+use Authentication\IdentityInterface;
 use Cake\Datasource\EntityInterface;
+use Cake\Event\EventInterface;
 use Cake\Http\Response;
+use Cake\Log\Log;
 use Cake\ORM\TableRegistry;
 
 /**
- * AI-Enhanced Copilot (chatbot)
- * - Answers questions about products and orders naturally using AI (Google Gemini or OpenAI)
- * - Falls back to rule-based parsing when AI is disabled
- * - Keeps logic server-side for security
+ * CopilotController
+ *
+ * Chat-like endpoint that:
+ *  - Answers common questions about products, delivery, payments, etc.
+ *  - Optionally calls an AI provider (Gemini/OpenAI) via AIService; if it fails,
+ *    falls back to simple rule-based responses (never 500 to the user).
+ *  - Always returns JSON; never renders a template.
+ *
+ * Endpoint:
+ *  POST /copilot/talk
+ *  Body: { message: string } (supports application/json or x-www-form-urlencoded)
  */
 class CopilotController extends AppController
 {
+    /** @var \App\Service\AIService|null */
     private ?AIService $aiService = null;
+
+    /** @var \App\Model\Table\ProductsTable */
+    protected $Products;
+    /** @var \App\Model\Table\OrdersTable */
+    protected $Orders;
+    /** @var \App\Model\Table\OrderItemsTable */
+    protected $OrderItems;
 
     public function initialize(): void
     {
         parent::initialize();
-        // Fetch tables explicitly (avoid loadModel to support all setups)
-        $this->Products   = TableRegistry::getTableLocator()->get('Products');
-        $this->Orders     = TableRegistry::getTableLocator()->get('Orders');
-        $this->OrderItems = TableRegistry::getTableLocator()->get('OrderItems');
-        $this->viewBuilder()->setClassName('Json');
-        
-        // Initialize AI service (supports Gemini and OpenAI)
+
+        // Obtain tables explicitly (avoid loadModel coupling)
+        $locator = TableRegistry::getTableLocator();
+        $this->Products   = $locator->get('Products');
+        $this->Orders     = $locator->get('Orders');
+        $this->OrderItems = $locator->get('OrderItems');
+
+        // Initialize AI service (reads config 'AI' in app_local.php)
         $this->aiService = new AIService();
-        
-        // Allow unauthenticated access
+
+        // If FormProtection is enabled globally, disable it here:
+        // this endpoint accepts JSON and we send CSRF via header from the UI.
+        if ($this->components()->has('FormProtection')) {
+            $this->components()->unload('FormProtection');
+        }
+
+        // We always return JSON manually
+        $this->viewBuilder()->setClassName('Json');
+    }
+
+    public function beforeFilter(EventInterface $event): void
+    {
+        parent::beforeFilter($event);
+
+        // Allow unauthenticated POST /copilot/talk
         if (isset($this->Authentication)) {
             $this->Authentication->allowUnauthenticated(['talk']);
         }
-        
-        // Load FormProtection but allow JSON requests
-        // Disable FormProtection for this controller since we handle CSRF via header
-        if ($this->components()->has('FormProtection')) {
-            $this->components()->unload('FormProtection');
+        // If Authorization plugin is enabled, skip policy checks
+        if (isset($this->Authorization)) {
+            $this->Authorization->skipAuthorization();
         }
     }
 
     /**
      * POST /copilot/talk
-     * Body: { message: string }
+     * Accepts JSON or x-www-form-urlencoded. Returns JSON.
      */
     public function talk(): Response
     {
         $this->request->allowMethod(['post']);
+        $this->autoRender = false;
 
-        $body = (array)$this->request->getData();
-        $message = trim((string)($body['message'] ?? ''));
-        if ($message === '') {
-            return $this->json([
-                'ok' => true,
-                'reply' => "Hi! I can help with orders and products. Try asking me anything!",
-            ]);
-        }
+        try {
+            // Support both JSON and form submissions
+            $isJson = stripos((string)$this->request->getHeaderLine('Content-Type'), 'application/json') !== false;
+            $input  = $isJson
+                ? (array)json_decode((string)$this->request->getBody(), true)
+                : (array)$this->request->getData();
 
-        $identity = $this->request->getAttribute('identity');
-
-        // Try AI-powered response first
-        if ($this->aiService && $this->aiService->isEnabled()) {
-            try {
-                return $this->handleWithAI($message, $identity);
-            } catch (\Throwable $e) {
-                // Fall through to rule-based handler on any error
+            $message = trim((string)($input['message'] ?? ''));
+            if ($message === '') {
+                return $this->json([
+                    'ok'    => true,
+                    'reply' => "Hi! I can help with products, delivery, payments, and orders. Ask me anything!"
+                ]);
             }
-        }
 
-        // Fall back to rule-based system
-        return $this->handleWithRules($message, $identity);
+            $identity = $this->request->getAttribute('identity');
+
+            // 1) Try AI first (if enabled)
+            if ($this->aiService && $this->aiService->isEnabled()) {
+                try {
+                    return $this->handleWithAI($message, $identity);
+                } catch (\Throwable $e) {
+                    // Log and continue with rules; don't 500 the user
+                    Log::warning('[copilot.ai] falling back to rules: ' . $e->getMessage());
+                }
+            }
+
+            // 2) Fallback: rule-based intents
+            return $this->handleWithRules($message, $identity);
+
+        } catch (\Throwable $e) {
+            Log::error('[copilot.talk] ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            return $this->response
+                ->withStatus(500)
+                ->withType('application/json')
+                ->withStringBody(json_encode(['ok' => false, 'error' => 'server_error']));
+        }
     }
 
     /**
-     * Handle message with AI (OpenAI)
+     * Extract user id from any kind of identity (Authentication\Identity, Entity, array).
      */
-    private function handleWithAI(string $message, ?EntityInterface $identity): Response
+    private function userId($identity): ?int
     {
-        // Build context for AI
+        if (!$identity) return null;
+
+        if ($identity instanceof IdentityInterface) {
+            $v = $identity->get('id');
+            return $v !== null && $v !== '' ? (int)$v : null;
+        }
+        if ($identity instanceof EntityInterface) {
+            $v = $identity->get('id');
+            return $v !== null && $v !== '' ? (int)$v : null;
+        }
+        if (is_array($identity)) {
+            return isset($identity['id']) ? (int)$identity['id'] : null;
+        }
+        return null;
+    }
+
+    /**
+     * Check admin role from any kind of identity (Authentication\Identity, Entity, array).
+     */
+    private function isAdmin($identity): bool
+    {
+        $role = null;
+        if ($identity instanceof IdentityInterface) {
+            $role = $identity->get('role');
+        } elseif ($identity instanceof EntityInterface) {
+            $role = $identity->get('role');
+        } elseif (is_array($identity)) {
+            $role = $identity['role'] ?? null;
+        }
+        return strtolower((string)$role) === 'admin';
+    }
+
+    /**
+     * Handle message by calling AI provider and optionally enrich with local data.
+     */
+    private function handleWithAI(string $message, $identity): Response
+    {
+        $payload = [];
         $context = [];
-        
-        if ($identity) {
-            $context['user_id'] = (int)$identity->get('id');
-            
-            // Get recent orders for context (tolerate DB issues)
-            $recentOrders = [];
+
+        if (($uid = $this->userId($identity)) !== null) {
+            $context['user_id'] = $uid;
             try {
                 $recentOrders = $this->recentOrders($identity, 3);
+                if ($recentOrders) {
+                    $context['recent_orders'] = $recentOrders;
+                }
             } catch (\Throwable $e) {
-                $recentOrders = [];
-            }
-            if (!empty($recentOrders)) {
-                $context['recent_orders'] = $recentOrders;
+                // ignore
             }
         }
 
-        // Get some product names for context (tolerate DB issues)
-        $products = [];
         try {
             $products = $this->Products->find()
                 ->select(['name'])
@@ -107,287 +186,253 @@ class CopilotController extends AppController
                 ->all()
                 ->extract('name')
                 ->toArray();
+            if ($products) {
+                $context['available_products'] = $products;
+            }
         } catch (\Throwable $e) {
-            $products = [];
-        }
-        if (!empty($products)) {
-            $context['available_products'] = $products;
+            // ignore
         }
 
-        // Get AI response
+        // Call AI service
         $aiResponse = $this->aiService->chat($message, $context);
-
-        if (!$aiResponse['success']) {
-            // AI failed, fall back to rules
+        if (!($aiResponse['success'] ?? false)) {
+            // Fallback to rules if AI failed
             return $this->handleWithRules($message, $identity);
         }
 
-        $reply = $aiResponse['message'];
-        $payload = [];
+        $reply = (string)($aiResponse['message'] ?? '');
 
-        // Check if message mentions specific orders and fetch data
+        // Optional: enrich with local order data if the user referenced an order id
         if (preg_match('/order\s*#?\s*(\d{1,8})/i', $message, $m)) {
-            $orderId = (int)$m[1];
+            $orderId   = (int)$m[1];
             $orderData = $this->lookupOrder($orderId, $identity);
             if ($orderData) {
                 $payload['order'] = $orderData;
             }
         }
 
-        // Check if message is about recent orders
-        if (preg_match('/\b(my|recent)\s*(orders?|purchases?)\b/i', $message) && $identity) {
-            $ordersList = $this->recentOrders($identity, 3);
-            if (!empty($ordersList)) {
-                $payload['orders'] = $ordersList;
+        // Optional: list recent orders if the user asked
+        if (preg_match('/\b(my|recent)\s*(orders?|purchases?)\b/i', $message)) {
+            $list = $this->recentOrders($identity, 3);
+            if ($list) {
+                $payload['orders'] = $list;
             }
         }
 
-        // Check if message is searching for products
+        // Optional: simple product search heuristic
         $productSearchTerm = null;
-        
-        // Explicit search patterns
+
         if (preg_match('/(search|find|looking for|want|need)\s+(.+)/i', $message, $m)) {
             $productSearchTerm = trim((string)($m[2] ?? ''));
             $productSearchTerm = preg_replace('/\b(cheese|product|some|any|a)\b/i', '', $productSearchTerm);
             $productSearchTerm = trim($productSearchTerm);
-        }
-        // Or simple product name queries (short messages without question words)
-        elseif (strlen($message) < 50 && !preg_match('/\b(what|how|when|where|why|can|do|does|is|are|my|order)\b/i', $message)) {
+        } elseif (strlen($message) < 50 && !preg_match('/\b(what|how|when|where|why|can|do|does|is|are|my|order)\b/i', $message)) {
             $productSearchTerm = trim($message);
         }
-        
-        if ($productSearchTerm && $productSearchTerm !== '') {
+
+        if ($productSearchTerm) {
             $results = $this->searchProducts($productSearchTerm, 6);
-            if (!empty($results)) {
+            if ($results) {
                 $payload['products'] = $results;
-                // Auto-open single product
                 if (count($results) === 1) {
-                    $webroot = (string)($this->request->getAttribute('webroot') ?? '/');
+                    $webroot             = (string)($this->request->getAttribute('webroot') ?? '/');
                     $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($results[0]['slug']);
                 }
             }
         }
 
         return $this->json([
-            'ok' => true,
-            'reply' => $reply,
-            'data' => $payload,
+            'ok'         => true,
+            'reply'      => $reply !== '' ? $reply : "Got it.",
+            'data'       => $payload,
             'ai_powered' => true,
         ]);
     }
 
     /**
-     * Handle message with rule-based system (original logic)
+     * Rule-based responses (no external calls, always safe).
      */
-    private function handleWithRules(string $message, ?EntityInterface $identity): Response
+    private function handleWithRules(string $message, $identity): Response
     {
-        $reply = null;
         $payload = [];
 
-        // Delivery, Shipping, Pickup questions
+        // Delivery / shipping / pickup
         if (preg_match('/(deliver|delivery|shipping|ship|arrive|arrival|pickup|pick.?up|how long)/i', $message)) {
-            $reply = 'We offer scheduled delivery slots and in-store pickup. You can choose your preferred option and see the final cost during checkout. For details on an existing order, please check your customer dashboard.';
-            return $this->json(['ok' => true, 'reply' => $reply]);
+            return $this->json([
+                'ok'    => true,
+                'reply' => 'We offer scheduled delivery slots and in-store pickup. You can choose your preferred option and see the final cost during checkout. For an existing order, please check your dashboard.'
+            ]);
         }
 
-        // Product ingredients, dietary, or allergy questions
+        // Ingredients / dietary / allergy
         if (preg_match('/(gluten|ingredient|pasteuri|vegan|vegetarian|allergy|allergic|dietary|lactose)/i', $message)) {
-            $reply = "We list all ingredients and dietary information on each product's page. Please search for the cheese you're interested in to see its full details. For severe allergy concerns, we recommend contacting us directly.";
-            return $this->json(['ok' => true, 'reply' => $reply]);
+            return $this->json([
+                'ok'    => true,
+                'reply' => "We list ingredients and dietary information on each product's page. Search the specific cheese to see full details. For severe allergy concerns, please contact us directly."
+            ]);
         }
-        
+
         // Payment methods
         if (preg_match('/(pay|payment|card|credit|debit|amex|visa|mastercard|accept.*card)/i', $message)) {
-            $reply = 'We accept all major credit cards (Visa, Mastercard, Amex) through our secure checkout via Stripe.';
-            return $this->json(['ok' => true, 'reply' => $reply]);
+            return $this->json([
+                'ok'    => true,
+                'reply' => 'We accept major credit cards (Visa, Mastercard, Amex) via Stripe.'
+            ]);
         }
 
-        // Contact or support questions
+        // Contact / support
         if (preg_match('/(contact|support|help|email|phone|reach|cancel|change.*order|modify.*order)/i', $message)) {
-            $reply = "For any help with your order or other questions, please use the form on our 'Contact Us' page, and our team will be happy to assist you.";
-            return $this->json(['ok' => true, 'reply' => $reply]);
+            return $this->json([
+                'ok'    => true,
+                'reply' => "For help with your order or other questions, please use our 'Contact Us' page."
+            ]);
         }
 
-        // General inventory question - expanded to catch more variations
+        // General inventory
         if (preg_match('/(cheese|cheeses|dairy|product|products|what.*(have|sell|offer|carry|stock))/i', $message)) {
             $names = [];
             try {
-                $rows = $this->Products->find()->select(['name','slug'])->orderAsc('name')->limit(6)->all();
+                $rows = $this->Products->find()
+                    ->select(['name', 'slug'])
+                    ->orderAsc('name')
+                    ->limit(6)
+                    ->all();
                 foreach ($rows as $r) {
                     $names[] = (string)$r->get('name');
                 }
             } catch (\Throwable $e) {
-                // ignore and fall back
+                // ignore
             }
-            if (!empty($names)) {
-                $reply = 'We offer a selection of artisan cheeses including: ' . implode(', ', $names) . ', and more. Would you like to know more about any specific cheese? Just type the name or ask me to search for it.';
-            } else {
-                $reply = 'We carry premium artisan cheeses including cheddar, brie, gouda, and blue varieties. Please ask me about a specific cheese to learn more!';
-            }
+
+            $reply = $names
+                ? 'We offer artisan cheeses including: ' . implode(', ', $names) . ', and more.'
+                : 'We carry artisan cheeses including cheddar, brie, gouda, and blue. Ask about a specific cheese!';
             return $this->json(['ok' => true, 'reply' => $reply]);
         }
 
-        // Order by explicit number e.g., order 1234
+        // "order 1234" pattern
         if (preg_match('/order\s*#?\s*(\d{1,8})/i', $message, $m)) {
             $orderId = (int)$m[1];
-            $replyData = null;
+            $data    = null;
             try {
-                $replyData = $this->lookupOrder($orderId, $identity);
+                $data = $this->lookupOrder($orderId, $identity);
             } catch (\Throwable $e) {
-                $replyData = null;
+                $data = null;
             }
-            if ($replyData) {
-                $payload['order'] = $replyData;
+
+            if ($data) {
+                $payload['order'] = $data;
                 $reply = sprintf(
                     'Order #%d — status: %s, payment: %s, total: %s, placed: %s.',
-                    (int)$replyData['id'],
-                    (string)$replyData['status'],
-                    (string)$replyData['payment_status'],
-                    (string)$replyData['total_fmt'],
-                    (string)$replyData['created_fmt']
+                    (int)$data['id'],
+                    (string)$data['status'],
+                    (string)$data['payment_status'],
+                    (string)$data['total_fmt'],
+                    (string)$data['created_fmt']
                 );
             } else {
                 $reply = 'I could not find that order, or you may not have access to it.';
             }
+
             return $this->json(['ok' => true, 'reply' => $reply, 'data' => $payload]);
         }
 
-        // My recent orders
+        // "my orders / where is my order"
         if (preg_match('/\b(my )?orders?\b|where is my order|order status/i', $message)) {
-            if (!$identity) {
-                $reply = 'Due to privacy, I cannot show order details in this chat. Please log in and visit your customer dashboard to see your full order history.';
-                return $this->json(['ok' => true, 'reply' => $reply]);
-            }
-            
-            $ordersList = [];
+            $orders = [];
             try {
-                $ordersList = $this->recentOrders($identity, 3);
+                $orders = $this->recentOrders($identity, 3);
             } catch (\Throwable $e) {
-                $ordersList = [];
+                $orders = [];
             }
-            if (!empty($ordersList)) {
-                $payload['orders'] = $ordersList;
-                $lines = array_map(function ($o) {
-                    return sprintf('#%d — %s • %s', (int)$o['id'], (string)$o['status'], (string)$o['total_fmt']);
-                }, $ordersList);
+
+            if ($orders) {
+                $payload['orders'] = $orders;
+                $lines = array_map(fn($o) => sprintf('#%d — %s • %s', (int)$o['id'], (string)$o['status'], (string)$o['total_fmt']), $orders);
                 $reply = 'Your recent orders: ' . implode('; ', $lines) . '. You can ask: "Order 101?"';
             } else {
                 $reply = 'I could not find any recent orders on your account.';
             }
+
             return $this->json(['ok' => true, 'reply' => $reply, 'data' => $payload]);
         }
 
-        // Product search e.g., search cheddar / find gouda / do you have brie
+        // Light-weight "search/find/have/show <term>" product search
         if (preg_match('/(search|find|have|show)(.*)/i', $message, $m)) {
-            $term = trim((string)($m[2] ?? ''));
-            if ($term === '') {
-                $term = $message; // fallback to whole message
-            }
+            $term = trim((string)($m[2] ?? '')) ?: $message;
             $term = preg_replace('/^(for|any|some|me|products?)/i', '', $term);
+
             $results = [];
             try {
                 $results = $this->searchProducts($term, 6);
             } catch (\Throwable $e) {
                 $results = [];
             }
-            if (!empty($results)) {
+
+            if ($results) {
                 $payload['products'] = $results;
                 if (count($results) === 1) {
-                    // Single product - provide link immediately
-                    $webroot = (string)($this->request->getAttribute('webroot') ?? '/');
+                    $webroot             = (string)($this->request->getAttribute('webroot') ?? '/');
                     $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($results[0]['slug']);
-                    $reply = 'I found ' . $results[0]['name'] . ' priced at ' . $results[0]['price_fmt'] . '. Opening the product details page for you now...';
+                    $reply               = 'I found ' . $results[0]['name'] . ' priced at ' . $results[0]['price_fmt'] . '. Opening the details page...';
                 } else {
-                    // Multiple products - list them
                     $names = array_map(fn($p) => $p['name'], $results);
-                    $reply = 'I found ' . count($results) . ' products: ' . implode(', ', $names) . '. Which one would you like to learn more about? Type the product name to see its details.';
+                    $reply = 'I found ' . count($results) . ' products: ' . implode(', ', $names) . '. Which one would you like?';
                 }
             } else {
-                $reply = 'I couldn\'t find any products matching "' . htmlspecialchars($term) . '". Please try a different search term, or ask "what cheeses do you have?" to see our full range.';
+                $reply = 'I couldn\'t find any products matching "' . htmlspecialchars($term) . '". Try another term, or ask "what cheeses do you have?"';
             }
+
             return $this->json(['ok' => true, 'reply' => $reply, 'data' => $payload]);
         }
 
-        // Open product by name/slug when user asks specifically
-        if (preg_match('/\b(view|open|show me)\s+([a-z0-9\-]+)/i', $message, $m)) {
-            $slug = strtolower(trim($m[2] ?? ''));
-            
-            if ($slug !== '') {
-                $product = null;
-                try {
-                    $product = $this->Products->find()->select(['id', 'name', 'slug', 'price', 'currency'])
-                        ->where(['slug' => $slug])->first();
-                } catch (\Throwable $e) {
-                    $product = null;
-                }
-                if ($product) {
-                    $webroot = (string)($this->request->getAttribute('webroot') ?? '/');
-                    $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($slug);
-                    $reply = 'Here\'s the link to ' . (string)$product->get('name') . '. Opening the product details page for you now...';
-                } else {
-                    $reply = 'I couldn\'t find a product with that name. Please check the spelling or ask "what cheeses do you have?" to see available options.';
-                }
-                return $this->json(['ok' => true, 'reply' => $reply, 'data' => $payload]);
-            }
+        // Short cheese-like keywords => treat as product search
+        $lower = strtolower($message);
+        $cheeseKeywords = [
+            'cheddar','brie','gouda','mozzarella','feta','blue','camembert','parmesan','aged','swiss',
+            'gruyere','provolone','ricotta','halloumi','manchego','edam','colby','fontina','asiago',
+            'pecorino','gorgonzola','stilton','roquefort','monterey','jack','havarti','muenster',
+            'taleggio','raclette','emmental','jarlsberg','comte','mimolette','reblochon','beaufort',
+            'boursin','chevre','cottage','cream','rustic','classic','vein','buffalo'
+        ];
+        $hasKeyword = false;
+        foreach ($cheeseKeywords as $kw) {
+            if (strpos($lower, $kw) !== false) { $hasKeyword = true; break; }
         }
 
-        // Catch standalone cheese/product queries (e.g., "cheddar", "aged-gouda-18m", "brie")
-        // This catches common cheese names or short product-like queries
-        // Matches if message contains cheese keywords and is relatively short (under 50 chars)
-        $lowerMsg = strtolower($message);
-        $cheeseKeywords = ['cheddar', 'brie', 'gouda', 'mozzarella', 'feta', 'blue', 'camembert', 
-                          'parmesan', 'aged', 'swiss', 'gruyere', 'provolone', 'ricotta', 'halloumi', 
-                          'manchego', 'edam', 'colby', 'fontina', 'asiago', 'pecorino', 'gorgonzola', 
-                          'stilton', 'roquefort', 'monterey', 'jack', 'havarti', 'muenster', 'taleggio', 
-                          'raclette', 'emmental', 'jarlsberg', 'comte', 'mimolette', 'reblochon', 
-                          'beaufort', 'boursin', 'chevre', 'cottage', 'cream', 'rustic', 'classic',
-                          'vein', 'buffalo'];
-        
-        $containsCheeseKeyword = false;
-        foreach ($cheeseKeywords as $keyword) {
-            if (strpos($lowerMsg, $keyword) !== false) {
-                $containsCheeseKeyword = true;
-                break;
-            }
-        }
-        
-        // If it's a short message containing a cheese keyword, treat it as a product search
-        if ($containsCheeseKeyword && strlen($message) < 50 && !preg_match('/(what|how|when|where|why|can|do|does|is|are)\b/i', $message)) {
-            $term = trim($message);
+        if ($hasKeyword && strlen($message) < 50 && !preg_match('/\b(what|how|when|where|why|can|do|does|is|are)\b/i', $message)) {
             $results = [];
-            try {
-                $results = $this->searchProducts($term, 6);
-            } catch (\Throwable $e) {
-                $results = [];
-            }
-            if (!empty($results)) {
+            try { $results = $this->searchProducts(trim($message), 6); } catch (\Throwable $e) { $results = []; }
+
+            if ($results) {
                 $payload['products'] = $results;
                 if (count($results) === 1) {
-                    // Single product - provide link immediately
-                    $webroot = (string)($this->request->getAttribute('webroot') ?? '/');
+                    $webroot             = (string)($this->request->getAttribute('webroot') ?? '/');
                     $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($results[0]['slug']);
-                    $reply = 'I found ' . $results[0]['name'] . ' priced at ' . $results[0]['price_fmt'] . '. Opening the product details page for you now...';
+                    $reply               = 'I found ' . $results[0]['name'] . ' priced at ' . $results[0]['price_fmt'] . '. Opening the details page...';
                 } else {
-                    // Multiple products - list them
                     $names = array_map(fn($p) => $p['name'], $results);
-                    $reply = 'I found ' . count($results) . ' matching products: ' . implode(', ', $names) . '. Which one would you like to learn more about? Type the specific product name to see its details.';
+                    $reply = 'I found ' . count($results) . ' matching products: ' . implode(', ', $names) . '.';
                 }
             } else {
-                $reply = "I couldn't find any products matching '" . htmlspecialchars($term) . "'. Please try a different search, or ask 'what cheeses do you have?' to see our complete selection.";
+                $reply = "I couldn't find any products matching '" . htmlspecialchars(trim($message)) . "'.";
             }
+
             return $this->json(['ok' => true, 'reply' => $reply, 'data' => $payload]);
         }
 
-        // Fallback
+        // Fallback: generic hint
         return $this->json([
-            'ok' => true,
-            'reply' => "I'm not sure how to help with that. I can answer questions about products, delivery, payments, and orders. Try asking 'what cheeses do you have?' or 'how does delivery work?'.",
+            'ok'    => true,
+            'reply' => "I'm not sure about that. I can help with products, delivery, payments, and orders. Try: 'what cheeses do you have?' or 'how does delivery work?'."
         ]);
     }
 
+    /**
+     * Build a JSON response with correct headers.
+     */
     private function json(array $data): Response
     {
-        // Build explicit JSON response to avoid empty-body issues
         $payload = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         return $this->response
             ->withType('application/json')
@@ -395,47 +440,54 @@ class CopilotController extends AppController
     }
 
     /**
-     * Return a public-safe order summary for current user (or admin)
+     * Securely look up an order owned by the current user (or any if admin).
      */
-    private function lookupOrder(int $orderId, ?EntityInterface $identity): ?array
+    private function lookupOrder(int $orderId, $identity): ?array
     {
-        $query = $this->Orders->find()
+        $q = $this->Orders->find()
             ->select(['id', 'user_id', 'status', 'payment_status', 'currency', 'total', 'created'])
             ->where(['Orders.id' => $orderId]);
 
-        $isAdmin = $identity && strtolower((string)$identity->get('role')) === 'admin';
-        if (!$isAdmin && $identity) {
-            $query->where(['Orders.user_id' => (int)$identity->get('id')]);
+        $userId  = $this->userId($identity);
+        $isAdmin = $this->isAdmin($identity);
+
+        if (!$isAdmin) {
+            if ($userId === null) {
+                return null; // not logged in; no access
+            }
+            $q->where(['Orders.user_id' => $userId]);
         }
 
-        $o = $query->first();
+        $o = $q->first();
         if (!$o) {
             return null;
         }
 
         return [
-            'id' => (int)$o->get('id'),
-            'status' => (string)$o->get('status'),
-            'payment_status' => (string)$o->get('payment_status'),
-            'total' => (float)$o->get('total'),
-            'currency' => (string)($o->get('currency') ?: 'AUD'),
-            'total_fmt' => $this->formatCurrency((float)$o->get('total'), (string)($o->get('currency') ?: 'AUD')),
-            'created' => $o->get('created'),
-            'created_fmt' => $o->get('created') ? $o->get('created')->format('Y-m-d H:i') : '',
+            'id'            => (int)$o->get('id'),
+            'status'        => (string)$o->get('status'),
+            'payment_status'=> (string)$o->get('payment_status'),
+            'total'         => (float)$o->get('total'),
+            'currency'      => (string)($o->get('currency') ?: 'AUD'),
+            'total_fmt'     => $this->formatCurrency((float)$o->get('total'), (string)($o->get('currency') ?: 'AUD')),
+            'created'       => $o->get('created'),
+            'created_fmt'   => $o->get('created') ? $o->get('created')->format('Y-m-d H:i') : '',
         ];
     }
 
     /**
-     * Recent orders for current user
+     * Recent orders for the current user (lightweight list).
      */
-    private function recentOrders(?EntityInterface $identity, int $limit = 3): array
+    private function recentOrders($identity, int $limit = 3): array
     {
-        if (!$identity) {
+        $userId = $this->userId($identity);
+        if ($userId === null) {
             return [];
         }
+
         $rows = $this->Orders->find()
             ->select(['id', 'status', 'currency', 'total', 'created'])
-            ->where(['user_id' => (int)$identity->get('id')])
+            ->where(['user_id' => $userId])
             ->orderDesc('id')
             ->limit($limit)
             ->all();
@@ -443,59 +495,65 @@ class CopilotController extends AppController
         $out = [];
         foreach ($rows as $r) {
             $out[] = [
-                'id' => (int)$r->get('id'),
-                'status' => (string)$r->get('status'),
-                'total' => (float)$r->get('total'),
+                'id'        => (int)$r->get('id'),
+                'status'    => (string)$r->get('status'),
+                'total'     => (float)$r->get('total'),
                 'total_fmt' => $this->formatCurrency((float)$r->get('total'), (string)($r->get('currency') ?: 'AUD')),
-                'created' => $r->get('created') ? $r->get('created')->format('Y-m-d') : '',
+                'created'   => $r->get('created') ? $r->get('created')->format('Y-m-d') : '',
             ];
         }
         return $out;
     }
 
+    /**
+     * Product search by name/slug (contains)
+     */
     private function searchProducts(string $term, int $limit = 6): array
     {
         $term = trim($term);
         if ($term === '') {
             return [];
         }
-        $q = $this->Products->find()
+
+        $rows = $this->Products->find()
             ->select(['id', 'name', 'slug', 'price', 'currency', 'image_url'])
             ->where([
                 'OR' => [
                     'name LIKE' => '%' . $term . '%',
-                    'slug LIKE' => '%' . $term . '%'
+                    'slug LIKE' => '%' . $term . '%',
                 ]
             ])
             ->limit($limit)
             ->all();
+
         $out = [];
-        foreach ($q as $p) {
+        foreach ($rows as $p) {
             $out[] = [
-                'id' => (int)$p->get('id'),
-                'name' => (string)$p->get('name'),
-                'slug' => (string)$p->get('slug'),
-                'price' => (float)$p->get('price'),
+                'id'        => (int)$p->get('id'),
+                'name'      => (string)$p->get('name'),
+                'slug'      => (string)$p->get('slug'),
+                'price'     => (float)$p->get('price'),
                 'price_fmt' => $this->formatCurrency((float)$p->get('price'), (string)($p->get('currency') ?: 'AUD')),
-                'image' => $p->get('image_url'),
-                'url' => ((string)($this->request->getAttribute('webroot') ?? '/')) . 'products/view/' . rawurlencode((string)$p->get('slug')),
+                'image'     => $p->get('image_url'),
+                'url'       => ((string)($this->request->getAttribute('webroot') ?? '/')) . 'products/view/' . rawurlencode((string)$p->get('slug')),
             ];
         }
+
         return $out;
     }
 
+    /**
+     * Simple currency formatter (client-friendly).
+     */
     private function formatCurrency(float $amount, string $currency): string
     {
         $symbol = $currency;
         switch (strtoupper($currency)) {
             case 'AUD': $symbol = 'A$'; break;
-            case 'USD': $symbol = '$'; break;
-            case 'EUR': $symbol = '€'; break;
-            case 'GBP': $symbol = '£'; break;
+            case 'USD': $symbol = '$';  break;
+            case 'EUR': $symbol = '€';  break;
+            case 'GBP': $symbol = '£';  break;
         }
         return $symbol . number_format($amount, 2);
     }
 }
-
-
-

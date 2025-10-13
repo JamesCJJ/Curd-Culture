@@ -21,6 +21,8 @@ $fontScale = (float)($prefs['font_scale'] ?? 1.0);
 ?>
 <!DOCTYPE html>
 <html lang="en">
+<?= $this->Html->meta('csrfToken', $this->getRequest()->getAttribute('csrfToken')) ?>
+<script>window.CopilotTalkUrl = <?= json_encode($this->Url->build('/copilot/talk')) ?>;</script>
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">

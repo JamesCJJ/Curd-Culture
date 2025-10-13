@@ -47,6 +47,8 @@ if ($identity && $role === 'customer') {
 ?>
 <!DOCTYPE html>
 <html lang="en">
+<?= $this->Html->meta('csrfToken', $this->getRequest()->getAttribute('csrfToken')) ?>
+<script>window.CopilotTalkUrl = <?= json_encode($this->Url->build('/copilot/talk')) ?>;</script>
 <head>
     <?= $this->Html->charset() ?>
     <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=yes">

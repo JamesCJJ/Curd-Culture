@@ -98,7 +98,7 @@
     }
     toggle.addEventListener('click', ()=> showPanel(panel.hidden));
     closeBtn.addEventListener('click', ()=> showPanel(false));
-    
+
     clearBtn.addEventListener('click', ()=> {
       if (confirm('Clear all chat history?')) {
         feed.innerHTML = '';
@@ -151,11 +151,11 @@
       e.preventDefault();
       const text = input.value.trim(); if (!text) return; input.value='';
       addMsg(text, 'you');
-      
+
       // Get CSRF token from meta tag or cookie
-      const csrfToken = document.querySelector('meta[name="csrfToken"]')?.content || 
+      const csrfToken = document.querySelector('meta[name="csrfToken"]')?.content ||
                         document.cookie.split('; ').find(row => row.startsWith('csrfToken='))?.split('=')[1];
-      
+
       try{
         const formData = new URLSearchParams({message:text});
         const headers = {
@@ -165,30 +165,31 @@
         if (csrfToken) {
           headers['X-CSRF-Token'] = csrfToken;
         }
-        
-        const res = await fetch(apiUrl('copilot/talk'), {
-          method:'POST', 
+
+          const res = await fetch(window.CopilotTalkUrl, {
+
+          method:'POST',
           headers: headers,
           body: formData,
           credentials: 'same-origin'
         });
-        
+
         if (!res.ok) {
           throw new Error(`HTTP ${res.status}`);
         }
-        
+
         const data = await res.json();
         addMsg(data.reply || 'No response received.', 'bot');
-        
+
         // If there's a product link, open it automatically
         if (data.data && data.data.open_url) {
           setTimeout(() => {
             window.open(data.data.open_url, '_blank');
           }, 500);
         }
-      }catch(err){ 
+      }catch(err){
         console.error('Copilot error:', err);
-        addMsg('Sorry, I had trouble reaching the server. Please try again.', 'bot'); 
+        addMsg('Sorry, I had trouble reaching the server. Please try again.', 'bot');
       }
     });
   });
