@@ -49,13 +49,12 @@ class CopilotController extends AppController
         // Initialize AI service (reads config 'AI' in app_local.php)
         $this->aiService = new AIService();
 
-        // If FormProtection is enabled globally, disable it here:
-        // this endpoint accepts JSON and we send CSRF via header from the UI.
+        // If FormProtection is enabled globally, disable it here (JSON endpoint)
         if ($this->components()->has('FormProtection')) {
             $this->components()->unload('FormProtection');
         }
 
-        // We always return JSON manually
+        // Always return JSON manually
         $this->viewBuilder()->setClassName('Json');
     }
 
@@ -218,36 +217,34 @@ class CopilotController extends AppController
                 $payload['orders'] = $list;
             }
         }
-        if (preg_match('/(cheese|cheeses|dairy|product|products|what.*(have|sell|offer|carry|stock))/i', $message) &&
-            !preg_match('/order/i', $message)) { // Don't confuse with order questions
-            // Return a list of products as buttons
-            $results = [];
+
+        // General inventory → return a list (buttons)
+        if (preg_match('/(cheese|cheeses|dairy|product|products|what.*(have|sell|offer|carry|stock))/i', $message)
+            && !preg_match('/order/i', $message)) {
             try {
-                $results = $this->Products->find()
+                $rows = $this->Products->find()
                     ->select(['id', 'name', 'slug', 'price', 'currency', 'image_url'])
                     ->orderAsc('name')
                     ->limit(10)
                     ->all();
-
-                foreach ($results as $p) {
+                foreach ($rows as $p) {
                     $payload['products'][] = [
-                        'id' => (int)$p->get('id'),
-                        'name' => (string)$p->get('name'),
-                        'slug' => (string)$p->get('slug'),
-                        'price' => (float)$p->get('price'),
+                        'id'        => (int)$p->get('id'),
+                        'name'      => (string)$p->get('name'),
+                        'slug'      => (string)$p->get('slug'),
+                        'price'     => (float)$p->get('price'),
                         'price_fmt' => $this->formatCurrency((float)$p->get('price'), (string)($p->get('currency') ?: 'AUD')),
-                        'image' => $p->get('image_url'),
-                        'url' => ((string)($this->request->getAttribute('webroot') ?? '/')) . 'products/view/' . rawurlencode((string)$p->get('slug')),
+                        'image'     => $p->get('image_url'),
+                        'url'       => ((string)($this->request->getAttribute('webroot') ?? '/')) . 'products/view/' . rawurlencode((string)$p->get('slug')),
                     ];
                 }
             } catch (\Throwable $e) {
-                // Ignore DB errors
+                // ignore
             }
         }
 
-        // Optional: simple product search heuristic
+        // Optional: heuristic product search
         $productSearchTerm = null;
-
         if (preg_match('/(search|find|looking for|want|need)\s+(.+)/i', $message, $m)) {
             $productSearchTerm = trim((string)($m[2] ?? ''));
             $productSearchTerm = preg_replace('/\b(cheese|product|some|any|a)\b/i', '', $productSearchTerm);
@@ -256,7 +253,7 @@ class CopilotController extends AppController
             $productSearchTerm = trim($message);
         }
 
-        if ($productSearchTerm && $productSearchTerm !== '' && empty($payload['products'])) {
+        if ($productSearchTerm && empty($payload['products'])) {
             $results = $this->searchProducts($productSearchTerm, 6);
             if ($results) {
                 $payload['products'] = $results;
@@ -336,7 +333,7 @@ class CopilotController extends AppController
             return $this->json(['ok' => true, 'reply' => $reply]);
         }
 
-        // "order 1234" pattern
+        // "order 1234"
         if (preg_match('/order\s*#?\s*(\d{1,8})/i', $message, $m)) {
             $orderId = (int)$m[1];
             $data    = null;
@@ -383,7 +380,7 @@ class CopilotController extends AppController
             return $this->json(['ok' => true, 'reply' => $reply, 'data' => $payload]);
         }
 
-        // Light-weight "search/find/have/show <term>" product search
+        // "search/find/have/show <term>"
         if (preg_match('/(search|find|have|show)(.*)/i', $message, $m)) {
             $term = trim((string)($m[2] ?? '')) ?: $message;
             $term = preg_replace('/^(for|any|some|me|products?)/i', '', $term);
@@ -447,16 +444,14 @@ class CopilotController extends AppController
             return $this->json(['ok' => true, 'reply' => $reply, 'data' => $payload]);
         }
 
-        // Fallback: generic hint
+        // Fallback
         return $this->json([
             'ok'    => true,
             'reply' => "I'm not sure about that. I can help with products, delivery, payments, and orders. Try: 'what cheeses do you have?' or 'how does delivery work?'."
         ]);
     }
 
-    /**
-     * Build a JSON response with correct headers.
-     */
+    /** Build a JSON response with correct headers. */
     private function json(array $data): Response
     {
         $payload = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
@@ -465,9 +460,7 @@ class CopilotController extends AppController
             ->withStringBody($payload === false ? '{}' : $payload);
     }
 
-    /**
-     * Securely look up an order owned by the current user (or any if admin).
-     */
+    /** Securely look up an order owned by the current user (or any if admin). */
     private function lookupOrder(int $orderId, $identity): ?array
     {
         $q = $this->Orders->find()
@@ -501,9 +494,7 @@ class CopilotController extends AppController
         ];
     }
 
-    /**
-     * Recent orders for the current user (lightweight list).
-     */
+    /** Recent orders for the current user (lightweight list). */
     private function recentOrders($identity, int $limit = 3): array
     {
         $userId = $this->userId($identity);
@@ -531,9 +522,7 @@ class CopilotController extends AppController
         return $out;
     }
 
-    /**
-     * Product search by name/slug (contains)
-     */
+    /** Product search by name/slug (contains). */
     private function searchProducts(string $term, int $limit = 6): array
     {
         $term = trim($term);
@@ -568,9 +557,7 @@ class CopilotController extends AppController
         return $out;
     }
 
-    /**
-     * Simple currency formatter (client-friendly).
-     */
+    /** Simple currency formatter. */
     private function formatCurrency(float $amount, string $currency): string
     {
         $symbol = $currency;

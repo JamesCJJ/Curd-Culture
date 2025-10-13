@@ -1,13 +1,12 @@
-(()=>{
-  const apiUrl = (path)=> ((window.CakeWebroot || '/') + path.replace(/^\//,'')).replace(/\/+$/,'').replace(/([^:])\/\/+/, '$1/');
+(()=> {
+    const apiUrl = (path)=> ((window.CakeWebroot || '/') + path.replace(/^\//,'')).replace(/\/+$/,'').replace(/([^:])\/\/+/, '$1/');
+    function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstChild; }
 
-  function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstChild; }
-
-  const ui = el(`
+    const ui = el(`
     <div id="copilot" class="copilot" aria-live="polite">
       <button class="copilot__toggle" aria-expanded="false" aria-controls="copilot__panel" aria-label="Open chat assistant">
         <svg class="copilot__icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a 2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
         </svg>
       </button>
       <div id="copilot__panel" class="copilot__panel" hidden>
@@ -34,7 +33,7 @@
       </div>
     </div>`);
 
-  const style = el(`<style>
+    const style = el(`<style>
     .copilot{position:fixed;right:20px;bottom:20px;z-index:9999;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif}
     .copilot__toggle{width:60px;height:60px;background:#1e3a8a;color:#fff;border:none;border-radius:50%;box-shadow:0 4px 20px rgba(30,58,138,.4);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s ease}
     .copilot__toggle:hover{background:#1e40af;transform:scale(1.05);box-shadow:0 6px 30px rgba(30,58,138,.5)}
@@ -57,7 +56,7 @@
     .copilot__msg{display:flex;animation:slideIn .3s ease}
     .copilot__msg--you{justify-content:flex-end}
     .copilot__msg--bot{justify-content:flex-start}
-    .copilot__bubble{max-width:85%;padding:.6rem .9rem;border-radius:12px;word-wrap:break-word;line-height:1.5;font-size:.9rem}
+    .copilot__bubble{max-width:85%;padding:.6rem .9rem;border-radius:12px;word-wrap:break-word;line-height:1.5;font-size:.9rem;white-space:pre-line}
     .copilot__msg--you .copilot__bubble{background:#1e3a8a;color:#fff;border-bottom-right-radius:4px}
     .copilot__msg--bot .copilot__bubble{background:#fff;color:#1f2937;border:1px solid #e5e7eb;border-bottom-left-radius:4px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
     .copilot__form{display:flex;gap:.5rem;padding:.8rem;border-top:1px solid #e5e7eb;background:#fff}
@@ -66,6 +65,10 @@
     .copilot__send{background:#1e3a8a;color:#fff;border:none;border-radius:10px;padding:.65rem .8rem;cursor:pointer;transition:background .2s;display:flex;align-items:center;justify-content:center}
     .copilot__send:hover{background:#1e40af}
     .copilot__send:active{transform:scale(.95)}
+    .copilot__products{display:flex;flex-direction:column;gap:.4rem;padding:.2rem 0}
+    .copilot__product-btn{background:#1e3a8a;color:#fff;border:none;border-radius:8px;padding:.55rem .9rem;font-size:.85rem;cursor:pointer;transition:all .2s;text-align:left;width:100%;font-weight:500}
+    .copilot__product-btn:hover{background:#1e40af;transform:translateX(4px);box-shadow:0 2px 8px rgba(30,58,138,.3)}
+    .copilot__product-btn:active{transform:translateX(2px)}
     @keyframes slideIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
     .theme-dark .copilot__panel{background:#0f172a;border-color:#1f2937}
     .theme-dark .copilot__feed{background:#0b1220}
@@ -76,148 +79,164 @@
     .page.hc .copilot__feed{background:#0b1220}
     .page.hc .copilot__msg--bot .copilot__bubble{background:#1f2937;color:#e5e7eb;border-color:#475569}
     .page.hc .copilot__input{background:#0b1220;color:#e5e7eb;border-color:#475569}
-    .copilot__products{display:flex;flex-direction:column;gap:.4rem;padding:.2rem 0}
-    .copilot__product-btn{background:#1e3a8a;color:#fff;border:none;border-radius:8px;padding:.55rem .9rem;font-size:.85rem;cursor:pointer;transition:all .2s;text-align:left;width:100%;font-weight:500}
-    .copilot__product-btn:hover{background:#1e40af;transform:translateX(4px);box-shadow:0 2px 8px rgba(30,58,138,.3)}
-    .copilot__product-btn:active{transform:translateX(2px)}
     @media (max-width:480px){.copilot__panel{height:calc(100vh - 120px);width:calc(100vw - 40px)}}
   </style>`);
 
-  document.addEventListener('DOMContentLoaded',()=>{
-    document.body.appendChild(style);
-    document.body.appendChild(ui);
+    document.addEventListener('DOMContentLoaded', ()=> {
+        document.body.appendChild(style);
+        document.body.appendChild(ui);
 
-    const toggle = ui.querySelector('.copilot__toggle');
-    const panel = ui.querySelector('#copilot__panel');
-    const closeBtn = ui.querySelector('.copilot__close');
-    const clearBtn = ui.querySelector('.copilot__clear');
-    const feed = ui.querySelector('.copilot__feed');
-    const form = ui.querySelector('.copilot__form');
-    const input = ui.querySelector('.copilot__input');
+        const toggle   = ui.querySelector('.copilot__toggle');
+        const panel    = ui.querySelector('#copilot__panel');
+        const closeBtn = ui.querySelector('.copilot__close');
+        const clearBtn = ui.querySelector('.copilot__clear');
+        const feed     = ui.querySelector('.copilot__feed');
+        const form     = ui.querySelector('.copilot__form');
+        const input    = ui.querySelector('.copilot__input');
 
-    function showPanel(show){
-      panel.hidden = !show;
-      toggle.setAttribute('aria-expanded', String(show));
-      if (show) input.focus();
-    }
-    toggle.addEventListener('click', ()=> showPanel(panel.hidden));
-    closeBtn.addEventListener('click', ()=> showPanel(false));
+        const STORAGE_KEY = 'copilot_history';
+        let isReplaying = false;
 
-    clearBtn.addEventListener('click', ()=> {
-      if (confirm('Clear all chat history?')) {
-        feed.innerHTML = '';
-        localStorage.removeItem('copilot_history');
-        addMsg("Hi! I can help with orders and products.", 'bot');
-      }
-    });
-
-    function addMsg(text, who){
-      const msg = el(`<div class="copilot__msg copilot__msg--${who}"><div class="copilot__bubble"></div></div>`);
-      msg.querySelector('.copilot__bubble').textContent = text;
-      feed.appendChild(msg); feed.scrollTop = feed.scrollHeight;
-      saveHistory();
-    }
-
-    function saveHistory(){
-      const messages = [];
-      feed.querySelectorAll('.copilot__msg').forEach(msg => {
-        const bubble = msg.querySelector('.copilot__bubble');
-        const who = msg.classList.contains('copilot__msg--you') ? 'you' : 'bot';
-        messages.push({ text: bubble.textContent, who: who });
-      });
-      localStorage.setItem('copilot_history', JSON.stringify(messages));
-    }
-
-    function loadHistory(){
-      try {
-        const saved = localStorage.getItem('copilot_history');
-        if (saved) {
-          const messages = JSON.parse(saved);
-          messages.forEach(m => {
-            const msg = el(`<div class="copilot__msg copilot__msg--${m.who}"><div class="copilot__bubble"></div></div>`);
-            msg.querySelector('.copilot__bubble').textContent = m.text;
-            feed.appendChild(msg);
-          });
-          feed.scrollTop = feed.scrollHeight;
+        function showPanel(show){
+            panel.hidden = !show;
+            toggle.setAttribute('aria-expanded', String(show));
+            if (show) input.focus();
         }
-      } catch(e) {
-        console.error('Failed to load chat history:', e);
-      }
-    }
+        toggle.addEventListener('click', ()=> showPanel(panel.hidden));
+        closeBtn.addEventListener('click', ()=> showPanel(false));
 
-    // Load existing history or show welcome message
-    loadHistory();
-    if (feed.children.length === 0) {
-      addMsg("Welcome to Curd & Culture! I'm here to assist you with information about our artisan cheeses, delivery options, payment methods, and order tracking. How may I help you today?", 'bot');
-    }
-
-    form.addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const text = input.value.trim(); if (!text) return; input.value='';
-      addMsg(text, 'you');
-
-      // Get CSRF token from meta tag or cookie
-      const csrfToken = document.querySelector('meta[name="csrfToken"]')?.content ||
-                        document.cookie.split('; ').find(row => row.startsWith('csrfToken='))?.split('=')[1];
-
-      try{
-        const formData = new URLSearchParams({message:text});
-        const headers = {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          'X-Requested-With': 'XMLHttpRequest'
-        };
-        if (csrfToken) {
-          headers['X-CSRF-Token'] = csrfToken;
-        }
-
-          const res = await fetch(window.CopilotTalkUrl, {
-
-          method:'POST',
-          headers: headers,
-          body: formData,
-          credentials: 'same-origin'
+        clearBtn.addEventListener('click', ()=> {
+            if (confirm('Clear all chat history?')) {
+                feed.innerHTML = '';
+                localStorage.removeItem(STORAGE_KEY);
+                addMsg("Hi! I can help with orders and products.", 'bot');
+            }
         });
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status}`);
+        // ----- message renderers -----
+        function addMsg(text, who){
+            const msg = el(`<div class="copilot__msg copilot__msg--${who}"><div class="copilot__bubble" data-type="text"></div></div>`);
+            msg.querySelector('.copilot__bubble').textContent = text;
+            feed.appendChild(msg);
+            feed.scrollTop = feed.scrollHeight;
+            if (!isReplaying) saveHistory();
         }
 
-        const data = await res.json();
-        addMsg(data.reply || 'No response received.', 'bot');
-        
-        // If there are products to display, show them as buttons
-        if (data.data && data.data.products && data.data.products.length > 0) {
-          const productsHtml = data.data.products.map(product => 
-            `<button class="copilot__product-btn" data-url="${product.url || (apiUrl('products/view/') + product.slug)}">${product.name}</button>`
-          ).join('');
-          
-          const productMsg = el(`<div class="copilot__msg copilot__msg--bot"><div class="copilot__bubble copilot__products">${productsHtml}</div></div>`);
-          feed.appendChild(productMsg);
-          feed.scrollTop = feed.scrollHeight;
-          saveHistory();
-          
-          // Add click handlers to product buttons
-          productMsg.querySelectorAll('.copilot__product-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-              const url = btn.getAttribute('data-url');
-              if (url) window.open(url, '_blank');
+        function addProducts(products){
+            // keep a compact payload for persistence
+            const compact = products.map(p => ({ name: p.name, slug: p.slug, url: p.url || null }));
+            const buttons = compact.map(p =>
+                `<button class="copilot__product-btn" data-url="${p.url || (apiUrl('products/view/') + encodeURIComponent(p.slug || ''))}">${p.name}</button>`
+            ).join('');
+
+            const msg = el(`<div class="copilot__msg copilot__msg--bot"><div class="copilot__bubble copilot__products" data-type="products" data-payload='${JSON.stringify(compact)}'>${buttons}</div></div>`);
+            feed.appendChild(msg);
+            feed.scrollTop = feed.scrollHeight;
+
+            // hook up clicks
+            msg.querySelectorAll('.copilot__product-btn').forEach(btn=>{
+                btn.addEventListener('click', ()=>{
+                    const url = btn.getAttribute('data-url');
+                    if (url) window.open(url, '_blank');
+                });
             });
-          });
+
+            if (!isReplaying) saveHistory();
         }
 
-        // If there's a product link, open it automatically
-        if (data.data && data.data.open_url) {
-          setTimeout(() => {
-            window.open(data.data.open_url, '_blank');
-          }, 500);
+        // ----- persistence -----
+        function saveHistory(){
+            const messages = [];
+            feed.querySelectorAll('.copilot__msg').forEach(msg => {
+                const bubble = msg.querySelector('.copilot__bubble');
+                const who = msg.classList.contains('copilot__msg--you') ? 'you' : 'bot';
+                const type = bubble?.dataset?.type || 'text';
+                const payload = bubble?.dataset?.payload || null;
+                messages.push({
+                    who, type,
+                    text: type === 'text' ? (bubble.textContent || '') : null,
+                    payload
+                });
+            });
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ v:2, items: messages }));
         }
-      }catch(err){
-        console.error('Copilot error:', err);
-        addMsg('Sorry, I had trouble reaching the server. Please try again.', 'bot');
-      }
+
+        function loadHistory(){
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (!saved) return;
+
+                let parsed = JSON.parse(saved);
+                let items  = parsed?.items;
+                // backward-compat with old format: [{text, who}]
+                if (!Array.isArray(items) && Array.isArray(parsed)) {
+                    items = parsed.map(m => ({ who:m.who, type:'text', text:m.text, payload:null }));
+                }
+                if (!Array.isArray(items)) return;
+
+                isReplaying = true;
+                items.forEach(m => {
+                    if (m.type === 'products' && m.payload) {
+                        try { addProducts(JSON.parse(m.payload) || []); } catch { /* ignore */ }
+                    } else {
+                        addMsg(m.text || '', m.who || 'bot');
+                    }
+                });
+                isReplaying = false;
+            } catch(e) {
+                console.error('Failed to load chat history:', e);
+            }
+        }
+
+        // initial load
+        loadHistory();
+        if (feed.children.length === 0) {
+            addMsg("Welcome to Curd & Culture! I'm here to assist you with information about our artisan cheeses, delivery options, payment methods, and order tracking. How may I help you today?", 'bot');
+        }
+
+        // ----- network -----
+        form.addEventListener('submit', async (e)=>{
+            e.preventDefault();
+            const text = input.value.trim(); if (!text) return; input.value='';
+            addMsg(text, 'you');
+
+            // CSRF
+            const csrfToken = document.querySelector('meta[name="csrfToken"]')?.content ||
+                document.cookie.split('; ').find(row => row.startsWith('csrfToken='))?.split('=')[1];
+
+            const talkUrl = window.CopilotTalkUrl || apiUrl('copilot/talk');
+
+            try {
+                const formData = new URLSearchParams({message:text});
+                const headers = {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-Requested-With': 'XMLHttpRequest'
+                };
+                if (csrfToken) headers['X-CSRF-Token'] = csrfToken;
+
+                const res = await fetch(talkUrl, {
+                    method:'POST',
+                    headers,
+                    body: formData,
+                    credentials: 'same-origin'
+                });
+
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+                const data = await res.json();
+                addMsg(data.reply || 'No response received.', 'bot');
+
+                if (data?.data?.products?.length) {
+                    addProducts(data.data.products);
+                }
+
+                if (data?.data?.open_url) {
+                    setTimeout(()=> window.open(data.data.open_url, '_blank'), 500);
+                }
+            } catch(err) {
+                console.error('Copilot error:', err);
+                addMsg('Sorry, I had trouble reaching the server. Please try again.', 'bot');
+            }
+        });
     });
-  });
 })();
-
-
-
