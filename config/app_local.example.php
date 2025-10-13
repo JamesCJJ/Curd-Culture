@@ -29,15 +29,29 @@ return [
     ],
 
     /*
-     * OpenAI Configuration for AI-powered Copilot
-     * Get your API key from: https://platform.openai.com/api-keys
+     * AI Configuration for AI-powered Copilot
+     * Supports both Google Gemini and OpenAI
      */
-    'OpenAI' => [
-        'api_key' => env('OPENAI_API_KEY', ''), // Set your OpenAI API key here
-        'model' => env('OPENAI_MODEL', 'gpt-4o-mini'), // gpt-4o-mini is cost-effective and fast
+    'AI' => [
+        'provider' => env('AI_PROVIDER', 'gemini'), // 'gemini' or 'openai'
+        
+        // Google Gemini Configuration (default)
+        'gemini' => [
+            'api_key' => env('GEMINI_API_KEY', ''),
+            'model' => env('GEMINI_MODEL', 'gemini-2.0-flash'), // Fast and free tier available
+            'enabled' => env('GEMINI_ENABLED', true), // Enabled by default
+        ],
+        
+        // OpenAI Configuration (alternative)
+        'openai' => [
+            'api_key' => env('OPENAI_API_KEY', ''),
+            'model' => env('OPENAI_MODEL', 'gpt-4o-mini'),
+            'enabled' => env('OPENAI_ENABLED', false),
+        ],
+        
+        // Shared settings
         'max_tokens' => 500,
         'temperature' => 0.7,
-        'enabled' => env('OPENAI_ENABLED', false), // Set to true to enable AI features
     ],
 
     /*

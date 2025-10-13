@@ -125,7 +125,7 @@ class AIService
      */
     private function callGemini(string $systemPrompt, string $userMessage): array
     {
-        $url = "https://generativelanguage.googleapis.com/v1beta/models/{$this->model}:generateContent?key={$this->apiKey}";
+        $url = "https://generativelanguage.googleapis.com/v1/models/{$this->model}:generateContent?key={$this->apiKey}";
 
         // Combine system prompt and user message for Gemini
         $combinedPrompt = $systemPrompt . "\n\nUser: " . $userMessage . "\n\nAssistant:";
