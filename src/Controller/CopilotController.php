@@ -219,49 +219,18 @@ class CopilotController extends AppController
             }
         }
 
-<<<<<<< Updated upstream
-        // Check for general product/cheese listing questions
-        if (preg_match('/(cheese|cheeses|dairy|product|products|what.*(have|sell|offer|carry|stock))/i', $message) &&
-            !preg_match('/order/i', $message)) { // Don't confuse with order questions
-            // Return a list of products as buttons
-            $results = [];
-            try {
-                $results = $this->Products->find()
-                    ->select(['id', 'name', 'slug', 'price', 'currency', 'image_url'])
-                    ->orderAsc('name')
-                    ->limit(10)
-                    ->all();
-                
-                foreach ($results as $p) {
-                    $payload['products'][] = [
-                        'id' => (int)$p->get('id'),
-                        'name' => (string)$p->get('name'),
-                        'slug' => (string)$p->get('slug'),
-                        'price' => (float)$p->get('price'),
-                        'price_fmt' => $this->formatCurrency((float)$p->get('price'), (string)($p->get('currency') ?: 'AUD')),
-                        'image' => $p->get('image_url'),
-                        'url' => ((string)($this->request->getAttribute('webroot') ?? '/')) . 'products/view/' . rawurlencode((string)$p->get('slug')),
-                    ];
-                }
-            } catch (\Throwable $e) {
-                // Ignore DB errors
-            }
-        }
-        
-        // Check if message is searching for specific products
+        // Optional: simple product search heuristic
         $productSearchTerm = null;
 
         if (preg_match('/(search|find|looking for|want|need)\s+(.+)/i', $message, $m)) {
             $productSearchTerm = trim((string)($m[2] ?? ''));
             $productSearchTerm = preg_replace('/\b(cheese|product|some|any|a)\b/i', '', $productSearchTerm);
             $productSearchTerm = trim($productSearchTerm);
-        }
-        // Or simple product name queries (short messages without question words)
-        elseif (strlen($message) < 50 && !preg_match('/\b(what|how|when|where|why|can|do|does|is|are|my|order|cheese|product)\b/i', $message)) {
+        } elseif (strlen($message) < 50 && !preg_match('/\b(what|how|when|where|why|can|do|does|is|are|my|order)\b/i', $message)) {
             $productSearchTerm = trim($message);
         }
-        
-        if ($productSearchTerm && $productSearchTerm !== '' && empty($payload['products'])) {
+
+        if ($productSearchTerm) {
             $results = $this->searchProducts($productSearchTerm, 6);
             if ($results) {
                 $payload['products'] = $results;
