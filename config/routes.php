@@ -42,6 +42,10 @@ return static function (RouteBuilder $routes): void {
     );
     $routes->connect('/products/view', ['controller' => 'Products', 'action' => 'index']);
 
+    // Articles removed: keep backward-compat redirect to home
+    $routes->connect('/articles', ['controller' => 'Pages', 'action' => 'display', 'home']);
+    $routes->connect('/articles/*', ['controller' => 'Pages', 'action' => 'display', 'home']);
+
     // Stripe checkout flow
     $routes->connect('/checkout/stripe',  ['controller' => 'Payments', 'action' => 'checkout'], ['_method' => 'POST']);
     $routes->connect('/checkout/success', ['controller' => 'Payments', 'action' => 'success']);
@@ -116,6 +120,8 @@ return static function (RouteBuilder $routes): void {
 
         // Admin landing page
         $builder->connect('/', ['controller' => 'ContactMessages', 'action' => 'index']);
+
+        // CMS: Articles removed
 
         // Deliveries
         $builder->connect('/deliveries',             ['controller' => 'Deliveries', 'action' => 'index']);

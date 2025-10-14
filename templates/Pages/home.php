@@ -8,8 +8,8 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
     <div class="hero__content">
         <div class="hero__text">
             <div class="hero__badge">🧀 Premium Artisan Cheese</div>
-            <h1 id="site-title">Small-Batch Cheeses,<br>Crafted with Love</h1>
-            <p class="hero__lead">From our family farm to your table. Experience the finest handmade cheeses, delivered fresh to your door with temperature-controlled care.</p>
+            <h1 id="site-title"><?= h($homeHeroTitle ?? 'Small-Batch Cheeses, Crafted with Love') ?></h1>
+            <p class="hero__lead"><?= $homeHeroLead ?? 'From our family farm to your table. Experience the finest handmade cheeses, delivered fresh to your door with temperature-controlled care.' ?></p>
 
             <div class="hero__features">
                 <div class="feature-chip">
@@ -37,7 +37,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         </div>
 
         <div class="hero__media">
-            <?= $this->Html->image('cheese-platter.jpg', ['alt' => 'Premium artisan cheese selection', 'class' => 'hero__img']) ?>
+            <?= $this->Html->image($home['home_hero_image'] ?? 'cheese-platter.jpg', ['alt' => 'Premium artisan cheese selection', 'class' => 'hero__img']) ?>
             <div class="hero__overlay">
                 <div class="stat-card">
                     <div class="stat-number">40+</div>
@@ -55,14 +55,14 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
 <!-- ========== FEATURED PRODUCTS ========== -->
 <section class="featured-products" aria-labelledby="featured-title">
     <div class="section-header">
-        <h2 id="featured-title">Our Signature Cheeses</h2>
-        <p class="section-subtitle">Handcrafted with passion, aged to perfection</p>
+        <h2 id="featured-title"><?= h($home['home_featured_title'] ?? 'Our Signature Cheeses') ?></h2>
+        <p class="section-subtitle"><?= $home['home_featured_subtitle'] ?? 'Handcrafted with passion, aged to perfection' ?></p>
     </div>
 
     <div class="product-grid">
         <div class="product-card">
             <div class="product-image">
-                <?= $this->Html->image('cheddar.jpg', ['alt' => 'Aged Cheddar cheese', 'class' => 'product-img']) ?>
+                <?= $this->Html->image($home['home_featured_1_image'] ?? 'cheddar.jpg', ['alt' => 'Aged Cheddar cheese', 'class' => 'product-img']) ?>
                 <span class="product-badge bestseller">Bestseller</span>
             </div>
             <div class="product-info">
@@ -77,7 +77,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
 
         <div class="product-card">
             <div class="product-image">
-                <?= $this->Html->image('cows-meadow.jpg', ['alt' => 'Artisan Brie cheese', 'class' => 'product-img']) ?>
+                <?= $this->Html->image($home['home_featured_2_image'] ?? 'cows-meadow.jpg', ['alt' => 'Artisan Brie cheese', 'class' => 'product-img']) ?>
                 <span class="product-badge new">New</span>
             </div>
             <div class="product-info">
@@ -92,7 +92,7 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
 
         <div class="product-card">
             <div class="product-image">
-                <?= $this->Html->image('farm.jpg', ['alt' => 'Gourmet Blue cheese', 'class' => 'product-img']) ?>
+                <?= $this->Html->image($home['home_featured_3_image'] ?? 'farm.jpg', ['alt' => 'Gourmet Blue cheese', 'class' => 'product-img']) ?>
                 <span class="product-badge limited">Limited</span>
             </div>
             <div class="product-info">
@@ -119,32 +119,32 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
                 <div class="trust-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
                 </div>
-                <h3>Premium Quality</h3>
-                <p>Award-winning cheeses crafted with the finest ingredients</p>
+                <h3><?= h($home['home_trust_1_title'] ?? 'Premium Quality') ?></h3>
+                <p><?= $home['home_trust_1_text'] ?? 'Award-winning cheeses crafted with the finest ingredients' ?></p>
             </div>
 
             <div class="trust-badge">
                 <div class="trust-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
                 </div>
-                <h3>Chilled Delivery</h3>
-                <p>Temperature-controlled at 4°C from farm to your door</p>
+                <h3><?= h($home['home_trust_2_title'] ?? 'Chilled Delivery') ?></h3>
+                <p><?= $home['home_trust_2_text'] ?? 'Temperature-controlled at 4°C from farm to your door' ?></p>
             </div>
 
             <div class="trust-badge">
                 <div class="trust-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
                 </div>
-                <h3>Family Legacy</h3>
-                <p>Three generations of cheese-making excellence</p>
+                <h3><?= h($home['home_trust_3_title'] ?? 'Family Legacy') ?></h3>
+                <p><?= $home['home_trust_3_text'] ?? 'Three generations of cheese-making excellence' ?></p>
             </div>
 
             <div class="trust-badge">
                 <div class="trust-icon">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
                 </div>
-                <h3>Fresh Daily</h3>
-                <p>Made in small batches to ensure peak freshness</p>
+                <h3><?= h($home['home_trust_4_title'] ?? 'Fresh Daily') ?></h3>
+                <p><?= $home['home_trust_4_text'] ?? 'Made in small batches to ensure peak freshness' ?></p>
             </div>
         </div>
     </div>
@@ -154,8 +154,8 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
 <section class="delivery-section" aria-labelledby="delivery">
     <div class="delivery-content">
         <div class="delivery-text">
-            <h2 id="delivery">Freshness First: Refrigerated Delivery</h2>
-            <p class="delivery-lead">Your cheese deserves the best care. We maintain optimal temperature (~4°C) throughout the entire journey from our farm to your doorstep.</p>
+            <h2 id="delivery"><?= h($home['home_delivery_title'] ?? 'Freshness First: Refrigerated Delivery') ?></h2>
+            <p class="delivery-lead"><?= $home['home_delivery_lead'] ?? 'Your cheese deserves the best care. We maintain optimal temperature (~4°C) throughout the entire journey from our farm to your doorstep.' ?></p>
 
             <div class="delivery-features">
                 <div class="delivery-feature">
@@ -198,11 +198,11 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
 <section class="why-section" aria-labelledby="why-us">
     <div class="why-container">
         <div class="why-image">
-            <?= $this->Html->image('cows-meadow.jpg', ['alt' => 'Happy cows grazing in our meadows', 'class' => 'why-img']) ?>
+            <?= $this->Html->image($home['home_why_image'] ?? 'cows-meadow.jpg', ['alt' => 'Happy cows grazing in our meadows', 'class' => 'why-img']) ?>
         </div>
         <div class="why-content">
-            <h2 id="why-us">Why Choose Curd &amp; Culture?</h2>
-            <p class="why-intro">For over 35 years, we've been dedicated to producing the finest artisan cheeses using time-honored techniques and sustainable farming practices.</p>
+            <h2 id="why-us"><?= h($home['home_why_title'] ?? 'Why Choose Curd &amp; Culture?') ?></h2>
+            <p class="why-intro"><?= $home['home_why_intro'] ?? "For over 35 years, we've been dedicated to producing the finest artisan cheeses using time-honored techniques and sustainable farming practices." ?></p>
 
             <div class="why-list">
                 <div class="why-item">
@@ -236,8 +236,8 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
 <!-- ========== HOW IT WORKS ========== -->
 <section class="how-section" aria-labelledby="how">
     <div class="section-header centered">
-        <h2 id="how">How It Works</h2>
-        <p class="section-subtitle">From browsing to enjoying — simple, seamless, and fresh</p>
+        <h2 id="how"><?= h($home['home_how_title'] ?? 'How It Works') ?></h2>
+        <p class="section-subtitle"><?= $home['home_how_subtitle'] ?? 'From browsing to enjoying — simple, seamless, and fresh' ?></p>
     </div>
 
     <div class="steps-grid">
@@ -273,8 +273,8 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
 <!-- ========== TESTIMONIALS ========== -->
 <section class="testimonials-section" aria-labelledby="testimonials">
     <div class="section-header centered">
-        <h2 id="testimonials">What Our Customers Say</h2>
-        <p class="section-subtitle">Join hundreds of happy cheese lovers</p>
+        <h2 id="testimonials"><?= h($home['home_test_title'] ?? 'What Our Customers Say') ?></h2>
+        <p class="section-subtitle"><?= $home['home_test_subtitle'] ?? 'Join hundreds of happy cheese lovers' ?></p>
     </div>
 
     <div class="testimonials-grid">
@@ -311,8 +311,8 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
 <section class="cta-section" aria-labelledby="cta">
     <div class="cta-container">
         <div class="cta-content">
-            <h2 id="cta">Ready to Experience Premium Cheese?</h2>
-            <p class="cta-subtitle">Start your artisan cheese journey today. Browse our full collection and taste the difference that quality makes.</p>
+            <h2 id="cta"><?= h($homeCtaTitle ?? 'Ready to Experience Premium Cheese?') ?></h2>
+            <p class="cta-subtitle"><?= $homeCtaSubtitle ?? 'Start your artisan cheese journey today. Browse our full collection and taste the difference that quality makes.' ?></p>
             <div class="cta-buttons">
                 <?= $this->Html->link('Shop Now', ['controller' => 'Products', 'action' => 'index'], ['class' => 'btn btn-large btn-primary']) ?>
                 <?= $this->Html->link('Contact Us', ['controller' => 'ContactMessages', 'action' => 'add'], ['class' => 'btn btn-large btn-outline']) ?>

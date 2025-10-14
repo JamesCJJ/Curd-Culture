@@ -210,6 +210,7 @@ $fontScale = (float)($prefs['font_scale'] ?? 1.0);
         .icon-bar-chart::before { content: '📊'; }
         .icon-settings::before { content: '⚙️'; }
         .icon-log-out::before { content: '🚪'; }
+        .icon-articles::before { content: '📖'; }
 
         /* ========== Theme: Dark ========== */
         .theme-dark { background: #1a1a1a; color: #e5e5e5; }
@@ -540,6 +541,11 @@ $fontScale = (float)($prefs['font_scale'] ?? 1.0);
                     '<i class="icon-message"></i>Customer Inquiries',
                     ['prefix' => 'Admin', 'controller' => 'ContactMessages', 'action' => 'index'],
                     ['class' => 'nav-link' . ($currentController === 'ContactMessages' ? ' active' : ''), 'escape' => false]
+                ) ?>
+                <?= $this->Html->link(
+                    '<i class="icon-settings"></i>Homepage',
+                    ['prefix' => 'Admin', 'controller' => 'SiteSettings', 'action' => 'index'],
+                    ['class' => 'nav-link' . ($currentController === 'SiteSettings' ? ' active' : ''), 'escape' => false]
                 ) ?>
                 <?= $this->Html->link(
                     '<i class="icon-package"></i>Products',
