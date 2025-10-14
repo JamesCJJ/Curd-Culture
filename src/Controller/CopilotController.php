@@ -257,10 +257,6 @@ class CopilotController extends AppController
             $results = $this->searchProducts($productSearchTerm, 6);
             if ($results) {
                 $payload['products'] = $results;
-                if (count($results) === 1) {
-                    $webroot             = (string)($this->request->getAttribute('webroot') ?? '/');
-                    $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($results[0]['slug']);
-                }
             }
         }
 
@@ -395,9 +391,7 @@ class CopilotController extends AppController
             if ($results) {
                 $payload['products'] = $results;
                 if (count($results) === 1) {
-                    $webroot             = (string)($this->request->getAttribute('webroot') ?? '/');
-                    $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($results[0]['slug']);
-                    $reply               = 'I found ' . $results[0]['name'] . ' priced at ' . $results[0]['price_fmt'] . '. Opening the details page...';
+                    $reply = 'I found ' . $results[0]['name'] . ' priced at ' . $results[0]['price_fmt'] . '. Click the button below to view details.';
                 } else {
                     $names = array_map(fn($p) => $p['name'], $results);
                     $reply = 'I found ' . count($results) . ' products: ' . implode(', ', $names) . '. Which one would you like?';
@@ -430,9 +424,7 @@ class CopilotController extends AppController
             if ($results) {
                 $payload['products'] = $results;
                 if (count($results) === 1) {
-                    $webroot             = (string)($this->request->getAttribute('webroot') ?? '/');
-                    $payload['open_url'] = $webroot . 'products/view/' . rawurlencode($results[0]['slug']);
-                    $reply               = 'I found ' . $results[0]['name'] . ' priced at ' . $results[0]['price_fmt'] . '. Opening the details page...';
+                    $reply = 'I found ' . $results[0]['name'] . ' priced at ' . $results[0]['price_fmt'] . '. Click the button below to view details.';
                 } else {
                     $names = array_map(fn($p) => $p['name'], $results);
                     $reply = 'I found ' . count($results) . ' matching products: ' . implode(', ', $names) . '.';
