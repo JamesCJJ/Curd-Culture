@@ -522,4 +522,44 @@ $sticky = (array)$this->request->getData();
     .card{border-radius:1.05rem}
     .progress-bar>span{border-radius:999px}
     .btn{border-radius:.7rem}
+    
+    /* High contrast mode for checkout */
+    .page.hc .card{background:#0f172a !important;border-color:#334155 !important;color:#f1f5f9 !important}
+    .page.hc .title{color:#f1f5f9 !important}
+    .page.hc .sub{color:#cbd5e1 !important}
+    .page.hc label{color:#f1f5f9 !important}
+    .page.hc input, .page.hc select, .page.hc textarea{
+        background:#0f172a !important;border-color:#334155 !important;color:#e5e7eb !important
+    }
+    .page.hc input::placeholder, .page.hc textarea::placeholder{color:#9aa3af !important}
+    .page.hc input:focus, .page.hc select:focus, .page.hc textarea:focus{
+        border-color:#60a5fa !important;box-shadow:0 0 0 3px rgba(96,165,250,.25) !important
+    }
+    .page.hc .btn{background:#1f2937 !important;border-color:#374155 !important;color:#f1f5f9 !important}
+    .page.hc .btn-primary{background:#60a5fa !important;color:#0f172a !important;border-color:#60a5fa !important}
+    .page.hc .btn-subtle{background:transparent !important;color:#60a5fa !important;border-color:#334155 !important}
+    .page.hc .progress-steps{color:#cbd5e1 !important}
+    .page.hc .progress-steps .step.done{color:#22d3a6 !important}
+    .page.hc .progress-steps .step.current{color:#f1f5f9 !important}
+    .page.hc .progress-bar{background:#374155 !important}
+    .page.hc .progress-bar>span{background:#60a5fa !important}
+    .page.hc .option-tile{background:#1f2937 !important;border-color:#374155 !important}
+    .page.hc .option-tile.active{background:#132033 !important;border-color:#60a5fa !important}
+    .page.hc .option-title{color:#f1f5f9 !important}
+    .page.hc .option-sub{color:#cbd5e1 !important}
+    .page.hc .switch-label{color:#f1f5f9 !important}
+    .page.hc .switch .slider{background:#374155 !important}
+    .page.hc .switch input:checked + .slider{background:#60a5fa !important}
+    .page.hc .callout{background:#1f2937 !important;border-color:#374155 !important}
+    .page.hc .addr-summary{color:#cbd5e1 !important}
+    .page.hc .muted{color:#9ca3af !important}
+    .page.hc .mini li{color:#f1f5f9 !important}
+    .page.hc .avatar{background:#1f2937 !important;color:#60a5fa !important}
+    .page.hc .line .n{color:#f1f5f9 !important}
+    .page.hc .line .meta{color:#cbd5e1 !important}
+    .page.hc .sep{border-color:#374155 !important}
+    .page.hc .totals .row{color:#f1f5f9 !important}
+    .page.hc .totals .total{color:#f1f5f9 !important;font-weight:700}
+    .page.hc .bank-block .kv span{color:#cbd5e1 !important}
+    .page.hc .bank-block .kv strong{color:#f1f5f9 !important}
 </style>

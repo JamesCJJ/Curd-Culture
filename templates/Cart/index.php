@@ -93,6 +93,22 @@ $csrf = (string)($this->getRequest()->getAttribute('csrfToken') ?? '');
     .pname{text-decoration:none;color:inherit}
     .qty{width:80px;border-radius:.6rem;border:1px solid #e5e7eb;padding:.35rem .5rem;background:#f9fafb}
     .theme-dark .qty{background:#0f172a;border-color:#334155;color:#e5e7eb}
+    
+    /* High contrast mode for cart */
+    .page.hc .card{background:#0f172a !important;border-color:#334155 !important;color:#f1f5f9 !important}
+    .page.hc .table thead th{color:#f1f5f9 !important;border-bottom-color:#334155 !important}
+    .page.hc .table tbody td{border-bottom-color:#334155 !important;color:#f1f5f9 !important}
+    .page.hc .pname{color:#60a5fa !important}
+    .page.hc .qty{background:#0f172a !important;border-color:#334155 !important;color:#f1f5f9 !important}
+    .page.hc .qty::placeholder{color:#9aa3af !important}
+    .page.hc .btn{background:#1f2937 !important;border-color:#374155 !important;color:#f1f5f9 !important}
+    .page.hc .btn-primary{background:#60a5fa !important;color:#0f172a !important;border-color:#60a5fa !important}
+    .page.hc .btn.danger{background:#dc2626 !important;color:#fff !important;border-color:#dc2626 !important}
+    .page.hc .btn-subtle{background:transparent !important;color:#60a5fa !important;border-color:#334155 !important}
+    .page.hc .summary dt{color:#cbd5e1 !important}
+    .page.hc .summary dd{color:#f1f5f9 !important}
+    .page.hc .summary .total dt,
+    .page.hc .summary .total dd{color:#f1f5f9 !important;font-weight:700}
 
     .cart-actions{display:flex;align-items:center;gap:.5rem;justify-content:space-between;margin-top:.75rem}
 
