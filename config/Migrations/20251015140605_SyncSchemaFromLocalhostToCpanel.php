@@ -8,7 +8,18 @@ final class SyncSchemaFromLocalhostToCpanel extends AbstractMigration
     public function up(): void
     {
         $this->execute('SET FOREIGN_KEY_CHECKS=0');
-        $this->execute('ALTER TABLE `pickup_locations` ADD `open_from` time DEFAULT NULL;');
+        $exists = $this->fetchAll("
+    SELECT COUNT(*) AS cnt
+    FROM information_schema.columns
+    WHERE table_schema = DATABASE()
+      AND table_name = 'pickup_locations'
+      AND column_name = 'open_from'
+")[0]['cnt'] ?? 0;
+
+        if (!$exists) {
+            $this->execute("ALTER TABLE `pickup_locations` ADD `open_from` time DEFAULT NULL");
+        }
+
         $this->execute('ALTER TABLE `pickup_locations` ADD `open_to` time DEFAULT NULL;');
         $this->execute('ALTER TABLE `pickup_locations` MODIFY COLUMN `address_line_1` varchar(255) NOT NULL;');
         $this->execute('ALTER TABLE `pickup_locations` MODIFY COLUMN `created` datetime DEFAULT NULL;');
