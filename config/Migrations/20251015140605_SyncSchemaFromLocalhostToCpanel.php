@@ -5,36 +5,7 @@ use Migrations\AbstractMigration;
 
 final class SyncSchemaFromLocalhostToCpanel extends AbstractMigration
 {
-    public function up(): void
-    {
-        $this->execute('SET FOREIGN_KEY_CHECKS=0');
-        $exists = $this->fetchAll("
-    SELECT COUNT(*) AS cnt
-    FROM information_schema.columns
-    WHERE table_schema = DATABASE()
-      AND table_name = 'pickup_locations'
-      AND column_name = 'open_from'
-")[0]['cnt'] ?? 0;
 
-        if (!$exists) {
-            $this->execute("ALTER TABLE `pickup_locations` ADD `open_from` time DEFAULT NULL");
-        }
-
-        $this->execute('ALTER TABLE `pickup_locations` ADD `open_to` time DEFAULT NULL;');
-        $this->execute('ALTER TABLE `pickup_locations` MODIFY COLUMN `address_line_1` varchar(255) NOT NULL;');
-        $this->execute('ALTER TABLE `pickup_locations` MODIFY COLUMN `created` datetime DEFAULT NULL;');
-        $this->execute('ALTER TABLE `pickup_locations` MODIFY COLUMN `modified` datetime DEFAULT NULL;');
-        $this->execute('ALTER TABLE `pickup_locations` MODIFY COLUMN `name` varchar(120) NOT NULL;');
-        $this->execute('ALTER TABLE `pickup_locations` MODIFY COLUMN `postcode` varchar(10) NOT NULL;');
-        $this->execute('ALTER TABLE `pickup_locations` MODIFY COLUMN `state` varchar(50) NOT NULL;');
-        $this->execute('ALTER TABLE `pickup_locations` MODIFY COLUMN `suburb` varchar(100) NOT NULL;');
-        $this->execute('ALTER TABLE `users` MODIFY COLUMN `language` varchar(255) NOT NULL;');
-        $this->execute('ALTER TABLE `users` MODIFY COLUMN `notify_email` tinyint(1) NOT NULL DEFAULT 1;');
-        $this->execute('ALTER TABLE `users` MODIFY COLUMN `notify_push` tinyint(1) NOT NULL DEFAULT 0;');
-        $this->execute('ALTER TABLE `users` MODIFY COLUMN `theme` varchar(255) NOT NULL;');
-        $this->execute('ALTER TABLE `users` MODIFY COLUMN `timezone` varchar(255) NOT NULL;');
-        $this->execute('SET FOREIGN_KEY_CHECKS=1');
-    }
 
     public function down(): void
     {
