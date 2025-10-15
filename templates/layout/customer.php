@@ -498,8 +498,11 @@ $currentController = $this->request->getParam('controller');
         const contentEls = Array.from(document.querySelectorAll('.page, .dashboard-content, .admin-content'));
 
         function apply(p) {
+            const on = p.contrast === 'high';
+            document.documentElement.classList.toggle('hc', on);
+            document.body.classList.toggle('hc', on);
             const page = document.querySelector('.page') || document.body;
-            page.classList.toggle('hc', p.contrast === 'high');
+            page.classList.toggle('hc', on);
             const s = Math.min(1.25, Math.max(0.9, parseFloat(p.font_scale || 1) || 1));
             contentEls.forEach(el => el.style.fontSize = (16 * s) + 'px');
         }

@@ -317,45 +317,6 @@ if ($identity && $role === 'customer') {
 
 <script>
     (function(){
-        const html = document.documentElement;
-        const body = document.body;
-        const plus = document.getElementById('font-plus');
-        const minus = document.getElementById('font-minus');
-        const contrast = document.getElementById('contrast-toggle');
-
-        function setHC(enabled) {
-            html.classList.toggle('hc', enabled);
-            body.classList.toggle('hc', enabled);
-            const page = document.querySelector('.page');
-            if (page) page.classList.toggle('hc', enabled);
-        }
-
-        // Restore high contrast from localStorage
-        if (localStorage.getItem('highContrast') === 'true') {
-            setHC(true);
-        }
-
-        let scale = parseFloat(localStorage.getItem('fontSize')) || 1;
-        if (scale !== 1) document.documentElement.style.fontSize = (16 * scale) + 'px';
-
-        plus && plus.addEventListener('click', function(){
-            scale = Math.min(1.25, +(scale + 0.05).toFixed(2));
-            document.documentElement.style.fontSize = (16 * scale) + 'px';
-            localStorage.setItem('fontSize', scale);
-        });
-        minus && minus.addEventListener('click', function(){
-            scale = Math.max(0.9, +(scale - 0.05).toFixed(2));
-            document.documentElement.style.fontSize = (16 * scale) + 'px';
-            localStorage.setItem('fontSize', scale);
-        });
-        contrast && contrast.addEventListener('click', function(){
-            const isEnabled = html.classList.contains('hc');
-            setHC(!isEnabled);
-            localStorage.setItem('highContrast', !isEnabled);
-        });
-    })();
-
-    (function(){
         const btn = document.getElementById('btn-read');
         if (!btn) return;
         const playIcon  = btn.querySelector('.glyph--play');

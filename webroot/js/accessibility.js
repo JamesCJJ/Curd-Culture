@@ -26,7 +26,8 @@
 
     function applyContrast(mode){
         const on = (mode === 'high');
-        // Toggle on body and key content containers for consistent styling
+        // Toggle on html, body and key content containers for consistent styling
+        document.documentElement.classList.toggle('hc', on);
         document.body.classList.toggle('hc', on);
         contentEls().forEach(el => el.classList.toggle('hc', on));
 
@@ -60,8 +61,10 @@
         applyFontScale(curr - 0.05);
     });
 
-    if (btnHC)    btnHC.addEventListener('click', () => {
-        const on = document.body.classList.contains('hc');
+    if (btnHC)    btnHC.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const on = document.documentElement.classList.contains('hc');
         applyContrast(on ? 'normal' : 'high');
     });
 })();
