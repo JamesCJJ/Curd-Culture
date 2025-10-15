@@ -8,6 +8,9 @@
 }
 
 html{ scroll-behavior:smooth; }
+/* Respect global font scale applied by JS */
+:root{ font-size: 16px; }
+html{ font-size: calc(16px * var(--font-scale, 1)); }
 
 /* Global typography — keep consistent across all pages */
 html, body, button, input, select, textarea {

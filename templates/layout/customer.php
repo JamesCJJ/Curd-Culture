@@ -493,29 +493,54 @@ $currentController = $this->request->getParam('controller');
 <script>
     /* Live apply + persist via /preferences/update */
     (function(){
-        const PREFS = JSON.parse(document.getElementById('PREFS_BOOTSTRAP')?.textContent || '{}');
+        let PREFS = JSON.parse(document.getElementById('PREFS_BOOTSTRAP')?.textContent || '{}');
         const csrf = document.querySelector('meta[name="csrfToken"]')?.getAttribute('content') || '';
         const contentEls = Array.from(document.querySelectorAll('.page, .dashboard-content, .admin-content'));
 
-        function apply(p) {
+        function apply(p, opts){
+            const persist = !!(opts && opts.persist);
             const on = p.contrast === 'high';
             document.documentElement.classList.toggle('hc', on);
             document.body.classList.toggle('hc', on);
             const page = document.querySelector('.page') || document.body;
             page.classList.toggle('hc', on);
+
+            // Persist to cookie + localStorage (only when this call is user-initiated)
+            if (persist) {
+                try {
+                    document.cookie = `pref_contrast=${on ? 'high' : 'normal'}; Max-Age=${180*24*60*60}; Path=/`;
+                    localStorage.setItem('highContrast', on ? 'true' : 'false');
+                } catch(e) {}
+            }
+
             const s = Math.min(1.25, Math.max(0.9, parseFloat(p.font_scale || 1) || 1));
             contentEls.forEach(el => el.style.fontSize = (16 * s) + 'px');
+            if (persist) {
+                try { document.cookie = `pref_font_scale=${encodeURIComponent(s.toFixed(2))}; Max-Age=${180*24*60*60}; Path=/`; } catch(e) {}
+            }
         }
-        apply(PREFS);
+        // Respect cookie/localStorage if they differ from session
+        (function(){
+            let cookieContrast = (document.cookie.split(';').map(s=>s.trim().split('=')).reduce((a,[k,v])=>{a[k]=decodeURIComponent(v||'');return a;}, {})['pref_contrast'] || '').toLowerCase();
+            let lsHC = '';
+            try { lsHC = localStorage.getItem('highContrast') || ''; } catch(e) {}
+            const derivedContrast = cookieContrast ? (cookieContrast === 'high' ? 'high' : 'normal') : (lsHC === 'true' ? 'high' : (lsHC === 'false' ? 'normal' : PREFS.contrast));
+            const initial = Object.assign({}, PREFS, { contrast: derivedContrast });
+            apply(initial); // no persistence on initial paint
+        })();
 
         async function savePrefs(patch) {
+            // Apply immediately and persist to cookie/localStorage
+            const next = Object.assign({}, PREFS, patch);
+            apply(next, {persist:true});
+
             const res = await fetch('<?= $this->Url->build(['controller'=>'Preferences','action'=>'update']) ?>', {
                 method:'POST',
                 headers:{'Content-Type':'application/json','X-CSRF-Token': csrf},
                 body: JSON.stringify(patch)
             });
             const data = await res.json().catch(()=>({ok:false}));
-            if (data && data.ok && data.prefs) { Object.assign(PREFS, data.prefs); apply(PREFS); }
+            if (data && data.ok && data.prefs) { PREFS = data.prefs; apply(PREFS); }
         }
 
         // Bind if your Settings page has inputs with these names:

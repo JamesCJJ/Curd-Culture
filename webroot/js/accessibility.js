@@ -16,7 +16,10 @@
 
     function applyFontScale(scale){
         const s = clamp(parseFloat(scale||1)||1, 0.9, 1.25);
-        contentEls().forEach(el => el.style.fontSize = (16 * s) + 'px');
+        // Apply to root so layout stays consistent site‑wide
+        document.documentElement.style.setProperty('--font-scale', s.toFixed(2));
+        document.documentElement.style.fontSize = (16 * s) + 'px';
+        contentEls().forEach(el => el.style.fontSize = '');
         setCookie('pref_font_scale', String(Number(s.toFixed(2))));
         const rng = document.querySelector('input[name="font_scale"]');
         const lab = document.getElementById('font-val');
