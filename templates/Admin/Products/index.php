@@ -239,6 +239,8 @@ $stockBadge = function ($stock): string {
 </div>
 
 <style>
+/* Base font size for this page */
+html{font-size:18px}
 /* Admin Products Styles */
 .admin-products {
     max-width: 1400px;
@@ -367,6 +369,7 @@ $stockBadge = function ($stock): string {
     padding: 1rem;
     text-align: left;
     font-weight: 600;
+    font-size: 1rem;
     color: #374151;
     border-bottom: 1px solid #e5e7eb;
     white-space: nowrap;
@@ -376,6 +379,7 @@ $stockBadge = function ($stock): string {
     padding: 1rem;
     border-bottom: 1px solid #f3f4f6;
     vertical-align: top;
+    font-size: 1rem;
 }
 
 .data-table tbody tr:hover {
@@ -411,47 +415,48 @@ $stockBadge = function ($stock): string {
 }
 
 .product-name {
-    font-size: 0.875rem;
+    font-size: 1.0625rem;
     font-weight: 600;
     color: #111827;
     margin: 0 0 0.25rem 0;
 }
 
 .product-summary {
-    font-size: 0.75rem;
+    font-size: 1rem;
     color: #6b7280;
     margin: 0 0 0.25rem 0;
-    line-height: 1.4;
+    line-height: 1.55;
 }
 
 .product-meta {
-    font-size: 0.75rem;
+    font-size: 0.95rem;
     color: #9ca3af;
 }
 
 .price {
     font-weight: 600;
     color: #059669;
+    font-size: 1.0625rem;
 }
 
 .date {
     display: block;
-    font-size: 0.875rem;
+    font-size: 1.0625rem;
     color: #374151;
 }
 
 .time {
     display: block;
-    font-size: 0.75rem;
+    font-size: 0.95rem;
     color: #9ca3af;
 }
 
 /* Badges */
 .badge {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
+    padding: 0.425rem 0.95rem;
     border-radius: 9999px;
-    font-size: 0.75rem;
+    font-size: 0.95rem;
     font-weight: 600;
 }
 
@@ -556,7 +561,7 @@ $stockBadge = function ($stock): string {
 
 .pagination-info {
     color: #6b7280;
-    font-size: 0.875rem;
+    font-size: 1rem;
 }
 
 .pagination-controls {
@@ -567,7 +572,7 @@ $stockBadge = function ($stock): string {
 
 .page-info {
     color: #374151;
-    font-size: 0.875rem;
+    font-size: 1rem;
 }
 
 /* Buttons */
@@ -575,9 +580,9 @@ $stockBadge = function ($stock): string {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.625rem 1rem;
+    padding: 0.7rem 1rem;
     border-radius: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 500;
     text-decoration: none;
     transition: all 0.2s;
@@ -616,17 +621,17 @@ $stockBadge = function ($stock): string {
 }
 
 .btn-sm {
-    padding: 0.375rem 0.75rem;
-    font-size: 0.8125rem;
+    padding: 0.5rem 0.9rem;
+    font-size: 0.95rem;
 }
 
 /* Form Controls */
 .form-control {
     width: 100%;
-    padding: 0.625rem 0.875rem;
+    padding: 0.75rem 1rem;
     border: 1px solid #d1d5db;
     border-radius: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 1.0625rem;
     transition: border-color 0.2s;
 }
 

@@ -79,6 +79,13 @@
     .page.hc .copilot__feed{background:#0b1220}
     .page.hc .copilot__msg--bot .copilot__bubble{background:#1f2937;color:#e5e7eb;border-color:#475569}
     .page.hc .copilot__input{background:#0b1220;color:#e5e7eb;border-color:#475569}
+    /* Also honor HC when applied on body/html or directly on the widget */
+    body.hc .copilot__panel, html.hc .copilot__panel, .copilot.hc .copilot__panel{background:#0f172a;border-color:#334155}
+    body.hc .copilot__feed,  html.hc .copilot__feed,  .copilot.hc .copilot__feed{background:#0b1220}
+    body.hc .copilot__msg--bot .copilot__bubble,
+    html.hc .copilot__msg--bot .copilot__bubble,
+    .copilot.hc .copilot__msg--bot .copilot__bubble{background:#1f2937;color:#e5e7eb;border-color:#475569}
+    body.hc .copilot__input, html.hc .copilot__input, .copilot.hc .copilot__input{background:#0b1220;color:#e5e7eb;border-color:#475569}
     @media (max-width:480px){.copilot__panel{height:calc(100vh - 120px);width:calc(100vw - 40px)}}
   </style>`);
 
@@ -93,6 +100,18 @@
         const feed     = ui.querySelector('.copilot__feed');
         const form     = ui.querySelector('.copilot__form');
         const input    = ui.querySelector('.copilot__input');
+
+        /* Sync High Contrast state onto the widget so HC styles always apply */
+        (function syncHC(){
+            const page = document.querySelector('.page');
+            const apply = () => {
+                const on = (page && page.classList.contains('hc')) || document.body.classList.contains('hc') || document.documentElement.classList.contains('hc');
+                ui.classList.toggle('hc', !!on);
+            };
+            apply();
+            const target = page || document.body || document.documentElement;
+            new MutationObserver(apply).observe(target, {attributes:true, attributeFilter:['class']});
+        })();
 
         const STORAGE_KEY = 'copilot_history';
         let isReplaying = false;

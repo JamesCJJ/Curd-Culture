@@ -26,8 +26,15 @@
 
     function applyContrast(mode){
         const on = (mode === 'high');
+        // Toggle on body and key content containers for consistent styling
         document.body.classList.toggle('hc', on);
+        contentEls().forEach(el => el.classList.toggle('hc', on));
+
+        // Persist
         setCookie('pref_contrast', on ? 'high' : 'normal');
+        try { localStorage.setItem('highContrast', on ? 'true' : 'false'); } catch (e) {}
+
+        // UI state
         const sel = document.querySelector('select[name="contrast"]');
         const btn = document.getElementById('contrast-toggle');
         if (sel) sel.value = on ? 'high' : 'normal';

@@ -219,6 +219,12 @@ echo $this->Form->create(
     .rp-help{display:block;margin:.45rem 0 0;color:#6b7280;font-size:.86rem}
     .theme-dark .rp-help{color:#94a3b8}
 
+    /* ===== OTP High Contrast ===== */
+    .page.hc .otp-box,
+    body.hc .otp-box{background:#1f2937;color:#f1f5f9;border:1px solid #475569}
+    .page.hc .otp-box:focus,
+    body.hc .otp-box:focus{border-color:#60a5fa;box-shadow:0 0 0 3px rgba(96,165,250,0.25)}
+
     /* ===== Actions ===== */
     .auth-actions{margin-top:.5rem;display:flex;justify-content:center}
     .auth-btn{display:block;border-radius:.75rem;padding:.72rem .9rem;font-weight:700;cursor:pointer}

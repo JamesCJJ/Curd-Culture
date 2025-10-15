@@ -304,16 +304,23 @@ html, body, button, input, select, textarea {
     color-scheme: dark;
 }
 
-/* Base & typography */
-.hc,
-.hc .page,
-.hc body {
+/* Base & typography - only apply when .hc is on page/body */
+.page.hc,
+body.hc,
+html.hc {
     background: var(--hc-bg) !important;
     color: var(--hc-text) !important;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
 }
-.hc * { 
+
+body.hc .page,
+html.hc body {
+    background: var(--hc-bg) !important;
+    color: var(--hc-text) !important;
+}
+
+.page.hc * { 
     text-shadow: none !important; 
     color: inherit !important;
 }

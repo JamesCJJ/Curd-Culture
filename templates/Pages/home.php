@@ -323,6 +323,11 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
 </section>
 
 <style>
+    /* ===== FORCE LIGHT MODE - Override any high contrast ===== */
+    html, body {
+        background: #ffffff !important;
+    }
+    
     /* ===== Theme variables for the content area ===== */
     .page {
         --bg: #ffffff;
@@ -343,13 +348,89 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         line-height: 1.7;
         font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',Arial,sans-serif;
     }
+    
+    /* Ensure light mode backgrounds and text */
+    html:not(.hc),
+    body:not(.hc),
+    .page:not(.hc) {
+        background: #ffffff !important;
+    }
+    
+    body:not(.hc) .topbar {
+        background: #ffffff !important;
+        border-bottom: 1px solid #e5e7eb !important;
+    }
+    
+    body:not(.hc) .topbar .btn {
+        background: #ffffff !important;
+        color: #111 !important;
+        border-color: #d1d5db !important;
+    }
+    
+    body:not(.hc) .topbar .btn-primary {
+        background: #2563eb !important;
+        color: #fff !important;
+        border-color: #2563eb !important;
+    }
+    
+    body:not(.hc) .brand-name {
+        color: #0f172a !important;
+    }
+    
+    .page:not(.hc) h1,
+    .page:not(.hc) h2,
+    .page:not(.hc) h3,
+    .page:not(.hc) h4,
+    .page:not(.hc) .hero__text h1,
+    .page:not(.hc) .section-header h2,
+    .page:not(.hc) .product-title,
+    .page:not(.hc) .trust-badge h3,
+    .page:not(.hc) .delivery-text h2,
+    .page:not(.hc) .why-content h2,
+    .page:not(.hc) .step-card h3,
+    .page:not(.hc) .cta-content h2 {
+        color: #0f172a !important;
+    }
+    
+    .page:not(.hc) p:not(.cta-subtitle),
+    .page:not(.hc) .hero__lead,
+    .page:not(.hc) .section-subtitle,
+    .page:not(.hc) .product-desc,
+    .page:not(.hc) .trust-badge p,
+    .page:not(.hc) .delivery-lead,
+    .page:not(.hc) .testimonial-text {
+        color: #64748b !important;
+    }
+    
+    .page:not(.hc) .hero {
+        background: linear-gradient(135deg, #fef3c7 0%, #fef9e8 50%, #ffffff 100%) !important;
+    }
+    
+    .page:not(.hc) .trust-section,
+    .page:not(.hc) .how-section {
+        background: #f8fafc !important;
+    }
+    
+    /* CTA section text should be white on orange background */
+    .page:not(.hc) .cta-content h2,
+    .page:not(.hc) .cta-content .cta-subtitle,
+    .page:not(.hc) .cta-content .cta-note,
+    .page:not(.hc) .cta-section .cta-subtitle,
+    .cta-section .cta-subtitle {
+        color: #ffffff !important;
+    }
+
+    .page:not(.hc) .cta-content .btn-primary {
+        color: var(--brand) !important;
+    }
 
     /* ===== Hero ===== */
     .hero { background:linear-gradient(135deg,#fef3c7 0%,#fef9e8 50%,#ffffff 100%); padding:4rem 0 5rem; margin-bottom:4rem; }
     .hero__content { max-width:1200px; margin:0 auto; padding:0 2rem; display:grid; grid-template-columns:1fr 1fr; gap:4rem; align-items:center; }
     .hero__text { display:flex; flex-direction:column; gap:1.5rem; }
     .hero__badge{display:inline-block;background:var(--brand);color:#fff;padding:.5rem 1.25rem;border-radius:50px;font-size:.875rem;font-weight:600;letter-spacing:.5px;width:fit-content;box-shadow:0 4px 12px var(--shadow)}
-    .hero__text h1{font-size:clamp(2.5rem,5vw,3.75rem);font-weight:800;line-height:1.1;color:var(--text);margin:0;letter-spacing:-.02em}
+    .hero__text h1{font-size:clamp(2.5rem,5vw,3.75rem);font-weight:800;line-height:1.1;color:#0f172a;margin:0;letter-spacing:-.02em}
+    .page:not(.hc) .hero__text h1{color:#0f172a!important}
     .hero__lead{font-size:1.125rem;color:var(--text-muted);line-height:1.7;margin:0}
     .hero__features{display:flex;flex-wrap:wrap;gap:1rem}
     .feature-chip{display:flex;align-items:center;gap:.5rem;background:#fff;padding:.75rem 1.25rem;border-radius:12px;border:1px solid var(--border);font-size:.9rem;font-weight:500;color:var(--text);box-shadow:0 2px 8px var(--shadow)}
@@ -467,14 +548,14 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
     .cta-section{background:linear-gradient(135deg,var(--brand) 0%,var(--brand-dark) 100%);padding:5rem 0;margin-bottom:4rem}
     .cta-container{max-width:900px;margin:0 auto;padding:0 2rem}
     .cta-content{text-align:center;color:#fff}
-    .cta-content h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;margin:0 0 1rem;letter-spacing:-.01em}
-    .cta-subtitle{font-size:1.25rem;margin:0 0 2.5rem;opacity:.95;line-height:1.6}
+    .cta-content h2{font-size:clamp(2rem,4vw,3rem);font-weight:800;margin:0 0 1rem;letter-spacing:-.01em;color:#fff}
+    .cta-subtitle{font-size:1.25rem;margin:0 0 2.5rem;color:#fff;line-height:1.6}
     .cta-buttons{display:flex;gap:1.25rem;justify-content:center;flex-wrap:wrap;margin-bottom:1.5rem}
     .cta-section .btn-primary{background:#fff;color:var(--brand);border-color:#fff}
     .cta-section .btn-primary:hover{background:var(--bg-alt);transform:translateY(-2px);box-shadow:0 12px 30px rgba(0,0,0,.2)}
     .cta-section .btn-outline{background:transparent;color:#fff;border-color:#fff}
     .cta-section .btn-outline:hover{background:rgba(255,255,255,.1)}
-    .cta-note{font-size:.9375rem;margin:0;opacity:.9}
+    .cta-note{font-size:.9375rem;margin:0;color:#fff}
 
     /* ===== High-contrast theme for content ===== */
     .page.hc{
@@ -484,10 +565,14 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
     }
     
     /* Ensure all text is visible in high contrast mode */
-    .page.hc * {
-        color: var(--text) !important;
-    }
-    
+    .page.hc h1,
+    .page.hc h2,
+    .page.hc h3,
+    .page.hc h4,
+    .page.hc p,
+    .page.hc span,
+    .page.hc strong,
+    .page.hc .hero__text h1,
     .page.hc .hero__text,
     .page.hc .hero__lead,
     .page.hc .section-subtitle,
@@ -527,6 +612,10 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
     .page.hc .stat-card{background:var(--card);border-color:var(--border)}
     .page.hc .feature-chip{background:var(--card)}
     .page.hc .hero__img,.page.hc .product-img,.page.hc .why-img{opacity:.9}
+    
+    /* CTA section in high contrast */
+    .page.hc .cta-section{background:linear-gradient(135deg,#1f2937 0%,#111827 100%)}
+    .page.hc .cta-content h2{color:var(--text)!important}
 
     /* ===== Responsive ===== */
     @media (max-width:1024px){

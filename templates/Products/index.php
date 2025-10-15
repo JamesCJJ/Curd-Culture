@@ -180,6 +180,13 @@ $this->assign('title', 'Products');
     .theme-dark .page-item .page-link{background:#0f172a;color:#e5e7eb;border-color:#334155}
     .theme-dark .page-item.active .page-link{background:#60a5fa;color:#111;border-color:#60a5fa}
     .theme-dark .pagination-meta{color:#94a3b8}
+    
+    /* High contrast mode pagination */
+    .page.hc .page-item .page-link{background:#1f2937;color:#f1f5f9;border-color:#475569}
+    .page.hc .page-item .page-link:hover{filter:brightness(1.1)}
+    .page.hc .page-item.active .page-link{background:#60a5fa;color:#0f172a;border-color:#60a5fa}
+    .page.hc .page-item.disabled .page-link{opacity:.6}
+    .page.hc .pagination-meta{color:#cbd5e1}
 
     .modal-dialog{background:#fff;border:1px solid #eef0f3}
     .theme-dark .modal-dialog{background:#111827;border-color:#1f2937}

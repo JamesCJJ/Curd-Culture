@@ -333,6 +333,8 @@ document.addEventListener('DOMContentLoaded', function() {
 </script>
 
 <style>
+/* Base font size for this page */
+html{font-size:18px}
 /* Admin Product Form Styles */
 .admin-product-form {
     max-width: 1200px;
@@ -350,7 +352,7 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .form-title {
-    font-size: 2rem;
+    font-size: 2.125rem;
     font-weight: 700;
     color: #111827;
     margin: 0 0 0.5rem 0;
@@ -381,7 +383,7 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .section-title {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 600;
     color: #111827;
     margin: 0 0 1.5rem 0;
@@ -406,18 +408,18 @@ document.addEventListener('DOMContentLoaded', function() {
 }
 
 .form-group label {
-    font-weight: 500;
+    font-weight: 600;
     color: #374151;
     margin-bottom: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 1.0625rem;
 }
 
 .form-control {
     width: 100%;
-    padding: 0.75rem 1rem;
+    padding: 0.85rem 1rem;
     border: 1px solid #d1d5db;
     border-radius: 0.5rem;
-    font-size: 0.875rem;
+    font-size: 1.0625rem;
     transition: border-color 0.2s, box-shadow 0.2s;
 }
 
@@ -466,9 +468,10 @@ textarea.form-control {
 }
 
 .form-help {
-    font-size: 0.75rem;
+    font-size: 0.95rem;
     color: #6b7280;
     margin-top: 0.5rem;
+    line-height: 1.6;
 }
 
 .form-footer {
@@ -488,10 +491,10 @@ textarea.form-control {
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    padding: 0.85rem 1.35rem;
     border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 1.0625rem;
+    font-weight: 600;
     text-decoration: none;
     transition: all 0.2s;
     border: 1px solid transparent;

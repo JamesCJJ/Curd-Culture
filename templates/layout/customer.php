@@ -264,6 +264,137 @@ $currentController = $this->request->getParam('controller');
     .page.hc .dashboard-sidebar{ background:#0f172a; border-color:#334155; color:#f5f7fa }
     .page.hc .dashboard-nav .nav-link:hover,
     .page.hc .dashboard-nav .nav-link.active{ background:#1f2937; color:#fff }
+    
+    /* High Contrast - Modals */
+    .page.hc .modal-content,
+    body.hc .modal-content { background:#0f172a; color:#f1f5f9; border:1px solid #475569 }
+    .page.hc .modal-header,
+    body.hc .modal-header { background:#1f2937; border-bottom-color:#475569 }
+    .page.hc .modal-title,
+    body.hc .modal-title { color:#f1f5f9 }
+    .page.hc .modal-footer,
+    body.hc .modal-footer { border-top-color:#475569 }
+    .page.hc .btn-close,
+    body.hc .btn-close { filter:invert(1) }
+    
+    /* High Contrast - Forms */
+    .page.hc .form-control,
+    .page.hc .form-select,
+    .page.hc select,
+    .page.hc input[type="text"],
+    .page.hc input[type="email"],
+    .page.hc input[type="tel"],
+    .page.hc input[type="number"],
+    .page.hc textarea,
+    body.hc .form-control,
+    body.hc .form-select,
+    body.hc select,
+    body.hc input[type="text"],
+    body.hc input[type="email"],
+    body.hc input[type="tel"],
+    body.hc input[type="number"],
+    body.hc textarea { background:#1f2937; color:#f1f5f9; border:1px solid #475569 }
+    
+    .page.hc .form-control:focus,
+    .page.hc .form-select:focus,
+    .page.hc select:focus,
+    .page.hc input:focus,
+    .page.hc textarea:focus,
+    body.hc .form-control:focus,
+    body.hc .form-select:focus,
+    body.hc select:focus,
+    body.hc input:focus,
+    body.hc textarea:focus { border-color:#60a5fa; box-shadow:0 0 0 3px rgba(96,165,250,0.25); outline:none }
+    
+    .page.hc .form-label,
+    body.hc .form-label { color:#cbd5e1; font-weight:600 }
+    
+    .page.hc .form-check-label,
+    body.hc .form-check-label { color:#e5e7eb }
+    
+    .page.hc .form-check-input,
+    body.hc .form-check-input { background:#1f2937; border-color:#475569 }
+    
+    .page.hc .form-check-input:checked,
+    body.hc .form-check-input:checked { background:#60a5fa; border-color:#60a5fa }
+    
+    /* High Contrast - Buttons */
+    .page.hc .btn,
+    body.hc .btn { background:#1f2937; color:#f1f5f9; border:1px solid #475569 }
+    .page.hc .btn:hover,
+    body.hc .btn:hover { filter:brightness(1.1) }
+    .page.hc .btn-primary,
+    .page.hc .btn-dark,
+    body.hc .btn-primary,
+    body.hc .btn-dark { background:#60a5fa; color:#0f172a; border-color:#60a5fa; font-weight:600 }
+    .page.hc .btn-outline-primary,
+    body.hc .btn-outline-primary { background:transparent; color:#60a5fa; border-color:#60a5fa }
+    .page.hc .btn-outline-primary:hover,
+    body.hc .btn-outline-primary:hover { background:#60a5fa; color:#0f172a }
+    
+    /* High Contrast - Cards & Sections */
+    .page.hc .card,
+    body.hc .card { background:#0f172a; border-color:#475569; color:#f1f5f9 }
+    .page.hc .card-header,
+    body.hc .card-header { background:#1f2937; border-bottom-color:#475569; color:#f1f5f9 }
+    .page.hc .border,
+    body.hc .border { border-color:#475569 !important }
+    
+    /* High Contrast - Text & Badges */
+    .page.hc .text-muted,
+    body.hc .text-muted { color:#cbd5e1 !important }
+    .page.hc .badge,
+    body.hc .badge { background:#475569; color:#f1f5f9 }
+    .page.hc .badge.bg-light,
+    body.hc .badge.bg-light { background:#374155 !important; color:#f1f5f9 !important }
+    
+    /* High Contrast - Dropdown */
+    .page.hc .dropdown-menu,
+    body.hc .dropdown-menu { background:#0f172a; border-color:#475569 }
+    .page.hc .dropdown-item,
+    body.hc .dropdown-item { color:#f1f5f9 }
+    .page.hc .dropdown-item:hover,
+    body.hc .dropdown-item:hover { background:#1f2937; color:#fff }
+    .page.hc .dropdown-divider,
+    body.hc .dropdown-divider { border-top-color:#475569 }
+    
+    /* High Contrast - Input Groups (Phone country code) */
+    .page.hc .input-group-text,
+    body.hc .input-group-text { background:#1f2937; color:#f1f5f9; border:1px solid #475569 }
+    
+    /* High Contrast - Alerts */
+    .page.hc .alert,
+    body.hc .alert { background:#1f2937; border-color:#475569; color:#f1f5f9 }
+    .page.hc .alert-info,
+    body.hc .alert-info { background:#0f2236; border-color:#284b72; color:#cfe8ff }
+    
+    /* High Contrast - Settings Groups */
+    .page.hc .settings-group,
+    body.hc .settings-group { background:#1f2937; border-color:#475569 }
+    .page.hc .settings-group-title,
+    body.hc .settings-group-title { color:#f1f5f9; border-bottom-color:#475569 }
+    
+    /* High Contrast - Form Range Slider */
+    .page.hc .form-range,
+    body.hc .form-range { background:#374155 }
+    .page.hc .form-range::-webkit-slider-thumb,
+    body.hc .form-range::-webkit-slider-thumb { background:#60a5fa }
+    .page.hc .form-range::-moz-range-thumb,
+    body.hc .form-range::-moz-range-thumb { background:#60a5fa }
+    .page.hc .form-range::-webkit-slider-runnable-track,
+    body.hc .form-range::-webkit-slider-runnable-track { background:#22304a }
+    .page.hc .form-range::-moz-range-track,
+    body.hc .form-range::-moz-range-track { background:#22304a }
+    
+    /* High Contrast - Form Switch */
+    .page.hc .form-switch .form-check-input,
+    body.hc .form-switch .form-check-input { background:#374155; border-color:#475569 }
+    .page.hc .form-switch .form-check-input:checked,
+    body.hc .form-switch .form-check-input:checked { background:#60a5fa; border-color:#60a5fa }
+    
+    /* High Contrast - Form Text (helper text) */
+    .page.hc .form-text,
+    body.hc .form-text { color:#94a3b8 }
 
     @media (max-width: 1024px) {
         .dashboard-sidebar {
@@ -308,6 +439,51 @@ $currentController = $this->request->getParam('controller');
         .dashboard-sidebar {
             max-width: 100%;
         }
+    }
+
+    /* ===== FORCE LIGHT MODE FOR CUSTOMER PAGES ===== */
+    html:not(.hc),
+    body:not(.hc) {
+        background: #f8fafc !important;
+    }
+
+    body:not(.hc) .dashboard-sidebar {
+        background: #ffffff !important;
+        border-right: 1px solid #e5e7eb !important;
+    }
+
+    body:not(.hc) .dashboard-content {
+        background: #f8fafc !important;
+        color: #0f172a !important;
+    }
+
+    body:not(.hc) .card,
+    body:not(.hc) .sec-box,
+    body:not(.hc) .group {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border-color: #e5e7eb !important;
+    }
+
+    body:not(.hc) h1,
+    body:not(.hc) h2,
+    body:not(.hc) h3,
+    body:not(.hc) h4,
+    body:not(.hc) p,
+    body:not(.hc) span,
+    body:not(.hc) label {
+        color: #0f172a !important;
+    }
+
+    body:not(.hc) .form-control,
+    body:not(.hc) input[type="text"],
+    body:not(.hc) input[type="email"],
+    body:not(.hc) input[type="password"],
+    body:not(.hc) textarea,
+    body:not(.hc) select {
+        background: #ffffff !important;
+        color: #0f172a !important;
+        border-color: #d1d5db !important;
     }
 </style>
 

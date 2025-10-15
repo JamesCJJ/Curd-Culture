@@ -499,6 +499,88 @@ $fontScale = (float)($prefs['font_scale'] ?? 1.0);
             .hc .form-text, .hc .hint, .hc .small { font-size: 0.95em; }
         }
 
+        /* ===== FORCE LIGHT MODE FOR ADMIN ===== */
+        html:not(.hc),
+        body:not(.hc) {
+            background: #f8fafc !important;
+        }
+
+        body:not(.hc) .admin-sidebar {
+            background: #1f2937 !important;
+            border-right: 1px solid #374151 !important;
+        }
+
+        body:not(.hc) .sidebar-brand {
+            border-bottom-color: #374151 !important;
+        }
+
+        body:not(.hc) .brand-text {
+            color: #ffffff !important;
+        }
+
+        body:not(.hc) .nav-title {
+            color: #9ca3af !important;
+        }
+
+        body:not(.hc) .nav-link {
+            color: #d1d5db !important;
+        }
+
+        body:not(.hc) .nav-link:hover {
+            background: #374151 !important;
+            color: #ffffff !important;
+        }
+
+        body:not(.hc) .nav-link.active {
+            background: #374151 !important;
+            color: #ffffff !important;
+            border-left-color: #3b82f6 !important;
+        }
+
+        body:not(.hc) .admin-header {
+            background: #ffffff !important;
+            border-bottom-color: #e5e7eb !important;
+        }
+
+        body:not(.hc) .header-title {
+            color: #111827 !important;
+        }
+
+        body:not(.hc) .header-user {
+            color: #6b7280 !important;
+        }
+
+        body:not(.hc) .admin-content {
+            background: #f8fafc !important;
+            color: #0f172a !important;
+        }
+
+        body:not(.hc) .card,
+        body:not(.hc) .stat,
+        body:not(.hc) .stats-grid .stat-card {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #e5e7eb !important;
+        }
+
+        body:not(.hc) h1,
+        body:not(.hc) h2,
+        body:not(.hc) h3,
+        body:not(.hc) h4 {
+            color: #0f172a !important;
+        }
+
+        body:not(.hc) .form-control,
+        body:not(.hc) input[type="text"],
+        body:not(.hc) input[type="email"],
+        body:not(.hc) input[type="password"],
+        body:not(.hc) textarea,
+        body:not(.hc) select {
+            background: #ffffff !important;
+            color: #0f172a !important;
+            border-color: #d1d5db !important;
+        }
+
     </style>
 
 
@@ -509,6 +591,7 @@ $fontScale = (float)($prefs['font_scale'] ?? 1.0);
 
 
 <body class="<?= h($bodyClass) ?>" style="font-size: calc(16px * <?= h($fontScale) ?>);">
+
 <div class="admin-layout">
     <!-- Sidebar -->
     <aside class="admin-sidebar">
@@ -620,5 +703,6 @@ $fontScale = (float)($prefs['font_scale'] ?? 1.0);
         </div>
     </main>
 </div>
+
 </body>
 </html>

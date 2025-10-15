@@ -126,6 +126,7 @@ $this->Html->script('https://www.google.com/recaptcha/api.js', ['block' => true]
     .auth-btn-ghost{border:1px solid #e5e7eb;background:#f3f4f6;color:#111}
     .auth-btn-ghost:hover{filter:brightness(.98)}
     .theme-dark .auth-btn-ghost{background:#0f172a;border-color:#334155;color:#e5e7eb}
+    .page.hc .auth-btn-ghost{background:#1e293b;border-color:#475569;color:#f1f5f9}
     .auth-divider{display:flex;align-items:center;gap:.6rem;margin:1.05rem 0;color:#9ca3af;font-size:.86rem}
     .auth-divider::before,.auth-divider::after{content:"";flex:1;height:1px;background:#edf0f4}
     .theme-dark .auth-divider{color:#94a3b8}

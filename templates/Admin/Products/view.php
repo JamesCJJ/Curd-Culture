@@ -286,6 +286,8 @@ $this->assign('title', 'View Product');
 
 <style>
 /* Admin Product View Styles */
+/* Base font size for this page */
+html{font-size:18px}
 .admin-product-view {
     max-width: 1400px;
     margin: 0 auto;
@@ -302,7 +304,7 @@ $this->assign('title', 'View Product');
 }
 
 .view-title {
-    font-size: 2rem;
+    font-size: 2.125rem;
     font-weight: 700;
     color: #111827;
     margin: 0 0 0.5rem 0;
@@ -379,7 +381,7 @@ $this->assign('title', 'View Product');
 }
 
 .overview-label {
-    font-size: 0.875rem;
+    font-size: 1rem;
     font-weight: 600;
     color: #6b7280;
     text-transform: uppercase;
@@ -387,7 +389,7 @@ $this->assign('title', 'View Product');
 }
 
 .overview-value {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     color: #111827;
 }
 
@@ -435,7 +437,7 @@ $this->assign('title', 'View Product');
 }
 
 .card-title {
-    font-size: 1.125rem;
+    font-size: 1.25rem;
     font-weight: 600;
     color: #111827;
     margin: 0 0 1rem 0;
@@ -460,7 +462,7 @@ $this->assign('title', 'View Product');
 }
 
 .detail-label {
-    font-size: 0.75rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: #6b7280;
     text-transform: uppercase;
@@ -468,7 +470,7 @@ $this->assign('title', 'View Product');
 }
 
 .detail-value {
-    font-size: 0.875rem;
+    font-size: 1.0625rem;
     color: #111827;
 }
 
@@ -517,9 +519,9 @@ $this->assign('title', 'View Product');
 /* Badges */
 .badge {
     display: inline-block;
-    padding: 0.25rem 0.75rem;
+    padding: 0.375rem 0.875rem;
     border-radius: 9999px;
-    font-size: 0.75rem;
+    font-size: 0.875rem;
     font-weight: 600;
 }
 
@@ -559,10 +561,10 @@ $this->assign('title', 'View Product');
     display: inline-flex;
     align-items: center;
     gap: 0.375rem;
-    padding: 0.5rem 0.75rem;
+    padding: 0.75rem 1.1rem;
     border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 1.0625rem;
+    font-weight: 600;
 }
 
 .dietary-badge.vegetarian {
@@ -590,10 +592,10 @@ $this->assign('title', 'View Product');
     display: inline-flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1.5rem;
+    padding: 0.85rem 1.35rem;
     border-radius: 0.5rem;
-    font-size: 0.875rem;
-    font-weight: 500;
+    font-size: 1.0625rem;
+    font-weight: 600;
     text-decoration: none;
     transition: all 0.2s;
     border: 1px solid transparent;
