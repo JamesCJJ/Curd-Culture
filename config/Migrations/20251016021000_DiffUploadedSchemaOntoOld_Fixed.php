@@ -3,17 +3,24 @@ declare(strict_types=1);
 
 use Migrations\AbstractMigration;
 
-class DiffUploadedSchemaOntoOld extends AbstractMigration
+class DiffUploadedSchemaOntoOldFixed extends AbstractMigration
 {
     /** Utilities */
+    private function esc(string $v): string {
+        // very basic escape for identifiers/values we control (table/index names from code)
+        return str_replace('`', '``', $v);
+    }
+
     private function colExists(string $table, string $column): bool
     {
+        $table = $this->esc($table);
+        $column = $this->esc($column);
         $sql = "SELECT COUNT(*) AS c
                 FROM information_schema.COLUMNS
                 WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = :t
-                  AND COLUMN_NAME = :c";
-        $row = $this->getAdapter()->fetchRow($sql, ['t' => $table, 'c' => $column]);
+                  AND TABLE_NAME = '{$table}'
+                  AND COLUMN_NAME = '{$column}'";
+        $row = $this->getAdapter()->fetchRow($sql);
         return (int)$row['c'] > 0;
     }
 
@@ -24,12 +31,14 @@ class DiffUploadedSchemaOntoOld extends AbstractMigration
 
     private function idxExistsByName(string $table, string $idxName): bool
     {
+        $table = $this->esc($table);
+        $idxName = $this->esc($idxName);
         $sql = "SELECT COUNT(*) AS c
                 FROM information_schema.STATISTICS
                 WHERE TABLE_SCHEMA = DATABASE()
-                  AND TABLE_NAME = :t
-                  AND INDEX_NAME = :i";
-        $row = $this->getAdapter()->fetchRow($sql, ['t' => $table, 'i' => $idxName]);
+                  AND TABLE_NAME = '{$table}'
+                  AND INDEX_NAME = '{$idxName}'";
+        $row = $this->getAdapter()->fetchRow($sql);
         return (int)$row['c'] > 0;
     }
 
@@ -37,11 +46,12 @@ class DiffUploadedSchemaOntoOld extends AbstractMigration
     {
         // returns true if there is ANY unique index exactly on these columns (order-insensitive)
         sort($cols);
-        $sql = "SELECT INDEX_NAME
+        $table = $this->esc($table);
+        $sql = "SELECT INDEX_NAME, COLUMN_NAME, SEQ_IN_INDEX
                 FROM information_schema.STATISTICS
-                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t AND NON_UNIQUE = 0
-                ORDER BY SEQ_IN_INDEX";
-        $rows = $this->getAdapter()->fetchAll($sql, ['t' => $table]);
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$table}' AND NON_UNIQUE = 0
+                ORDER BY INDEX_NAME, SEQ_IN_INDEX";
+        $rows = $this->getAdapter()->fetchAll($sql);
         $byIndex = [];
         foreach ($rows as $r) {
             $byIndex[$r['INDEX_NAME']][] = $r['COLUMN_NAME'];
@@ -55,20 +65,23 @@ class DiffUploadedSchemaOntoOld extends AbstractMigration
 
     private function fkExists(string $table, string $constraint): bool
     {
+        $table = $this->esc($table);
+        $constraint = $this->esc($constraint);
         $sql = "SELECT COUNT(*) AS c
                 FROM information_schema.REFERENTIAL_CONSTRAINTS
                 WHERE CONSTRAINT_SCHEMA = DATABASE()
-                  AND CONSTRAINT_NAME = :k
-                  AND TABLE_NAME = :t";
-        $row = $this->getAdapter()->fetchRow($sql, ['k' => $constraint, 't' => $table]);
+                  AND CONSTRAINT_NAME = '{$constraint}'
+                  AND TABLE_NAME = '{$table}'";
+        $row = $this->getAdapter()->fetchRow($sql);
         return (int)$row['c'] > 0;
     }
 
     private function tableCollation(string $table): ?string
     {
+        $table = $this->esc($table);
         $sql = "SELECT TABLE_COLLATION FROM information_schema.TABLES
-                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = :t";
-        $row = $this->getAdapter()->fetchRow($sql, ['t' => $table]);
+                WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = '{$table}'";
+        $row = $this->getAdapter()->fetchRow($sql);
         return $row ? $row['TABLE_COLLATION'] : null;
     }
 
@@ -77,7 +90,7 @@ class DiffUploadedSchemaOntoOld extends AbstractMigration
         $current = $this->tableCollation($table);
         if ($current && $current !== $collation) {
             $this->write(sprintf("~ Collation of %s: %s -> %s", $table, $current, $collation));
-            $this->execute(sprintf("ALTER TABLE `%s` CONVERT TO CHARACTER SET %s COLLATE %s", $table, $charset, $collation));
+            $this->execute(sprintf("ALTER TABLE `%s` CONVERT TO CHARACTER SET %s COLLATE %s", $this->esc($table), $charset, $collation));
         }
     }
 
@@ -85,25 +98,25 @@ class DiffUploadedSchemaOntoOld extends AbstractMigration
     {
         if (!$this->colExists($table, $column)) {
             $this->write(sprintf("+ Adding column %s.%s", $table, $column));
-            $this->execute(sprintf("ALTER TABLE `%s` ADD COLUMN %s %s", $table, $column, $definitionSql));
+            $this->execute(sprintf("ALTER TABLE `%s` ADD COLUMN `%s` %s", $this->esc($table), $this->esc($column), $definitionSql));
         }
     }
 
     private function ensureUniqueIndex(string $table, string $name, array $columns): void
     {
         if (!$this->uniqueExistsOn($table, $columns)) {
-            $colsSql = implode('`,`', $columns);
+            $colsSql = '`' . implode('`,`', array_map([$this,'esc'], $columns)) . '`';
             $this->write(sprintf("+ Adding UNIQUE index %s on %s(%s)", $name, $table, implode(',', $columns)));
-            $this->execute(sprintf("ALTER TABLE `%s` ADD UNIQUE KEY `%s` (`%s`)", $table, $name, $colsSql));
+            $this->execute(sprintf("ALTER TABLE `%s` ADD UNIQUE KEY `%s` (%s)", $this->esc($table), $this->esc($name), $colsSql));
         }
     }
 
     private function ensureIndex(string $table, string $name, array $columns): void
     {
         if (!$this->idxExistsByName($table, $name)) {
-            $colsSql = implode('`,`', $columns);
+            $colsSql = '`' . implode('`,`', array_map([$this,'esc'], $columns)) . '`';
             $this->write(sprintf("+ Adding index %s on %s(%s)", $name, $table, implode(',', $columns)));
-            $this->execute(sprintf("ALTER TABLE `%s` ADD KEY `%s` (`%s`)", $table, $name, $colsSql));
+            $this->execute(sprintf("ALTER TABLE `%s` ADD KEY `%s` (%s)", $this->esc($table), $this->esc($name), $colsSql));
         }
     }
 
@@ -117,11 +130,11 @@ class DiffUploadedSchemaOntoOld extends AbstractMigration
         string $onUpdate
     ): void {
         if (!$this->fkExists($table, $constraint)) {
-            $cols = '`' . implode('`,`', $columns) . '`';
-            $rcols = '`' . implode('`,`', $refColumns) . '`';
+            $cols = '`' . implode('`,`', array_map([$this,'esc'], $columns)) . '`';
+            $rcols = '`' . implode('`,`', array_map([$this,'esc'], $refColumns)) . '`';
             $sql = sprintf(
                 "ALTER TABLE `%s` ADD CONSTRAINT `%s` FOREIGN KEY (%s) REFERENCES `%s` (%s) ON DELETE %s ON UPDATE %s",
-                $table, $constraint, $cols, $refTable, $rcols, $onDelete, $onUpdate
+                $this->esc($table), $this->esc($constraint), $cols, $this->esc($refTable), $rcols, $onDelete, $onUpdate
             );
             $this->write(sprintf("+ Adding FK %s on %s(%s) -> %s(%s)", $constraint, $table, implode(',', $columns), $refTable, implode(',', $refColumns)));
             $this->execute($sql);
@@ -281,7 +294,6 @@ class DiffUploadedSchemaOntoOld extends AbstractMigration
         $this->addColIfMissing('products', 'lactose_free', "tinyint(1) NOT NULL DEFAULT 0");
         $this->addColIfMissing('products', 'pairing_notes', "text DEFAULT NULL");
         $this->addColIfMissing('products', 'awards', "text DEFAULT NULL");
-        // ensure one unique index on slug
         $this->ensureUniqueIndex('products', 'idx_products_slug', ['slug']);
 
         // ===== carts =====
@@ -315,7 +327,6 @@ class DiffUploadedSchemaOntoOld extends AbstractMigration
         $this->addColIfMissing('cart_items', 'currency', "char(3) DEFAULT 'AUD'");
         $this->addColIfMissing('cart_items', 'created', "datetime DEFAULT NULL");
         $this->addColIfMissing('cart_items', 'modified', "datetime DEFAULT NULL");
-        // unique (cart_id, product_id)
         $this->ensureUniqueIndex('cart_items', 'cart_product', ['cart_id','product_id']);
         $this->ensureIndex('cart_items', 'fk_ci_prod', ['product_id']);
         $this->ensureForeignKey('cart_items', 'fk_ci_cart', ['cart_id'], 'carts', ['id'], 'CASCADE', 'NO ACTION');
@@ -464,6 +475,6 @@ class DiffUploadedSchemaOntoOld extends AbstractMigration
 
     public function down(): void
     {
-        // This is a structural patch migration; down() intentionally left empty to avoid accidental destructive changes.
+        // No destructive rollback.
     }
 }
