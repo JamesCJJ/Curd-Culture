@@ -482,6 +482,42 @@ $this->assign('title', 'Curd & Culture - Premium Artisan Cheese');
         --brand:#fbbf24; --brand-dark:#f59e0b; --brand-light:#1f2937; --accent:#60a5fa; --border:#374155;
         --shadow:rgba(0,0,0,.3); --shadow-lg:rgba(0,0,0,.5); --ring:rgba(251,191,36,.45);
     }
+    
+    /* Ensure all text is visible in high contrast mode */
+    .page.hc * {
+        color: var(--text) !important;
+    }
+    
+    .page.hc .hero__text,
+    .page.hc .hero__lead,
+    .page.hc .section-subtitle,
+    .page.hc .product-title,
+    .page.hc .product-desc,
+    .page.hc .product-feature,
+    .page.hc .trust-badge h3,
+    .page.hc .trust-badge p,
+    .page.hc .delivery-lead,
+    .page.hc .delivery-feature strong,
+    .page.hc .delivery-feature p,
+    .page.hc .why-intro,
+    .page.hc .why-text h3,
+    .page.hc .why-text p,
+    .page.hc .step-card h3,
+    .page.hc .step-card p,
+    .page.hc .testimonial-text,
+    .page.hc .testimonial-author strong,
+    .page.hc .testimonial-author span,
+    .page.hc .cta-subtitle,
+    .page.hc .cta-note,
+    .page.hc .trust-text,
+    .page.hc .stat-label,
+    .page.hc .stat-number,
+    .page.hc .delivery-card h4,
+    .page.hc .delivery-card p,
+    .page.hc .hero__badge,
+    .page.hc .feature-chip {
+        color: var(--text) !important;
+    }
     .page.hc .hero{background:linear-gradient(135deg,#1f2937 0%,#111827 50%,#0b0f14 100%)}
     .page.hc .product-card,
     .page.hc .trust-badge,

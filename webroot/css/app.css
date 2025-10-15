@@ -237,7 +237,26 @@ html, body, button, input, select, textarea {
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
 }
-.hc * { text-shadow: none !important; }
+.hc * { 
+    text-shadow: none !important; 
+    color: inherit !important;
+}
+
+/* Ensure all text elements are visible in high contrast */
+.hc h1, .hc h2, .hc h3, .hc h4, .hc h5, .hc h6,
+.hc p, .hc span, .hc div, .hc a, .hc li, .hc td, .hc th,
+.hc .hero__text, .hc .hero__lead, .hc .section-subtitle,
+.hc .product-title, .hc .product-desc, .hc .product-feature,
+.hc .trust-badge h3, .hc .trust-badge p, .hc .delivery-lead,
+.hc .delivery-feature strong, .hc .delivery-feature p,
+.hc .why-intro, .hc .why-text h3, .hc .why-text p,
+.hc .step-card h3, .hc .step-card p, .hc .testimonial-text,
+.hc .testimonial-author strong, .hc .testimonial-author span,
+.hc .cta-subtitle, .hc .cta-note, .hc .trust-text,
+.hc .stat-label, .hc .stat-number, .hc .delivery-card h4,
+.hc .delivery-card p, .hc .hero__badge, .hc .feature-chip {
+    color: var(--hc-text) !important;
+}
 
 /* Headings slightly heavier for legibility */
 .hc h1, .hc h2, .hc h3, .hc .page-title { color: var(--hc-text); font-weight: 750; }
