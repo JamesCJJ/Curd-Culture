@@ -180,6 +180,82 @@ html, body, button, input, select, textarea {
   background-color: rgba(74, 222, 128, 0.1);
 }
 
+/* High contrast flash messages */
+.hc .flash-message {
+  background: var(--hc-surface) !important;
+  border: 1px solid var(--hc-border) !important;
+  color: var(--hc-text) !important;
+}
+
+.hc .flash-error {
+  background: #3a0b13 !important;
+  border-color: #7a1b2b !important;
+  color: #ff6b6b !important;
+}
+
+.hc .flash-error .flash-text,
+.hc .flash-error .flash-icon {
+  color: #ff6b6b !important;
+}
+
+.hc .flash-error .flash-close {
+  color: #ff6b6b !important;
+}
+
+.hc .flash-error .flash-close:hover {
+  background-color: rgba(255, 107, 107, 0.1) !important;
+}
+
+.hc .flash-success {
+  background: #072b27 !important;
+  border-color: #116f62 !important;
+  color: #22d3a6 !important;
+}
+
+.hc .flash-success .flash-text,
+.hc .flash-success .flash-icon {
+  color: #22d3a6 !important;
+}
+
+.hc .flash-success .flash-close {
+  color: #22d3a6 !important;
+}
+
+.hc .flash-success .flash-close:hover {
+  background-color: rgba(34, 211, 166, 0.1) !important;
+}
+
+/* High contrast for CakePHP legacy flash messages */
+.hc .message {
+  background: var(--hc-surface) !important;
+  border: 1px solid var(--hc-border) !important;
+  color: var(--hc-text) !important;
+}
+
+.hc .message.error {
+  background: #3a0b13 !important;
+  border-color: #7a1b2b !important;
+  color: #ff6b6b !important;
+}
+
+.hc .message.success {
+  background: #072b27 !important;
+  border-color: #116f62 !important;
+  color: #22d3a6 !important;
+}
+
+.hc .message.warning {
+  background: #2d1b0b !important;
+  border-color: #7a4a0b !important;
+  color: #fbbf24 !important;
+}
+
+.hc .message.info {
+  background: #0f2236 !important;
+  border-color: #284b72 !important;
+  color: #60a5fa !important;
+}
+
 /* Lightweight loading veil (form submits, long navigations) */
 .page::after{
   content:'Loading…';
