@@ -22,10 +22,11 @@
     <?= $this->fetch('script') ?>
 </head>
 <?php
+// Read theme preference from cookie to set body class (light/dark/auto)
 $cookies   = $this->getRequest()->getCookieParams();
 $theme     = $cookies['pref_theme'] ?? 'auto';
 $bodyClass = $theme === 'dark' ? 'theme-dark' : ($theme === 'light' ? 'theme-light' : '');
-
+// Current user identity and role (empty if guest)
 $identity  = $this->getRequest()->getAttribute('identity');
 $role      = $identity ? strtolower((string)$identity->get('role')) : '';
 
