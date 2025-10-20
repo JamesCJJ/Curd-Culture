@@ -38,9 +38,9 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
     public function getAuthenticationService(ServerRequestInterface $request): AuthenticationServiceInterface
     {
-
+        // Canonical login URL (non-prefixed); used for unauthenticated redirects.
         $loginUrl = Router::url(['prefix' => false, 'controller' => 'Users', 'action' => 'login'], false);
-
+        // Redirect unauthenticated users and preserve intended URL via ?redirect=
         $service = new AuthenticationService([
             'unauthenticatedRedirect' => $loginUrl,
             'queryParam'              => 'redirect',
