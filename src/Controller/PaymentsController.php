@@ -10,21 +10,31 @@ use Cake\I18n\FrozenDate;
 use Cake\Validation\Validation;
 use Stripe\StripeClient;
 
+/**
+ * PaymentsController
+ * Handles checkout session creation (Stripe) and simple success/cancel endpoints.
+ * Notes:
+ * - Totals are recomputed on the server from the cart; client values are not trusted.
+ * - This controller only creates a Checkout Session; finalization should happen via webhooks.
+ */
 class PaymentsController extends AppController
 {
     public function initialize(): void
     {
         parent::initialize();
+        // Use the Authentication component to require login where needed.
         $this->loadComponent('Authentication.Authentication');
     }
 
     /**
      * POST /payments/checkout
+     * Creates a Stripe Checkout Session from the user's open cart and redirects to Stripe.
      */
     public function checkout()
     {
         $this->request->allowMethod(['post']);
 
+        // Require a signed-in user. Preserve intended URL for redirect after login.
         $identity = $this->request->getAttribute('identity');
         if (!$identity) {
             $this->Flash->error('Please sign in to checkout.');
@@ -37,18 +47,21 @@ class PaymentsController extends AppController
 
         $userId = (int)$identity->get('id');
 
+        // Tables we need for recomputing totals and validating fulfillment options.
         $Carts           = $this->getTableLocator()->get('Carts');
         $CartItems       = $this->getTableLocator()->get('CartItems');
         $Products        = $this->getTableLocator()->get('Products');
         $DeliverySlots   = $this->getTableLocator()->get('DeliverySlots');
         $PickupLocations = $this->getTableLocator()->get('PickupLocations');
 
+        // Fetch the user's open cart (server is the source of truth).
         $cart = $Carts->find()->where(['user_id' => $userId, 'status' => 'open'])->first();
         if (!$cart) {
             $this->Flash->error('Your cart is empty.');
             return $this->redirect(['controller' => 'Cart', 'action' => 'index']);
         }
 
+        // Pull lightweight cart item rows (no hydration).
         $rows = $CartItems->find()
             ->select(['product_id', 'qty', 'price', 'currency'])
             ->where(['cart_id' => $cart->id])
@@ -61,14 +74,14 @@ class PaymentsController extends AppController
             return $this->redirect(['controller' => 'Cart', 'action' => 'index']);
         }
 
-        // 商品名映射
+        // Map product_id → name for nicer line item titles.
         $pids = array_column($rows, 'product_id');
         $nameMap = [];
         foreach ($Products->find()->select(['id', 'name'])->where(['id IN' => $pids])->enableHydration(false)->all() as $p) {
             $nameMap[(int)$p['id']] = (string)$p['name'];
         }
 
-        // 表单基础校验
+        // Basic form validation for customer/fulfillment info.
         $data = (array)$this->request->getData();
 
         $required = ['full_name', 'email', 'address', 'city', 'postcode', 'country'];
@@ -85,7 +98,7 @@ class PaymentsController extends AppController
             return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
         }
 
-        // 统一货币
+        // Enforce a single currency in the session (Stripe requires one).
         $currency = strtoupper((string)($rows[0]['currency'] ?? 'AUD')) ?: 'AUD';
         foreach ($rows as $r) {
             $rc = strtoupper((string)($r['currency'] ?? $currency)) ?: $currency;
@@ -95,7 +108,7 @@ class PaymentsController extends AppController
             }
         }
 
-        // 计算金额 & line items
+        // Recompute totals and build Stripe line items. Never trust client totals.
         $subtotal  = 0.0;
         $lineItems = [];
         foreach ($rows as $it) {
@@ -115,7 +128,7 @@ class PaymentsController extends AppController
                 'price_data' => [
                     'currency'     => $currency,
                     'product_data' => ['name' => $name],
-                    'unit_amount'  => (int)round($price * 100),
+                    'unit_amount'  => (int)round($price * 100), // cents
                 ],
                 'quantity' => $qty,
             ];
@@ -126,7 +139,7 @@ class PaymentsController extends AppController
             return $this->redirect(['controller' => 'Cart', 'action' => 'index']);
         }
 
-        // 履约方式 & 高级校验（delivery / pickup）
+        // Fulfillment: delivery or pickup. Validate advanced fields below.
         $method = (string)($data['fulfillment_method'] ?? 'delivery');
         $method = in_array($method, ['delivery', 'pickup'], true) ? $method : 'delivery';
 
@@ -135,12 +148,13 @@ class PaymentsController extends AppController
         $pickupLocationId     = (int)($data['pickup_location_id'] ?? 0);
         $deliveryInstructions = (string)($data['delivery_instructions'] ?? '');
 
-        // 规则配置
+        // Configurable rules for delivery validation.
         $maxDaysAhead      = (int)(Configure::read('Checkout.delivery_days_max') ?? 30);
         $allowWeekends     = (bool)(Configure::read('Checkout.delivery_allow_weekends') ?? true);
         $requireActiveSlot = (bool)(Configure::read('Checkout.require_active_slot') ?? true);
 
         if ($method === 'pickup') {
+            // Pickup requires a valid location ID.
             if ($pickupLocationId <= 0) {
                 $this->Flash->error('Please choose a pickup location.');
                 return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
@@ -151,19 +165,19 @@ class PaymentsController extends AppController
                 return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
             }
         } else {
-            // ===== DELIVERY 严格校验（修复 lt()/gt()）=====
+            // ===== DELIVERY validation (date/slot consistency, weekend policy, capacity) =====
             if ($deliverySlotId <= 0 || $deliveryDateStr === '') {
                 $this->Flash->error('Please choose a delivery date and time slot.');
                 return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
             }
 
-            // 1) 严格 YYYY-MM-DD
+            // 1) Strict YYYY-MM-DD format.
             if (!$this->isValidYmd($deliveryDateStr)) {
                 $this->Flash->error('Please choose a valid delivery date (YYYY-MM-DD).');
                 return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
             }
 
-            // 2) 用 FrozenTime + 时间戳比较（兼容所有版本）
+            // 2) Compare timestamps using FrozenTime (avoids platform quirks).
             $todayStart    = (new FrozenTime('today'))->startOfDay();
             $selectedStart = (new FrozenTime($deliveryDateStr))->startOfDay();
 
@@ -180,7 +194,7 @@ class PaymentsController extends AppController
                 }
             }
 
-            // 3) 周末限制
+            // 3) Weekend policy.
             $dow = (int)$selectedStart->format('N'); // 1..7 (Mon..Sun)
             $isWeekend = ($dow >= 6);
             if (!$allowWeekends && $isWeekend) {
@@ -188,7 +202,7 @@ class PaymentsController extends AppController
                 return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
             }
 
-            // 4) 时段有效性
+            // 4) Slot must exist (and be active if that column is present).
             $slotQ = $DeliverySlots->find()->where(['id' => $deliverySlotId]);
             if ($requireActiveSlot && $DeliverySlots->getSchema()->hasColumn('active')) {
                 $slotQ->andWhere(['active' => true]);
@@ -199,7 +213,7 @@ class PaymentsController extends AppController
                 return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
             }
 
-            // weekday 字段匹配（如有）
+            // Optional: weekday alignment check if the slot has a weekday field.
             if (isset($slot->weekday)) {
                 $slotDow = (int)$slot->weekday;
                 if ($slotDow >= 1 && $slotDow <= 7 && $slotDow !== $dow) {
@@ -208,14 +222,14 @@ class PaymentsController extends AppController
                 }
             }
 
-            // 容量（如有 remaining 字段）
+            // Optional capacity check if the slot exposes a remaining field.
             if (isset($slot->remaining) && is_numeric($slot->remaining) && (int)$slot->remaining <= 0) {
                 $this->Flash->error('The selected time slot is full. Please choose another slot.');
                 return $this->redirect(['controller' => 'Cart', 'action' => 'checkout']);
             }
         }
 
-        // 运费
+        // Shipping fee (simple flat-rate example; pickup is free).
         $shipping = ($method === 'pickup') ? 0.0 : (($subtotal > 0) ? 12.90 : 0.0);
         if ($shipping > 0) {
             $lineItems[] = [
@@ -228,7 +242,7 @@ class PaymentsController extends AppController
             ];
         }
 
-        // Stripe key
+        // Load Stripe secret key from config/env. Abort if missing.
         $secret = (string)(Configure::read('Stripe.secret_key') ?: env('STRIPE_SECRET_KEY', ''));
         if ($secret === '') {
             $this->Flash->error('Stripe secret key is not configured.');
@@ -237,16 +251,18 @@ class PaymentsController extends AppController
 
         $stripe = new StripeClient($secret);
 
+        // After Stripe returns, success goes to Cart::complete; cancel returns to checkout.
         $successUrl = Router::url(['controller' => 'Cart', 'action' => 'complete'], true);
         $cancelUrl  = Router::url(['controller' => 'Cart', 'action' => 'checkout'], true);
 
-        // 安全裁剪 metadata
+        // Trim metadata to a safe length so we don't hit provider limits.
         $truncate = function ($v, int $max = 350): string {
             $s = trim((string)$v);
             if (mb_strlen($s) > $max) $s = mb_substr($s, 0, $max);
             return $s;
         };
 
+        // Minimal customer and fulfillment details for later processing in webhooks.
         $metadata = [
             'user_id'               => (string)$userId,
             'cart_id'               => (string)$cart->id,
@@ -266,6 +282,7 @@ class PaymentsController extends AppController
             $metadata['delivery_slot_id'] = (string)$deliverySlotId;
         }
 
+        // Create the Checkout Session and redirect the user to Stripe-hosted payment page.
         $session = $stripe->checkout->sessions->create([
             'mode'           => 'payment',
             'customer_email' => $email,
@@ -278,8 +295,10 @@ class PaymentsController extends AppController
         return $this->redirect($session->url);
     }
 
+    // Landing page after Stripe success (actual order finalization should be webhook-driven).
     public function success() {}
 
+    // Simple cancel route to get back to checkout.
     public function cancel()
     {
         $this->Flash->warning('Payment was cancelled.');
@@ -287,7 +306,8 @@ class PaymentsController extends AppController
     }
 
     /**
-     * 严格校验 YYYY-MM-DD
+     * Validate strict YYYY-MM-DD format.
+     * Returns true for valid dates (e.g., 2025-10-20), false otherwise.
      */
     private function isValidYmd(string $ymd): bool
     {
