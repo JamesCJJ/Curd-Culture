@@ -36,7 +36,7 @@ if ($identity && $role === 'customer') {
         $locator   = \Cake\ORM\TableRegistry::getTableLocator();
         $Carts     = $locator->get('Carts');
         $CartItems = $locator->get('CartItems');
-
+        // Find user's open cart and count its items
         $cart = $Carts->find()
             ->select(['id'])
             ->where(['user_id' => (int)$identity->get('id'), 'status' => 'open'])
@@ -46,6 +46,7 @@ if ($identity && $role === 'customer') {
             $cartQty = $CartItems->find()->where(['cart_id' => $cart->id])->count();
         }
     } catch (\Throwable $e) {
+        // Swallow errors to avoid breaking layout; leave $cartQty at 0
         $cartQty = 0;
     }
 }
