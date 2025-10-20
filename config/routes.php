@@ -123,6 +123,8 @@ return static function (RouteBuilder $routes): void {
     // ─────────────────────────────────────────────────────────────
     // Admin area
     // ─────────────────────────────────────────────────────────────
+    // Namespace target: App\Controller\Admin\*
+    // Ensure this prefix is guarded by authentication/authorization middleware.
     $routes->prefix('Admin', function (RouteBuilder $builder) {
         $builder->connect('/login',  ['controller' => 'Users', 'action' => 'login']);
         $builder->connect('/logout', ['controller' => 'Users', 'action' => 'logout']);
@@ -136,7 +138,7 @@ return static function (RouteBuilder $routes): void {
         $builder->connect('/deliveries',             ['controller' => 'Deliveries', 'action' => 'index']);
         $builder->connect('/deliveries/bulk-update', ['controller' => 'Deliveries', 'action' => 'bulkUpdate'], ['_method' => 'POST']);
         $builder->connect('/deliveries/move',        ['controller' => 'Deliveries', 'action' => 'move'],        ['_method' => 'POST']);
-
+        // Fallbacks for Admin prefix
         $builder->fallbacks(DashedRoute::class);
     });
 
