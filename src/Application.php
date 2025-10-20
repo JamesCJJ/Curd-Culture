@@ -15,6 +15,10 @@ use Cake\Routing\Middleware\RoutingMiddleware;
 use Cake\Routing\Router;
 use Psr\Http\Message\ServerRequestInterface;
 
+// Application entry point: HTTP middleware pipeline + authentication setup.
+// - middleware(): defines the global middleware order.
+// - getAuthenticationService(): configures identifiers/authenticators and login redirect.
+
 class Application extends BaseApplication implements AuthenticationServiceProviderInterface
 {
     public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
