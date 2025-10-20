@@ -226,7 +226,7 @@ if ($identity && $role === 'customer') {
     .topbar__inner{max-width:1100px;margin:0 auto;padding:8px 16px;display:flex;align-items:center;justify-content:space-between;gap:8px}
     .brand-link{display:flex;align-items:center;gap:8px;text-decoration:none;white-space:nowrap}
     .brand-logo{height:28px;width:auto;border-radius:4px}
-    .brand-name{font-weight:800;color:#0f172a;font-size:var(--nav-font-px)}
+    .brand-name{font-weight:1000;color:#0f172a;font-size:var(--nav-font-px)}
     .nav-actions{flex:1 1 auto;display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap;min-width:0}
 
     .topbar .btn{display:inline-flex;align-items:center;justify-content:center;height:var(--nav-h);min-height:var(--nav-h);padding:0 14px;border-radius:var(--nav-radius);border:1px solid #d1d5db;background:#fff;color:#111;font-size:var(--nav-font-px)!important;white-space:nowrap;flex:0 0 auto;line-height:1!important;text-decoration:none;box-shadow:none;transition:filter .15s}
