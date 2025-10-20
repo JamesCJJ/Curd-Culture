@@ -48,7 +48,7 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 
 
         $fields = ['username' => 'email', 'password' => 'password'];
-
+        // Identifier: look up user via ORM and verify password hash.
         $service->loadIdentifier('Authentication.Password', [
             'fields' => $fields,
             'resolver' => [
@@ -57,6 +57,8 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
             ],
         ]);
 
+        // Authenticator chain:
+        // 1) Session: restore existing logins (browser flows).
 
         $service->loadAuthenticator('Authentication.Session');
 
