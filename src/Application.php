@@ -23,7 +23,11 @@ class Application extends BaseApplication implements AuthenticationServiceProvid
 {
     public function middleware(MiddlewareQueue $middlewareQueue): MiddlewareQueue
     {
-
+        // Global middleware order (request inwards):
+        // 1) ErrorHandler  – consistent error pages/logging
+        // 2) Routing       – resolve controller/action/params
+        // 3) BodyParser    – parse JSON/form bodies
+        // 4) Authentication– attach user identity (if any)
         return $middlewareQueue
             ->add(new ErrorHandlerMiddleware())
             ->add(new RoutingMiddleware($this))
