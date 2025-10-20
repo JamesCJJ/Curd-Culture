@@ -3,7 +3,16 @@ declare(strict_types=1);
 
 use Cake\Routing\Route\DashedRoute;
 use Cake\Routing\RouteBuilder;
-
+//Routes map (handover-ready).
+//  Purpose: document URL → controller/action mappings for public pages,
+//  customer dashboard, payments/webhooks, and the Admin prefix.
+//  Safety guidelines:
+//  - Destructive actions must not be reachable via GET (prefer POST/DELETE).
+//  - Webhooks must be POST-only and verify signatures in their controllers.
+//  - Keep parameter constraints explicit (e.g., numeric IDs, slug keys).
+//  Conventions:
+//  - Dashed URLs globally.
+//  - Named routes where helpful for generating URLs.
 return static function (RouteBuilder $routes): void {
     // Use dashed URLs by default, e.g. /my-controller/my-action
     $routes->setRouteClass(DashedRoute::class);
