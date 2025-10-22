@@ -61,6 +61,7 @@ class WebhooksController extends AppController
         } catch (UnexpectedValueException $e) {
             return $this->response->withStatus(400)->withStringBody('Invalid payload');
         }
+        // We only care about completed checkout sessions here.
 
         if ($event->type === 'checkout.session.completed') {
             /** @var \Stripe\Checkout\Session $session */
