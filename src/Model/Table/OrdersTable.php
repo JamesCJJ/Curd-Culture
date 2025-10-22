@@ -8,7 +8,15 @@ use Cake\Validation\Validator;
 
 /**
  * Orders table
- * - Adds relations to OrderItems, Users, DeliverySlots, PickupLocations
+ *
+ * Purpose:
+ * - Holds the order header (customer/contact, totals, payment/fulfillment fields).
+ * - Relationships to lines (OrderItems) and optional scheduling entities.
+ *
+ * Notes for maintainers:
+ * - Totals are stored as numbers (no currency math here); amounts are recomputed at the controller/service layer.
+ * - We allow NULL for some fulfillment fields because pickup/delivery are mutually exclusive.
+ * - Consider DB indexes on (user_id, created), (payment_ref), and (delivery_date, delivery_slot_id).
  */
 class OrdersTable extends Table
 {
