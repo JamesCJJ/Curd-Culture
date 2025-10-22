@@ -203,7 +203,8 @@ class WebhooksController extends AppController
                 return $this->response->withStringBody('ok');
             }
         }
-
+        // Respond "ok" for all events (including ones we don't care about).
+        // Stripe treats any 2xx as success.
         return $this->response->withStringBody('ok');
     }
 }
