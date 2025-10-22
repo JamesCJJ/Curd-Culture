@@ -88,7 +88,7 @@ class WebhooksController extends AppController
             if ($Orders->exists(['payment_ref' => (string)$session->id])) {
                 return $this->response->withStringBody('ok');
             }
-
+            // Snapshot the cart items now (server is the source of truth).
             $rows = $CartItems->find()
                 ->select(['product_id', 'qty', 'price', 'currency'])
                 ->where(['cart_id' => $cartId])
