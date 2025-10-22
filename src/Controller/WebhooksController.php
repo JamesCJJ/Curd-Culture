@@ -97,9 +97,10 @@ class WebhooksController extends AppController
                 ->toArray();
 
             if (empty($rows)) {
+                // Cart might have been already processed or emptied; acknowledge.
                 return $this->response->withStringBody('ok');
             }
-
+            // Compute totals from the cart rows (avoid trusting client).
             $currency = 'AUD';
             $subtotal = 0.0;
             foreach ($rows as $it) {
