@@ -66,11 +66,13 @@ class WebhooksController extends AppController
         if ($event->type === 'checkout.session.completed') {
             /** @var \Stripe\Checkout\Session $session */
             $session = $event->data->object;
+            // Metadata set during checkout; used to find the cart and user.
 
             $userId = isset($session->metadata->user_id) ? (int)$session->metadata->user_id : null;
             $cartId = isset($session->metadata->cart_id) ? (int)$session->metadata->cart_id : 0;
 
             if (!$cartId) {
+                // Nothing we can do without the cart; acknowledge to stop retries.
                 $this->log('Webhook missing cart_id for session: ' . (string)$session->id, 'error');
                 return $this->response->withStringBody('ok');
             }
