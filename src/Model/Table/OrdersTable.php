@@ -76,3 +76,10 @@ class OrdersTable extends Table
         return $validator;
     }
 }
+// Tip (not implemented here, but recommended):
+// - buildRules(): enforce:
+//     * if fulfillment_method = 'delivery' → delivery_date & delivery_slot_id must be present
+//     * if fulfillment_method = 'pickup'   → pickup_location_id must be present
+//     * totals consistency: total = subtotal + shipping_fee - discount (within rounding tolerance)
+//     * unique payment_ref (idempotency for paid orders)
+
