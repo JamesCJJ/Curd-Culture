@@ -118,6 +118,7 @@ class WebhooksController extends AppController
             $deliverySlotId   = isset($meta->delivery_slot_id) ? (int)$meta->delivery_slot_id : 0;
             $pickupLocationId = isset($meta->pickup_location_id) ? (int)$meta->pickup_location_id : 0;
             $instructions     = (string)($meta->delivery_instructions ?? '');
+            // Normalize fulfillment-specific fields and shipping.
 
             if ($fm === 'pickup') {
                 $shipping = 0.0;
@@ -132,6 +133,8 @@ class WebhooksController extends AppController
             }
 
             $total = round($subtotal + $shipping, 2);
+
+            // Create the paid order + lines, deduct stock, and close the cart.
 
             $conn = $Orders->getConnection();
             $conn->begin();
