@@ -44,6 +44,7 @@ class WebhooksController extends AppController
      */
     public function stripe()
     {
+        // Raw payload + signature header as required by Stripe
         $payload   = (string)$this->request->getBody()->getContents();
         $sigHeader = $this->request->getHeaderLine('Stripe-Signature');
         $secret    = (string)(Configure::read('Stripe.webhook_secret') ?: env('STRIPE_WEBHOOK_SECRET', ''));
