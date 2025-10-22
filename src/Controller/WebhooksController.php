@@ -166,7 +166,7 @@ class WebhooksController extends AppController
                     'notes'                => null,
                 ]);
                 $Orders->saveOrFail($order, ['atomic' => false]);
-
+                // Fetch names/slugs in bulk for nicer order lines
                 $pids = array_map(fn($r) => (int)$r['product_id'], $rows);
                 $prodMap = [];
                 if ($pids) {
@@ -175,6 +175,7 @@ class WebhooksController extends AppController
                     }
                 }
 
+                // Lines + stock deduction (will throw if not enough stock)
                 foreach ($rows as $it) {
                     $pid = (int)$it['product_id'];
                     $qty = (int)$it['qty'];
@@ -191,7 +192,7 @@ class WebhooksController extends AppController
                         'currency'   => (string)($it['currency'] ?? $currency),
                     ]), ['atomic' => false]);
                 }
-
+                // Close cart and clear its rows after successful order creation
                 $Carts->updateAll(['status' => 'ordered'], ['id' => $cartId]);
                 $CartItems->deleteAll(['cart_id' => $cartId]);
 
