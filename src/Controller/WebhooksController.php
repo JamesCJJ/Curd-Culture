@@ -50,9 +50,10 @@ class WebhooksController extends AppController
         $secret    = (string)(Configure::read('Stripe.webhook_secret') ?: env('STRIPE_WEBHOOK_SECRET', ''));
 
         if ($secret === '') {
+            // Misconfiguration; better fail fast with 400 to surface the issue.
             return $this->response->withStatus(400)->withStringBody('Missing webhook secret');
         }
-
+        // Verify request authenticity before touching any state.
         try {
             $event = Webhook::constructEvent($payload, $sigHeader, $secret);
         } catch (SignatureVerificationException $e) {
