@@ -76,7 +76,7 @@ class WebhooksController extends AppController
                 $this->log('Webhook missing cart_id for session: ' . (string)$session->id, 'error');
                 return $this->response->withStringBody('ok');
             }
-
+            // Tables we need for finalization
             $Orders     = $this->getTableLocator()->get('Orders');
             $OrderItems = $this->getTableLocator()->get('OrderItems');
             $Carts      = $this->getTableLocator()->get('Carts');
@@ -84,6 +84,7 @@ class WebhooksController extends AppController
             /** @var \App\Model\Table\ProductsTable $Products */
             $Products   = $this->getTableLocator()->get('Products');
 
+            // Idempotency: if an order already exists for this session, stop here.
             if ($Orders->exists(['payment_ref' => (string)$session->id])) {
                 return $this->response->withStringBody('ok');
             }
