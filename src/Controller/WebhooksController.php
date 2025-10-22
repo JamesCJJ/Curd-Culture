@@ -32,7 +32,16 @@ class WebhooksController extends AppController
         parent::initialize();
         $this->request->allowMethod(['post']);
     }
-
+    /**
+     * POST /webhooks/stripe
+     *
+     * Flow:
+     * 1) Read raw body + 'Stripe-Signature' header and verify using the webhook secret.
+     * 2) Switch on $event->type; only handle the types we know (here: checkout.session.completed).
+     * 3) Look up the cart from metadata; compute totals from server-side data (cart items).
+     * 4) In a transaction: create a PAID order, insert lines, deduct stock, close the cart.
+     * 5) Always return "ok" (200) at the end to acknowledge the event.
+     */
     public function stripe()
     {
         $payload   = (string)$this->request->getBody()->getContents();
