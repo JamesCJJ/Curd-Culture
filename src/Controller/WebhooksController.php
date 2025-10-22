@@ -9,7 +9,20 @@ use Stripe\Exception\SignatureVerificationException;
 use Stripe\Webhook;
 use Throwable;
 use UnexpectedValueException;
-
+// WebhooksController
+// Purpose:
+// - Receive Stripe callbacks and finalize orders.
+// - Keep the handler short and idempotent; move heavy work (emails, PDFs) to background jobs.
+//
+// Security:
+// - Verify signature with STRIPE_WEBHOOK_SECRET.
+// - Return 2xx even on internal errors we’ve already handled to avoid retry storms.
+//
+// Idempotency:
+// - De-duplicate by Orders.payment_ref (Stripe session id). If it exists, do nothing.
+//
+// Logging:
+// - Log only event/session ids and order ids. Avoid PII in logs.
 class WebhooksController extends AppController
 {
     public $autoRender = false;
