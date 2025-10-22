@@ -139,6 +139,7 @@ class WebhooksController extends AppController
             $conn = $Orders->getConnection();
             $conn->begin();
             try {
+                // Order header (paid via card)
                 $order = $Orders->patchEntity($Orders->newEmptyEntity(), [
                     'user_id'              => $userId,
                     'email'                => (string)($session->customer_details->email ?? $session->customer_email ?? ''),
