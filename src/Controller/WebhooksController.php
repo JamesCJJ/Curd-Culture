@@ -109,7 +109,7 @@ class WebhooksController extends AppController
                     $currency = (string)$it['currency'];
                 }
             }
-
+            // Fulfillment data was stored as metadata during the checkout step.
             $meta = $session->metadata ?? (object)[];
             $fm   = in_array((string)($meta->fulfillment_method ?? 'delivery'), ['delivery', 'pickup'], true)
                 ? (string)$meta->fulfillment_method : 'delivery';
